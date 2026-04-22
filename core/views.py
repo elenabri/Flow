@@ -126,7 +126,7 @@ def register(request):
                 print(f"Ошибка почты: {mail_err}")
 
             # 4. Получаем роль из формы
-            role = form.cleaned_data.get('role')
+            role = request.POST.get('role')
             
             try:
                 if role == 'blogger':

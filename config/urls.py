@@ -5,6 +5,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from core import views  
 
+
+
 # Группируем все маршруты основного приложения с именем 'core'
 core_patterns = ([
     path('', views.home, name='home'),
@@ -35,13 +37,16 @@ core_patterns = ([
     path('blogger/<int:blogger_id>/', views.blogger_detail, name='blogger_detail'),
     # Роутер
     path('login-router/', views.login_router, name='login_router'),
+    
 ], 'core')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    
+    path('test-path/', views.home), # ДОБАВЬ ЭТУ СТРОКУ ДЛЯ ПРОВЕРКИ
+    path('verify-email/<path:username>/', views.verify_email, name='verify_email'),
     # Подключаем наши основные пути через include с namespace
     path('', include(core_patterns)),
+    
 
     # Встроенная авторизация (login/logout)
     path('accounts/', include('django.contrib.auth.urls')),

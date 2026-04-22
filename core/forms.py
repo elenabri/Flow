@@ -7,10 +7,7 @@ class RegistrationForm(forms.ModelForm):
     # Поле username скрываем, чтобы оно не мешалось в интерфейсе
     username = forms.CharField(widget=forms.HiddenInput(), required=False)
     
-    role = forms.ChoiceField(
-        choices=[('blogger', 'Блогер'), ('advertiser', 'Рекламодатель')], 
-        label="Кто вы?"
-    )
+    role = forms.ChoiceField(choices=[('blogger', 'Блогер'), ('advertiser', 'Рекламодатель')])
     
     # Поля блогера (Название канала удалено)
     channel_link = forms.CharField( # Меняем на CharField, чтобы убрать браузерную проверку URL
@@ -41,7 +38,7 @@ class RegistrationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['username', 'email']
+        fields = ['email', 'role']
 
 class EmailLoginForm(AuthenticationForm):
     username = forms.EmailField(

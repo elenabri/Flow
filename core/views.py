@@ -4,7 +4,7 @@ import requests
 import statistics
 import json
 import string
-
+import random, string, json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, get_user_model
 from django.contrib.auth.decorators import login_required
@@ -92,7 +92,7 @@ def send_verification_email(user, password): # Добавили password
     )
 
 # --- 2. АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ ---
-
+from django.shortcuts import redirect
 def register(request):
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
@@ -135,7 +135,11 @@ def register(request):
                         ProductAd.objects.create(
                             advertiser=adv, 
                             title=request.POST.get('title'), 
-                            category=", ".join(request.POST.getlist('topics'))
+                            product_image=request.FILES.get('product_image'),
+                            category=", ".join(request.POST.getlist('topics')),
+                            link_wb=request.POST.get('link_wb'),
+                            link_ozon=request.POST.get('link_ozon'),
+                            description=request.POST.get('description')
                         )
 
                 # 5. ОТПРАВКА ПИСЬМА (передаем и пользователя, и "сырой" пароль)

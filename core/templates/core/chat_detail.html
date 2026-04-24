@@ -97,9 +97,9 @@
 // --- WEBSOCKET ЛОГИКА ---
 const otherUserId = "{{ other_user.id }}";
 const currentUserId = "{{ user.id }}";
+
 const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-//const chatSocket = new WebSocket(wsScheme + '://' + window.location.host + '/ws/chat/' + otherUserId + '/');
-const chatSocket = new WebSocket('wss://tubeflow-mvfo.onrender.com/ws/chat/' + otherUserId + '/');
+const chatSocket = new WebSocket(wsScheme + '://' + window.location.host + '/ws/chat/' + otherUserId + '/');
      
 const chatLog = document.querySelector('#chat-log');
 chatLog.scrollTop = chatLog.scrollHeight; // Авто-скролл при загрузке

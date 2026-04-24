@@ -3,6 +3,8 @@
 {% block title %}Чат с {{ other_user.username }}{% endblock %}
 
 {% block content %}
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
 <div class="chat-main-container" id="chat-layout" 
      style="display: grid; grid-template-columns: 280px 1fr 380px; height: 88vh; background: white; border: 1px solid #ddd; border-radius: 15px; overflow: hidden; margin: 10px auto; max-width: 1550px; transition: all 0.3s ease;">
     

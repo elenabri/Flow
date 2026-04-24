@@ -27,11 +27,8 @@ ASGI_APPLICATION = 'config.asgi.application'
 
 # Настройка твоего платного Redis (возьми URL из настроек Render)
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [os.environ.get('REDIS_URL', 'redis://localhost:6379')],
-        },
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
     },
 }
 

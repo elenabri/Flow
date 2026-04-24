@@ -131,3 +131,4 @@ CSRF_TRUSTED_ORIGINS = [
     "https://tubeflow-mvfo.onrender.com",
     "https://*.onrender.com"  # Это на случай, если домен чуть изменится
 ]
+ALLOWED_HOSTS = ["tubeflow-mvfo.onrender.com", "localhost", "127.0.0.1"]

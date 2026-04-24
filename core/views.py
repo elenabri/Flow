@@ -330,14 +330,36 @@ def chat_list(request):
         'messages': msgs
     })
 
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from .models import Chat, Message
+
 @login_required
 def chat_detail(request, chat_id):
-    other = get_object_or_404(User, id=chat_id)
+    # 1. Находим чат по ID и проверяем, что текущий пользователь в нем участвует
+    chat = get_object_or_404(Chat, id=chat_id, participants=request.user)
+    
     if request.method == 'POST':
         txt = request.POST.get('text')
-        if txt: Message.objects.create(sender=request.user, receiver=other, text=txt)
-    msgs = Message.objects.filter((Q(sender=request.user) & Q(receiver=other)) | (Q(sender=other) & Q(receiver=request.user))).order_by('created_at')
-    return render(request, 'core/chat_detail.html', {'other_user': other, 'chat_messages': msgs})
+        if txt:
+            # Создаем сообщение, привязанное к чату. Поле receiver больше не нужно.
+            Message.objects.create(
+                sender=request.user, 
+                chat=chat, 
+                text=txt
+            )
+            
+    # 2. Получаем все сообщения этого чата
+    msgs = chat.messages.all().order_by('created_at')
+    
+    # 3. Находим "другого" участника для отображения в заголовке
+    other_user = chat.participants.exclude(id=request.user.id).first()
+    
+    return render(request, 'core/chat_detail.html', {
+        'chat': chat,
+        'other_user': other_user, 
+        'chat_messages': msgs
+    })
 
 @login_required
 def bulk_message_setup(request):

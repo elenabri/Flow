@@ -378,41 +378,62 @@ from .models import Chat, Message
 
 
 @login_required
+@login_required
 def bulk_message_setup(request):
     if request.method == 'POST':
         txt = request.POST.get('message')
         cat = request.POST.get('category_filter')
+        
         bloggers = BloggerProfile.objects.all()
-        if cat and cat != 'all': bloggers = bloggers.filter(categories__icontains=cat)
+        if cat and cat != 'all':
+            bloggers = bloggers.filter(categories__icontains=cat)
+            
         for b in bloggers:
             if b.user != request.user:
-                Message.objects.create(sender=request.user, receiver=b.user, text=f"[РАССЫЛКА] {txt}")
+                # 1. Находим или создаем чат для рассылки
+                chat, created = Chat.objects.get_or_create(
+                    title=f"Рассылка: {request.user.username}",
+                )
+                chat.participants.add(request.user, b.user)
+                
+                # 2. Создаем сообщение
+                Message.objects.create(
+                    chat=chat, 
+                    sender=request.user, 
+                    text=f"[РАССЫЛКА] {txt}"
+                )
         messages.success(request, "Рассылка завершена!")
-        return redirect('chat_list')
+        return redirect('core:chat_list')
     return render(request, 'core/bulk_message_setup.html', {'TOPIC_CHOICES': TOPIC_CHOICES})
 
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from .models import ProductAd, Message
 
-@login_required
 
+@login_required
 def send_response(request, ad_id):
     ad = get_object_or_404(ProductAd, id=ad_id)
-    other_user = ad.advertiser.user
+    advertiser_user = ad.advertiser.user
     
-    # 1. Находим или создаем чат
-    chat, created = Chat.objects.get_or_create(ad=ad) # Можно привязать к товару
-    chat.participants.add(request.user, other_user)
-    chat.title = f"Отклик: {ad.name}"
-    chat.save()
+    if advertiser_user == request.user:
+        messages.warning(request, "Вы не можете откликнуться на собственное объявление.")
+        return redirect('core:marketplace')
 
-    # 2. Создаем сообщение внутри этого чата
+    # Ищем чат именно по этому товару между этими двумя людьми
+    chat = Chat.objects.filter(ad=ad, participants=request.user).filter(participants=advertiser_user).first()
+    
+    if not chat:
+        chat = Chat.objects.create(ad=ad, title=f"Товар: {ad.name}")
+        chat.participants.add(request.user, advertiser_user)
+
     Message.objects.create(
         chat=chat,
         sender=request.user,
-        text=f"Новый отклик на товар: «{ad.name}»"
+        text=f"Здравствуйте! Меня заинтересовал ваш товар «{ad.name}». Давайте обсудим интеграцию."
     )
+    
+    messages.success(request, "Отклик успешно отправлен!")
     return redirect('core:chat_list')
 
 # --- 5. УПРАВЛЕНИЕ И ПРОФИЛЬ ---
@@ -727,10 +748,12 @@ from channels.layers import get_channel_layer
 from .models import User, Chat, Message
 
 def send_tg_feedback(tg_id, text):
-    """Вспомогательная функция для ответа пользователю в Telegram"""
-    token = "ВАШ_ТЕЛЕГРАМ_ТОКЕН" # Лучше вынести в settings.TELEGRAM_BOT_TOKEN
+    token = settings.TELEGRAM_BOT_TOKEN
     url = f"https://api.telegram.org/bot{token}/sendMessage"
-    requests.post(url, json={"chat_id": tg_id, "text": text})
+    try:
+        requests.post(url, json={"chat_id": tg_id, "text": text, "parse_mode": "HTML"}, timeout=5)
+    except Exception as e:
+        print(f"Ошибка отправки в TG: {e}")
 
 @csrf_exempt
 def telegram_webhook(request):
@@ -769,21 +792,41 @@ def telegram_webhook(request):
         return HttpResponse(status=200)
 
     # --- 2. Обработка команд переключения чата (/chat_42) ---
-    if text.startswith('/chat_'):
-        try:
-            chat_id = text.split('_')[1]
-            # Проверяем, что чат существует и юзер в нем участвует
-            chat = Chat.objects.filter(id=chat_id, participants=sender).first()
+    if text:
+        chat = sender.current_tg_chat
+        if not chat:
+            chat = Chat.objects.filter(participants=sender).order_by('-created_at').first()
             if chat:
                 sender.current_tg_chat = chat
                 sender.save()
-                other_user = chat.participants.exclude(id=sender.id).first()
-                send_tg_feedback(tg_id, f"🔄 Контекст переключен на чат с: {other_user.username}")
-            else:
-                send_tg_feedback(tg_id, "❌ Чат не найден или у вас нет к нему доступа.")
-        except (IndexError, ValueError):
-            send_tg_feedback(tg_id, "❌ Неверный формат команды. Используйте /chat_ID")
-        return HttpResponse(status=200)
+
+        if chat:
+            # Создаем сообщение в БД
+            new_msg = Message.objects.create(
+                chat=chat, sender=sender, text=text, is_from_tg=True
+            )
+            
+            # Находим, кому отправить уведомление на сайте (WebSocket)
+            other_user = chat.participants.exclude(id=sender.id).first()
+            if other_user:
+                # Логика WebSocket (как у тебя была)
+                try:
+                    channel_layer = get_channel_layer()
+                    group_name = f'chat_{min(sender.id, other_user.id)}_{max(sender.id, other_user.id)}'
+                    async_to_sync(channel_layer.group_send)(
+                        group_name,
+                        {
+                            'type': 'chat_message',
+                            'message': text,
+                            'sender_id': sender.id,
+                            'is_from_tg': True
+                        }
+                    )
+                except: pass 
+        else:
+            send_tg_feedback(tg_id, "ℹ️ У вас нет активных диалогов. Напишите кому-нибудь на сайте Vkusnevich!")
+
+    return HttpResponse(status=200)
 
     # --- 3. Пересылка обычного сообщения ---
     if text:

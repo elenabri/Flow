@@ -666,31 +666,70 @@ def verify_email(request, username):
         return HttpResponse(f"ОШИБКА: В базе нет пользователя с username = {username}")
 
 
+# core/views.py
 import json
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from .models import User, Chat, Message
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 @csrf_exempt
 def telegram_webhook(request):
-    data = json.loads(request.body)
-    tg_id = data['message']['from']['id']
-    text = data['message']['text']
-    
-    # 1. Находим пользователя по tg_id
-    user = User.objects.get(tg_chat_id=tg_id)
-    
-    # 2. Находим активный чат этого пользователя
-    chat = Chat.objects.get(id=user.current_tg_chat_id)
-    
-    # 3. Сохраняем сообщение в базу
-    new_message = Message.objects.create(
-        chat=chat, 
-        sender=user, 
-        text=text, 
-        is_from_tg=True
-    )
-    
-    # 4. Отправляем в WebSocket (чтобы оно всплыло на экране сайта)
-    # Здесь вызывается код Django Channels
-    
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        
+        # 1. Проверяем, что это обычное сообщение
+        if 'message' in data:
+            tg_id = data['message']['from']['id']
+            text = data['message'].get('text')
+            
+            # Логика привязки аккаунта (/start 123)
+            if text and text.startswith('/start'):
+                parts = text.split()
+                if len(parts) > 1:
+                    user_id = parts[1]
+                    try:
+                        user = User.objects.get(id=user_id)
+                        user.tg_chat_id = tg_id
+                        user.save()
+                        # Тут можно отправить ответ ботом "Успешно привязано!"
+                    except User.DoesNotExist:
+                        pass
+                return HttpResponse(status=200)
+
+            # 2. Логика пересылки обычного сообщения на сайт
+            try:
+                sender = User.objects.get(tg_chat_id=tg_id)
+                # Находим активный чат (последний, в котором участвовал юзер)
+                chat = Chat.objects.filter(participants=sender).order_by('-created_at').first()
+                
+                if chat and text:
+                    # Сохраняем в базу
+                    new_msg = Message.objects.create(
+                        chat=chat,
+                        sender=sender,
+                        text=text,
+                        is_from_tg=True
+                    )
+                    
+                    # Мгновенно отправляем на экран сайта через WebSocket
+                    channel_layer = get_channel_layer()
+                    # Находим ID второго участника для группы сокета
+                    other_user = chat.participants.exclude(id=sender.id).first()
+                    ids = sorted([sender.id, other_user.id])
+                    room_group_name = f'chat_{ids[0]}_{ids[1]}'
+                    
+                    async_to_sync(channel_layer.group_send)(
+                        room_group_name,
+                        {
+                            'type': 'chat_message',
+                            'message': text,
+                            'sender_id': sender.id,
+                            'sender_name': sender.username
+                        }
+                    )
+            except User.DoesNotExist:
+                pass # Сообщение от неизвестного юзера
+                
     return HttpResponse(status=200)

@@ -396,27 +396,23 @@ from django.contrib import messages
 from .models import ProductAd, Message
 
 @login_required
-def send_response(request, ad_id):
-    # 1. Получаем товар, на который блогер хочет откликнуться
-    ad = get_object_or_404(ProductAd, id=ad_id)
-    
-    # 2. Проверяем, не является ли сам пользователь рекламодателем этого товара
-    if ad.advertiser.user == request.user:
-        messages.warning(request, "Вы не можете откликнуться на собственный товар.")
-        return redirect('core:dashboard')
 
-    # 3. Создаем сообщение для рекламодателя
-    # Заменили ad.title на ad.name, чтобы избежать AttributeError
+def send_response(request, ad_id):
+    ad = get_object_or_404(ProductAd, id=ad_id)
+    other_user = ad.advertiser.user
+    
+    # 1. Находим или создаем чат
+    chat, created = Chat.objects.get_or_create(ad=ad) # Можно привязать к товару
+    chat.participants.add(request.user, other_user)
+    chat.title = f"Отклик: {ad.name}"
+    chat.save()
+
+    # 2. Создаем сообщение внутри этого чата
     Message.objects.create(
-        sender=request.user, 
-        receiver=ad.advertiser.user, 
-        text=f"Новый отклик на ваш товар: «{ad.name}». Блогер готов к сотрудничеству!"
+        chat=chat,
+        sender=request.user,
+        text=f"Новый отклик на товар: «{ad.name}»"
     )
-    
-    # 4. Уведомляем пользователя об успехе
-    messages.success(request, f"Ваш отклик на товар «{ad.name}» успешно отправлен!")
-    
-    # 5. Перенаправляем в список чатов или обратно на маркетплейс
     return redirect('core:chat_list')
 
 # --- 5. УПРАВЛЕНИЕ И ПРОФИЛЬ ---
@@ -425,7 +421,7 @@ def send_response(request, ad_id):
 def manage_products(request):
     adv = get_object_or_404(AdvertiserProfile, user=request.user)
     if request.method == 'POST':
-        ProductAd.objects.create(advertiser=adv, title=request.POST.get('title'), category=request.POST.get('category'), image=request.FILES.get('product_image'))
+        ProductAd.objects.create(advertiser=adv, name=request.POST.get('title'), category=request.POST.get('category'), image=request.FILES.get('product_image'))
     return render(request, 'core/manage_products.html', {'ads': ProductAd.objects.filter(advertiser=adv)})
 
 @login_required
@@ -833,3 +829,14 @@ def telegram_webhook(request):
             send_tg_feedback(tg_id, "❓ У вас нет активных чатов. Начните диалог на сайте.")
 
     return HttpResponse(status=200)
+
+from django.shortcuts import render, get_object_or_404
+from .models import ProductAd
+
+def product_detail(request, pk):
+    # Получаем конкретное объявление по его первичному ключу (ID)
+    product = get_object_or_404(ProductAd, pk=pk)
+    
+    return render(request, 'core/product_detail.html', {
+        'product': product,
+    })

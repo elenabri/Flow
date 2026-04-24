@@ -22,7 +22,7 @@ core_patterns = ([
 
     # Чаты и взаимодействие
     path('chats/', views.chat_list, name='chat_list'),
-    path('chats/<int:chat_id>/', views.chat_detail, name='chat_detail'),
+    path('chats/<int:user_id>/', views.chat_detail, name='chat_detail'),
     path('send_response/<int:ad_id>/', views.send_response, name='send_response'),
     path('bulk-message-setup/', views.bulk_message_setup, name='bulk_message_setup'),
     

@@ -126,3 +126,8 @@ LOGOUT_REDIRECT_URL = 'login'
 PASSWORD_RESET_TIMEOUT = 14400
 SITE_DOMAIN = 'tubeflow-mvfo.onrender.com'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://tubeflow-mvfo.onrender.com",
+    "https://*.onrender.com"  # Это на случай, если домен чуть изменится
+]

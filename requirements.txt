@@ -17,3 +17,4 @@ psycopg2-binary==2.9.9
 daphne
 channels
 channels-redis
+aiohttp

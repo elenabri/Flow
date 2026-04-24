@@ -4,7 +4,7 @@ from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
 from core import views  
-
+from .views import telegram_webhook
 
 
 # Группируем все маршруты основного приложения с именем 'core'
@@ -69,6 +69,7 @@ urlpatterns = [
     path('password-reset-complete/', auth_views.PasswordResetCompleteView.as_view(
         template_name='registration/password_reset_complete.html'
     ), name='password_reset_complete'),
+    path('tg-webhook-8275098246/', telegram_webhook),
 
 ]
 # Раздаем МЕДИА всегда (и в DEBUG, и в PROD на Render)

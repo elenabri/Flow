@@ -160,38 +160,38 @@ class ProductAd(models.Model):
         company = getattr(self.advertiser, 'company_name', 'Рекламодатель')
         return f"{self.name} ({company})"
 # --- ЧАТЫ ---
-# --- ЧАТЫ ---
 class Chat(models.Model):
-    # Модель диалога между двумя людьми
     participants = models.ManyToManyField(User, related_name='chats')
     ad = models.ForeignKey(ProductAd, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
-    # Название "Темы" для этого диалога (например, "Вкусневич" или "Блогер Александр")
-    # Именно это поле мы будем отправлять жирным шрифтом в Telegram
     title = models.CharField(max_length=255, default="Диалог")
 
-    def __str__(self):
-        return f"Чат {self.id}: {self.title}"
+    # Вспомогательный метод, чтобы бот знал, как назвать собеседника
+    def get_opponent_name(self, current_user):
+        opponent = self.participants.exclude(id=current_user.id).first()
+        if not opponent:
+            return "Неизвестный"
+        
+        # Если собеседник — рекламодатель, берем название компании
+        if hasattr(opponent, 'advertiser_profile'):
+            return opponent.advertiser_profile.company_name
+        # Если блогер — название канала
+        if hasattr(opponent, 'blogger_profile'):
+            return opponent.blogger_profile.channel_name
+        
+        return opponent.username
 
 class Message(models.Model):
-    # Теперь сообщение ОБЯЗАТЕЛЬНО привязано к чату
-    chat = models.ForeignKey('Chat', on_delete=models.CASCADE, related_name='messages', null=True, blank=True)
+    # Делаем чат обязательным
+    chat = models.ForeignKey('Chat', on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
-    
-    # Текст сообщения
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
-
-    # Метка: пришло из Telegram или с сайта?
     is_from_tg = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['created_at']
-
-    def __str__(self):
-        return f"От {self.sender} в чате {self.chat.id}"
 # --- КОНТРАКТЫ ---
 class AdContract(models.Model):
     STATUS_CHOICES = [

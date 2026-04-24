@@ -71,8 +71,10 @@ urlpatterns = [
     ), name='password_reset_complete'),
 
 ]
+# Раздаем МЕДИА всегда (и в DEBUG, и в PROD на Render)
+# Это позволит Django отдавать картинки тушенки и судака, пока ты не подключишь облако
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-# Подключаем статику и медиафайлы
+# Раздаем СТАТИКУ (только для локальной разработки, на Render это делает WhiteNoise)
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

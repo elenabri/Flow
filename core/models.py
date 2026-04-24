@@ -17,7 +17,7 @@ class User(AbstractUser):
         return f"{self.email} ({self.get_role_display()})"
         
     # Поле для ID чата в Telegram (уникальное для каждого пользователя)
-    tg_chat_id = models.BigIntegerField(null=True, blank=True, unique=True)
+    current_tg_chat = models.ForeignKey('Chat', null=True, blank=True, on_delete=models.SET_NULL)
     
     # Поле, которое запоминает, какой чат у пользователя сейчас "активен" в Telegram
     # Это нужно, чтобы бот знал, куда слать ответ блогера

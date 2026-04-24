@@ -129,3 +129,4 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.onrender.com"  # Это на случай, если домен чуть изменится
 ]
 ALLOWED_HOSTS = ["tubeflow-mvfo.onrender.com", "localhost", "127.0.0.1"]
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

@@ -37,6 +37,7 @@ core_patterns = ([
     path('blogger/<int:blogger_id>/', views.blogger_detail, name='blogger_detail'),
     # Роутер
     path('login-router/', views.login_router, name='login_router'),
+    path('chats/room/<int:chat_id>/', views.chat_room_by_id, name='chat_room_by_id'),
     
 ], 'core')
 

@@ -4,6 +4,9 @@
 
 {% block content %}
 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+<a href="https://t.me/TubeFlowSupport_bot?start={{ request.user.id }}" target="_blank" class="btn">
+    Подключить Telegram
+</a>
 
 <div class="chat-main-container" id="chat-layout">
     <main class="chat-section">
@@ -116,7 +119,15 @@ const chatLog = document.querySelector('#chat-log');
 chatSocket.onmessage = function(e) {
     const data = JSON.parse(e.data);
     const isMe = data.sender_id == currentUserId;
-    const html = `<div class="msg ${isMe ? 'msg-me' : 'msg-other'}">${data.message}<div class="msg-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div></div>`;
+    
+    // Добавим отображение имени, если сообщение пришло из Telegram
+    const senderName = data.sender_name ? `<strong>${data.sender_name}</strong><br>` : "";
+    
+    const html = `
+        <div class="msg ${isMe ? 'msg-me' : 'msg-other'}">
+            ${!isMe ? senderName : ""}${data.message}
+            <div class="msg-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+        </div>`;
     chatLog.insertAdjacentHTML('beforeend', html);
     chatLog.scrollTop = chatLog.scrollHeight;
 };

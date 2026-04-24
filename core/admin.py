@@ -9,9 +9,9 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
-    list_display = ('sender', 'receiver', 'created_at', 'is_read') 
-    list_filter = ('created_at', 'is_read') # И здесь тоже
-    search_fields = ('text', 'sender__username', 'receiver__username')
+    list_display = ('sender', 'chat', 'created_at', 'is_from_tg', 'is_read') 
+    list_filter = ('is_from_tg', 'created_at', 'chat')
+    search_fields = ('text', 'sender__email')
 
 # Регистрируем остальные модели
 admin.site.register(BloggerProfile)

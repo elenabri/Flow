@@ -309,9 +309,51 @@ def marketplace(request):
         'TOPIC_CHOICES': TOPIC_CHOICES,
     }
     return render(request, 'core/marketplace.html', context)
-def product_detail(request, pk):
-    ad = get_object_or_404(ProductAd, pk=pk)
-    return render(request, 'core/product_detail.html', {'ad': ad})
+from django.db.models import Count
+
+@login_required
+def chat_detail(request, user_id):
+    # 1. Получаем пользователя, которому пишем
+    other_user = get_object_or_404(User, id=user_id)
+    
+    # Чтобы не начать чат с самим собой
+    if other_user == request.user:
+        return redirect('core:chat_list')
+
+    # 2. Ищем существующий чат между текущим юзером и other_user
+    # Мы ищем чат, где количество участников = 2 и оба этих юзера там присутствуют
+    chat = Chat.objects.annotate(part_count=Count('participants')).filter(
+        part_count=2,
+        participants=request.user
+    ).filter(
+        participants=other_user
+    ).first()
+
+    # 3. Если такого чата еще нет (первый контакт) — создаем его
+    if not chat:
+        chat = Chat.objects.create()
+        chat.participants.add(request.user, other_user)
+
+    # 4. Обработка отправки нового сообщения через форму (POST)
+    if request.method == 'POST':
+        txt = request.POST.get('text')
+        if txt:
+            Message.objects.create(
+                sender=request.user,
+                chat=chat,
+                text=txt
+            )
+            # Если это обычный POST (не AJAX), можно редиректить на тот же URL
+            return redirect('core:chat_detail', user_id=user_id)
+
+    # 5. Сообщения для отображения
+    msgs = chat.messages.all().order_by('created_at')
+
+    return render(request, 'core/chat_detail.html', {
+        'chat': chat,
+        'other_user': other_user,
+        'chat_messages': msgs,
+    })
 
 # --- 4. ЧАТ И РАССЫЛКА ---
 
@@ -334,32 +376,6 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .models import Chat, Message
 
-@login_required
-def chat_detail(request, chat_id):
-    # 1. Находим чат по ID и проверяем, что текущий пользователь в нем участвует
-    chat = get_object_or_404(Chat, id=chat_id, participants=request.user)
-    
-    if request.method == 'POST':
-        txt = request.POST.get('text')
-        if txt:
-            # Создаем сообщение, привязанное к чату. Поле receiver больше не нужно.
-            Message.objects.create(
-                sender=request.user, 
-                chat=chat, 
-                text=txt
-            )
-            
-    # 2. Получаем все сообщения этого чата
-    msgs = chat.messages.all().order_by('created_at')
-    
-    # 3. Находим "другого" участника для отображения в заголовке
-    other_user = chat.participants.exclude(id=request.user.id).first()
-    
-    return render(request, 'core/chat_detail.html', {
-        'chat': chat,
-        'other_user': other_user, 
-        'chat_messages': msgs
-    })
 
 @login_required
 def bulk_message_setup(request):
@@ -705,62 +721,115 @@ from .models import User, Chat, Message
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
+import json
+import requests
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from .models import User, Chat, Message
+
+def send_tg_feedback(tg_id, text):
+    """Вспомогательная функция для ответа пользователю в Telegram"""
+    token = "ВАШ_ТЕЛЕГРАМ_ТОКЕН" # Лучше вынести в settings.TELEGRAM_BOT_TOKEN
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    requests.post(url, json={"chat_id": tg_id, "text": text})
+
 @csrf_exempt
 def telegram_webhook(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        
-        # 1. Проверяем, что это обычное сообщение
-        if 'message' in data:
-            tg_id = data['message']['from']['id']
-            text = data['message'].get('text')
-            
-            # Логика привязки аккаунта (/start 123)
-            if text and text.startswith('/start'):
-                parts = text.split()
-                if len(parts) > 1:
-                    user_id = parts[1]
-                    try:
-                        user = User.objects.get(id=user_id)
-                        user.tg_chat_id = tg_id
-                        user.save()
-                        # Тут можно отправить ответ ботом "Успешно привязано!"
-                    except User.DoesNotExist:
-                        pass
-                return HttpResponse(status=200)
+    if request.method != 'POST':
+        return HttpResponse(status=405)
 
-            # 2. Логика пересылки обычного сообщения на сайт
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return HttpResponse(status=400)
+
+    if 'message' not in data:
+        return HttpResponse(status=200)
+
+    message = data['message']
+    tg_id = message['from']['id']
+    text = message.get('text', '')
+
+    # --- 1. Поиск пользователя по tg_id ---
+    try:
+        sender = User.objects.get(tg_chat_id=tg_id)
+    except User.DoesNotExist:
+        # Если юзера нет, проверяем команду привязки /start ID
+        if text.startswith('/start'):
+            parts = text.split()
+            if len(parts) > 1:
+                try:
+                    user = User.objects.get(id=parts[1])
+                    user.tg_chat_id = tg_id
+                    user.save()
+                    send_tg_feedback(tg_id, "✅ Аккаунт привязан! Теперь вы можете получать сообщения.")
+                except (User.DoesNotExist, ValueError):
+                    send_tg_feedback(tg_id, "❌ Ошибка: пользователь не найден.")
+        else:
+            send_tg_feedback(tg_id, "Зарегистрируйтесь на сайте и привяжите Telegram через /start [ваш_id]")
+        return HttpResponse(status=200)
+
+    # --- 2. Обработка команд переключения чата (/chat_42) ---
+    if text.startswith('/chat_'):
+        try:
+            chat_id = text.split('_')[1]
+            # Проверяем, что чат существует и юзер в нем участвует
+            chat = Chat.objects.filter(id=chat_id, participants=sender).first()
+            if chat:
+                sender.current_tg_chat = chat
+                sender.save()
+                other_user = chat.participants.exclude(id=sender.id).first()
+                send_tg_feedback(tg_id, f"🔄 Контекст переключен на чат с: {other_user.username}")
+            else:
+                send_tg_feedback(tg_id, "❌ Чат не найден или у вас нет к нему доступа.")
+        except (IndexError, ValueError):
+            send_tg_feedback(tg_id, "❌ Неверный формат команды. Используйте /chat_ID")
+        return HttpResponse(status=200)
+
+    # --- 3. Пересылка обычного сообщения ---
+    if text:
+        chat = sender.current_tg_chat
+        
+        # Если чат не выбран, пытаемся взять последний активный
+        if not chat:
+            chat = Chat.objects.filter(participants=sender).order_by('-created_at').first()
+            if chat:
+                sender.current_tg_chat = chat
+                sender.save()
+
+        if chat:
+            # Сохраняем в БД
+            new_msg = Message.objects.create(
+                chat=chat,
+                sender=sender,
+                text=text,
+                is_from_tg=True
+            )
+
+            # Отправляем на сайт через WebSocket
             try:
-                sender = User.objects.get(tg_chat_id=tg_id)
-                # Находим активный чат (последний, в котором участвовал юзер)
-                chat = Chat.objects.filter(participants=sender).order_by('-created_at').first()
-                
-                if chat and text:
-                    # Сохраняем в базу
-                    new_msg = Message.objects.create(
-                        chat=chat,
-                        sender=sender,
-                        text=text,
-                        is_from_tg=True
-                    )
-                    
-                    # Мгновенно отправляем на экран сайта через WebSocket
-                    channel_layer = get_channel_layer()
-                    # Находим ID второго участника для группы сокета
-                    other_user = chat.participants.exclude(id=sender.id).first()
-                    ids = sorted([sender.id, other_user.id])
-                    room_group_name = f'chat_{ids[0]}_{ids[1]}'
-                    
-                    async_to_sync(channel_layer.group_send)(
-                        room_group_name,
-                        {
-                            'type': 'chat_message',
-                            'message': text,
-                            'sender_id': sender.id,
-                            'sender_name': sender.username
-                        }
-                    )
-            except User.DoesNotExist:
-                pass # Сообщение от неизвестного юзера
-                
+                channel_layer = get_channel_layer()
+                other_user = chat.participants.exclude(id=sender.id).first()
+                # Генерируем имя группы (должно совпадать с логикой в consumers.py)
+                ids = sorted([sender.id, other_user.id])
+                room_group_name = f'chat_{ids[0]}_{ids[1]}'
+
+                async_to_sync(channel_layer.group_send)(
+                    room_group_name,
+                    {
+                        'type': 'chat_message',
+                        'message': text,
+                        'sender_id': sender.id,
+                        'sender_name': sender.username,
+                        'is_from_tg': True
+                    }
+                )
+            except Exception as e:
+                print(f"Ошибка WebSocket: {e}")
+        else:
+            send_tg_feedback(tg_id, "❓ У вас нет активных чатов. Начните диалог на сайте.")
+
     return HttpResponse(status=200)

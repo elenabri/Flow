@@ -45,13 +45,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }
         )
 
-    async def chat_message(self, event):
-        # Отправка в браузер
-        await self.send(text_data=json.dumps({
-            'message': event['message'],
-            'sender_id': event['sender_id'],
-            'sender_name': event['sender_name']
-        }))
+    async def save_message(self, message_text):
+    # Вместо поиска other_user, нам нужно найти сам объект Chat
+    from .models import Chat, Message
+    chat = await database_sync_to_async(Chat.objects.get)(id=self.room_name) # room_name обычно равен chat_id
+    
+    return await database_sync_to_async(Message.objects.create)(
+        sender=self.scope["user"],
+        chat=chat,  # Привязываем к чату
+        text=message_text,
+        is_from_tg=False
+    )
 
     @database_sync_to_async
     def save_message(self, text):

@@ -877,8 +877,16 @@ from django.shortcuts import render, get_object_or_404
 from .models import ProductAd
 
 def product_detail(request, pk):
-    # Получаем конкретное объявление по его первичному ключу (ID)
-    product = get_object_or_404(ProductAd, pk=pk)
+    product = get_object_or_404(Product, pk=pk)
+    
+    # Твоя логика (например, обработка формы или условий)
+    # ... 
+
+    # ВАЖНО: Убедись, что return стоит ВНЕ всех условий if, 
+    # чтобы он срабатывал в любом случае.
+    return render(request, 'core/product_detail.html', {
+        'product': product
+    })
 
 @login_required
 def chat_room_by_id(request, chat_id):

@@ -7,7 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- БЕЗОПАСНОСТЬ ---
 SECRET_KEY = 'django-insecure-q(cs0^v-hof)#h-ql#774!$02yi%6j28(bud4xtc%sv9h-$l$u'
-DEBUG = True  # На Render переключи на False для безопасности
+DEBUG = False 
 ALLOWED_HOSTS = ['*']  # Позже замени на ['tubeflow-mvfo.onrender.com', '127.0.0.1']
 
 # --- ПРИЛОЖЕНИЯ ---

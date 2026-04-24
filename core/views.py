@@ -664,3 +664,33 @@ def verify_email(request, username):
         return HttpResponse(f"УРА! Пользователь {username} найден и активирован. Теперь попробуй войти.")
     except User.DoesNotExist:
         return HttpResponse(f"ОШИБКА: В базе нет пользователя с username = {username}")
+
+
+import json
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def telegram_webhook(request):
+    data = json.loads(request.body)
+    tg_id = data['message']['from']['id']
+    text = data['message']['text']
+    
+    # 1. Находим пользователя по tg_id
+    user = User.objects.get(tg_chat_id=tg_id)
+    
+    # 2. Находим активный чат этого пользователя
+    chat = Chat.objects.get(id=user.current_tg_chat_id)
+    
+    # 3. Сохраняем сообщение в базу
+    new_message = Message.objects.create(
+        chat=chat, 
+        sender=user, 
+        text=text, 
+        is_from_tg=True
+    )
+    
+    # 4. Отправляем в WebSocket (чтобы оно всплыло на экране сайта)
+    # Здесь вызывается код Django Channels
+    
+    return HttpResponse(status=200)

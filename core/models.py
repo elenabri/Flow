@@ -4,6 +4,7 @@ from django.conf import settings
 from .constants import TOPIC_CHOICES
 
 # --- ПОЛЬЗОВАТЕЛЬ ---
+
 class User(AbstractUser):
     ROLE_CHOICES = (
         ('admin', 'Администратор'),
@@ -13,15 +14,23 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='blogger')
     email = models.EmailField(unique=True)
 
+    # Поле для привязки Telegram (чтобы знать, кому слать уведомления)
+    # Обычно его называют tg_chat_id, чтобы не путать с объектом чата
+    tg_chat_id = models.BigIntegerField(null=True, blank=True)
+
+    # Объект чата, который сейчас "открыт" у пользователя
+    current_tg_chat = models.ForeignKey(
+        'Chat', 
+        null=True, 
+        blank=True, 
+        on_delete=models.SET_NULL,
+        related_name='active_in_users'
+    )
+
     def __str__(self):
         return f"{self.email} ({self.get_role_display()})"
-        
-    # Поле для ID чата в Telegram (уникальное для каждого пользователя)
-    current_tg_chat = models.ForeignKey('Chat', null=True, blank=True, on_delete=models.SET_NULL)
     
-    # Поле, которое запоминает, какой чат у пользователя сейчас "активен" в Telegram
-    # Это нужно, чтобы бот знал, куда слать ответ блогера
-    current_tg_chat_id = models.IntegerField(null=True, blank=True)
+    # СТРОКУ current_tg_chat_id = models.IntegerField(...) УДАЛЯЕМ!
 
 
 # --- ПРОФИЛЬ БЛОГЕРА ---

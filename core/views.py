@@ -315,11 +315,20 @@ def product_detail(request, pk):
 
 # --- 4. ЧАТ И РАССЫЛКА ---
 
+from core.models import Chat, Message
+
 @login_required
 def chat_list(request):
-    msgs = Message.objects.filter(Q(sender=request.user) | Q(receiver=request.user)).order_by('-created_at')
-    chats = { (m.receiver if m.sender == request.user else m.sender): m for m in msgs }
-    return render(request, 'core/chat_list.html', {'chats': chats})
+    # Получаем все чаты, где текущий пользователь является участником
+    user_chats = Chat.objects.filter(participants=request.user).order_by('-created_at')
+    
+    # Если тебе всё же нужен список последних сообщений для отображения:
+    msgs = Message.objects.filter(chat__participants=request.user).order_by('-created_at')
+    
+    return render(request, 'core/chat_list.html', {
+        'chats': user_chats,
+        'messages': msgs
+    })
 
 @login_required
 def chat_detail(request, chat_id):

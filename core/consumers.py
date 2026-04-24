@@ -6,7 +6,7 @@ from .models import Message
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.other_user_id = self.scope['url_route']['kwargs']['room_name']
+        self.other_user_id = self.scope['url_route']['kwargs']['user_id']
         self.user = self.scope['user']
         
         # Создаем уникальное имя комнаты для двоих пользователей

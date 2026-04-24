@@ -879,6 +879,21 @@ from .models import ProductAd
 def product_detail(request, pk):
     # Получаем конкретное объявление по его первичному ключу (ID)
     product = get_object_or_404(ProductAd, pk=pk)
+
+@login_required
+def chat_room_by_id(request, chat_id):
+    """
+    Вспомогательный роут, чтобы заходить в чат по ID самого чата, 
+    а не по ID собеседника. Удобно для ссылок из Telegram.
+    """
+    chat = get_object_or_404(Chat, id=chat_id, participants=request.user)
+    # Находим второго участника, чтобы перенаправить на стандартный chat_detail
+    other_user = chat.participants.exclude(id=request.user.id).first()
+    
+    if other_user:
+        return redirect('core:chat_detail', user_id=other_user.id)
+    
+    return redirect('core:chat_list')
     
     return render(request, 'core/product_detail.html', {
         'product': product,

@@ -518,7 +518,7 @@ def dashboard(request):
     
     if hasattr(user, 'blogger_profile'):
         context['profile'] = user.blogger_profile
-        context['recent_messages'] = Message.objects.filter(receiver=user).order_by('-created_at')[:5]
+        context['recent_messages'] = Message.objects.filter(chat__participants=user).exclude(sender=user).order_by('-created_at')[:5]
         context['active_contracts'] = AdContract.objects.filter(blogger=user).exclude(status='completed')
         return render(request, 'core/dashboard.html', context)
     

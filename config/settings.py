@@ -117,6 +117,7 @@ EMAIL_USE_SSL = False  # SSL должен быть False
 EMAIL_HOST_USER = 'len.bri14@gmail.com'
 EMAIL_HOST_PASSWORD = 'yvyojptzikbylojr'
 DEFAULT_FROM_EMAIL = 'Vkusnevich <len.bri14@gmail.com>'
+TELEGRAM_BOT_TOKEN = "8275098246:AAG0GwVR8FNSS7DhnmhCseZZwzXvO1h-n7k"
 
 # --- ПЕРЕЙТИ ПОСЛЕ ВХОДА ---
 LOGIN_REDIRECT_URL = 'core:login_router'

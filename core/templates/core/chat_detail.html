@@ -3,8 +3,8 @@
 {% block title %}Чат с {{ other_user.username }}{% endblock %}
 
 {% block content %}
-<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-<a href="https://t.me/TubeFlowSupport_bot?start={{ request.user.id }}" target="_blank" class="btn">
+{% csrf_token %}
+<a href="https://t.me/TubeFlowSupport_bot?start={{ request.user.id }}" target="_blank" class="btn" style="margin-bottom: 10px; display: inline-block;">
     Подключить Telegram
 </a>
 
@@ -83,11 +83,11 @@
     }
     .chat-section { display: flex; flex-direction: column; height: 100%; border-right: 1px solid #eee; }
     .chat-header { padding: 12px 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; }
-    .chat-header .avatar { width: 35px; height: 35px; border-radius: 50%; }
+    .chat-header .avatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; }
     .chat-header .user-name { font-weight: bold; font-size: 14px; }
     .chat-header .status { font-size: 10px; color: #28a745; }
     #chat-log { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #fcfcfc; }
-    .msg { max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; position: relative; }
+    .msg { max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; position: relative; word-wrap: break-word; }
     .msg-me { align-self: flex-end; background: #007bff; color: white; border-bottom-right-radius: 2px; }
     .msg-other { align-self: flex-start; background: #e9e9eb; color: #333; border-bottom-left-radius: 2px; }
     .msg-time { font-size: 9px; opacity: 0.7; text-align: right; margin-top: 4px; }
@@ -110,27 +110,32 @@
 </style>
 
 <script>
-const otherUserId = "{{ other_user.id }}";
+// КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем ID чата для всех подключений
+const chatId = "{{ chat.id }}"; 
 const currentUserId = "{{ user.id }}";
 const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-const chatSocket = new WebSocket(wsScheme + '://' + window.location.host + '/ws/chat/' + otherUserId + '/');
+
+// Подключаемся именно по ID чата
+const chatSocket = new WebSocket(wsScheme + '://' + window.location.host + '/ws/chat/' + chatId + '/');
 const chatLog = document.querySelector('#chat-log');
 
 chatSocket.onmessage = function(e) {
     const data = JSON.parse(e.data);
     const isMe = data.sender_id == currentUserId;
     
-    // Добавим отображение имени, если сообщение пришло из Telegram
-    const senderName = data.sender_name ? `<strong>${data.sender_name}</strong><br>` : "";
+    const senderName = (data.sender_name && !isMe) ? `<strong>${data.sender_name}</strong><br>` : "";
     
     const html = `
         <div class="msg ${isMe ? 'msg-me' : 'msg-other'}">
-            ${!isMe ? senderName : ""}${data.message}
+            ${senderName}${data.message}
             <div class="msg-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
         </div>`;
     chatLog.insertAdjacentHTML('beforeend', html);
     chatLog.scrollTop = chatLog.scrollHeight;
 };
+
+// Прокрутка вниз при загрузке
+chatLog.scrollTop = chatLog.scrollHeight;
 
 document.querySelector('#chat-message-submit').onclick = function() {
     const input = document.querySelector('#chat-message-input');
@@ -140,7 +145,15 @@ document.querySelector('#chat-message-submit').onclick = function() {
     }
 };
 
-let activeChatId = "{{ other_user.id }}";
+// Отправка по Enter
+document.querySelector('#chat-message-input').onkeyup = function(e) {
+    if (e.keyCode === 13) {
+        document.querySelector('#chat-message-submit').click();
+    }
+};
+
+// Логика планов привязана к chatId
+let activeChatId = chatId; 
 let adPlans = { [activeChatId]: { isSigned: false, productIds: [], videos: [], platformsBlogger: [], platformsAdv: [], needMarking: true, guarantees: { low: 0, high: 0 } } };
 
 function toggleRightTab(tab) {
@@ -157,7 +170,7 @@ function renderPlanEditor() {
     container.innerHTML = `
         <div class="card">
             <h3 style="font-size:14px; margin-bottom:10px;">📜 Статус: ${plan.isSigned ? 'Подписано' : 'Черновик'}</h3>
-            <button onclick="addVideoToPlan()" class="tab-btn" style="background:#007bff; color:#fff; border-radius:5px; width:100%;">+ Видео</button>
+            <button onclick="alert('Функция добавления видео в разработке')" class="tab-btn" style="background:#007bff; color:#fff; border-radius:5px; width:100%;">+ Видео</button>
         </div>
         <div style="margin-top:20px;">
             <button onclick="signContract()" style="width:100%; padding:12px; background:#28a745; color:white; border:none; border-radius:10px; font-weight:bold;">ПОДПИСАТЬ</button>
@@ -173,7 +186,6 @@ function signContract() {
 }
 
 function saveData() { 
-    // ИСПРАВЛЕНО: Добавлена буква 's' в /chats/ и закрывающий слеш
     fetch(`/chats/save_contract/${activeChatId}/`, { 
         method: "POST", 
         headers: { 
@@ -183,8 +195,8 @@ function saveData() {
         body: JSON.stringify(adPlans[activeChatId]) 
     })
     .then(res => res.json())
-    .then(data => console.log("Сохранено:", data))
-    .catch(err => console.error("Ошибка:", err));
+    .then(data => console.log("Данные договора сохранены:", data))
+    .catch(err => console.error("Ошибка сохранения:", err));
 }
 </script>
 {% endblock %}

@@ -167,7 +167,7 @@ class Chat(models.Model):
 
 class Message(models.Model):
     # Теперь сообщение ОБЯЗАТЕЛЬНО привязано к чату
-    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages_set')
+    chat = models.ForeignKey('Chat', on_delete=models.CASCADE, related_name='messages', null=True, blank=True)
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     
     # Текст сообщения

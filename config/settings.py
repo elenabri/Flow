@@ -96,7 +96,10 @@ USE_TZ = True
 
 # --- СТАТИКА И МЕДИА ---
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = [
+    # BASE_DIR / 'static',  <-- Закомментируй это, если папка в корне пустая
+    BASE_DIR / 'core' / 'static', # Оставь только путь к реальным файлам
+]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # WhiteNoise для работы статики на хостинге

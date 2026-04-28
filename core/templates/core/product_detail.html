@@ -53,12 +53,25 @@
                 {% endif %}
             </div>
 
-            <form action="#" method="POST" style="margin-top: 25px;">
-                {% csrf_token %}
-                <button type="submit" style="width: 100%; background: #28a745; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='#218838'" onmouseout="this.style.background='#28a745'">
-                    Откликнуться на предложение
-                </button>
-            </form>
+            <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 10px;">
+                {% if user.is_authenticated %}
+                    {% if user != ad.advertiser.user %}
+                        {# Ссылка на чат с владельцем бренда #}
+                        <a href="{% url 'core:chat_detail' user_id=ad.advertiser.user.id %}" 
+                           style="display: flex; align-items: center; justify-content: center; width: 100%; background: #28a745; color: white; padding: 15px; border-radius: 10px; text-decoration: none; font-size: 16px; font-weight: bold; text-align: center; transition: background 0.3s;"
+                           onmouseover="this.style.background='#218838'" 
+                           onmouseout="this.style.background='#28a745'">
+                            Обсудить сотрудничество (в чате)
+                        </a>
+                    {% else %}
+                        <p style="text-align: center; color: #888; font-style: italic;">Это ваше объявление</p>
+                    {% endif %}
+                {% else %}
+                    <a href="{% url 'core:login' %}" style="display: flex; align-items: center; justify-content: center; width: 100%; background: #6c757d; color: white; padding: 15px; border-radius: 10px; text-decoration: none; font-weight: bold;">
+                        Войдите, чтобы откликнуться
+                    </a>
+                {% endif %}
+            </div>v
         </div>
     </div>
 </div>

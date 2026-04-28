@@ -46,8 +46,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     
-
-    @database_sync_to_async
-    def save_message(self, text):
-        other_user = User.objects.get(id=self.other_user_id)
-        return Message.objects.create(chat_id=self.chat_id, sender=self.user, text=text)
+@database_sync_to_async
+def save_message(self, text):
+    # self.chat_id берется из URL при подключении
+    from .models import Message, Chat
+    
+    # Получаем объект чата
+    chat_obj = Chat.objects.get(id=self.chat_id)
+    
+    # Создаем сообщение, привязанное к чату
+    return Message.objects.create(
+        chat=chat_obj,
+        sender=self.user,
+        text=text
+    )

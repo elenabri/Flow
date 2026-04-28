@@ -4,5 +4,5 @@ from . import consumers
 
 websocket_urlpatterns = [
     # Используем user_id, чтобы это совпадало с логикой в твоем consumers.py
-    re_path(r'ws/chat/(?P<user_id>\d+)/$', consumers.ChatConsumer.as_asgi()),
+    re_path(r'ws/chat/(?P<chat_id>\d+)/$', consumers.ChatConsumer.as_asgi()),
 ]

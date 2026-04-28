@@ -2,19 +2,18 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
-User = get_user_model() # Это автоматически подтянет твой core.User
-from .models import Message
+from .models import Message, Chat
+
+User = get_user_model()
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.other_user_id = self.scope['url_route']['kwargs']['user_id']
+        # В routing.py должно быть: re_path(r'ws/chat/(?P<chat_id>\d+)/$', consumers.ChatConsumer.as_asgi()),
+        self.chat_id = self.scope['url_route']['kwargs']['chat_id']
         self.user = self.scope['user']
-        
-        # Создаем уникальное имя комнаты для двоих пользователей
-        # Чтобы и 1-2, и 2-1 попадали в одну комнату
-        ids = sorted([int(self.user.id), int(self.other_user_id)])
-        self.room_group_name = f'chat_{ids[0]}_{ids[1]}'
+        self.room_group_name = f'chat_{self.chat_id}'
 
+        # Присоединяемся к группе чата
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -22,6 +21,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
+        # Покидаем группу чата
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
@@ -29,12 +29,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        message_text = data['message']
+        message_text = data.get('message', '')
 
-        # Сохраняем в базу данных
+        if not message_text:
+            return
+
+        # Сохраняем в базу данных (метод теперь внутри класса)
         await self.save_message(message_text)
 
-        # Отправляем сообщение всем в комнате
+        # Отправляем сообщение всем участникам группы
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -45,18 +48,28 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }
         )
 
-    
-@database_sync_to_async
-def save_message(self, text):
-    # self.chat_id берется из URL при подключении
-    from .models import Message, Chat
-    
-    # Получаем объект чата
-    chat_obj = Chat.objects.get(id=self.chat_id)
-    
-    # Создаем сообщение, привязанное к чату
-    return Message.objects.create(
-        chat=chat_obj,
-        sender=self.user,
-        text=text
-    )
+    # Этот метод отвечает за непосредственную отправку данных в WebSocket
+    async def chat_message(self, event):
+        await self.send(text_data=json.dumps({
+            'message': event['message'],
+            'sender_id': event['sender_id'],
+            'sender_name': event['sender_name']
+        }))
+
+    # МЕТОД СОХРАНЕНИЯ (Теперь с правильными отступами внутри класса)
+    @database_sync_to_async
+    def save_message(self, text):
+        try:
+            # Находим чат по ID, переданному в URL
+            chat_obj = Chat.objects.get(id=self.chat_id)
+            
+            # Создаем сообщение. 
+            # Убедись, что в models.py поле связи с чатом называется 'chat'
+            return Message.objects.create(
+                chat=chat_obj,
+                sender=self.user,
+                text=text
+            )
+        except Exception as e:
+            print(f"Ошибка при сохранении сообщения: {e}")
+            return None

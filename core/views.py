@@ -867,9 +867,10 @@ def product_detail(request, pk):
     similar_products = ProductAd.objects.filter(category=product.category).exclude(pk=pk)[:4]
     
     return render(request, 'core/product_detail.html', {
-        'product': product,
-        'similar_products': similar_products
-    })
+    'product': product,
+    'ad': product,  # <--- Добавь эту строку
+    'similar_products': similar_products,
+})
 
 @login_required
 def chat_room_by_id(request, chat_id):

@@ -106,24 +106,19 @@ def register(request):
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
         if form.is_valid():
-            # 1. Создаем объект пользователя
+            # 1. Создаем пользователя, но не сохраняем в БД сразу
             user = form.save(commit=False)
             email = form.cleaned_data.get('email')
             user.email = email
-            user.username = email  # Используем email как логин
+            user.username = email  # Email как логин
             
-            # 2. Генерируем пароль
+            # 2. Генерируем временный пароль
             pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
             user.set_password(pwd)
             
-            # 3. Деактивируем до подтверждения
+            # 3. Деактивируем до подтверждения по почте
             user.is_active = False 
             user.save()
-            try:
-                send_verification_email(user, pwd)
-                print("Функция отправки вызвана!")
-            except Exception as mail_err:
-                print(f"Ошибка почты: {mail_err}")
 
             # 4. Получаем роль из формы
             role = form.cleaned_data.get('role')
@@ -138,40 +133,33 @@ def register(request):
                         median_views=int(request.POST.get('api_long_median') or 0),
                         median_views_shorts=int(request.POST.get('api_shorts_median') or 0),
                         categories=", ".join(request.POST.getlist('topics')),
-                        # Прайс-лист
                         price_start=request.POST.get('price_start') or 0,
-                        price_middle=request.POST.get('price_middle') or 0,
-                        price_end=request.POST.get('price_end') or 0,
-                        price_shorts=request.POST.get('price_shorts') or 0,
-                        # Фото из API
                         avatar_url=request.POST.get('api_avatar'),
                         banner_url=request.POST.get('api_banner'),
                     )
                 
                 elif role == 'advertiser':
-                    # Создаем профиль компании
+                    # Создаем профиль рекламодателя (бренд Вкусневич)
                     adv = AdvertiserProfile.objects.create(
                         user=user, 
                         company_name=request.POST.get('company_name') or "Новый бренд"
                     )
                     
-                    # Создаем товар (Объявление)
-                    # Используем request.POST.get('title'), так как в HTML name="title"
+                    # Если при регистрации сразу заполнили данные первого товара
                     product_title = request.POST.get('title')
                     if product_title:
                         ProductAd.objects.create(
                             advertiser=adv, 
-                            name=product_title, # В модели это поле 'name'
+                            name=product_title,
                             description=request.POST.get('description', ''),
                             category=", ".join(request.POST.getlist('topics')),
-                            # В модели поле 'image', в HTML 'product_image'
                             image=request.FILES.get('product_image'),
                             link_wb=request.POST.get('link_wb'),
                             link_ozon=request.POST.get('link_ozon'),
                             is_active=True
                         )
 
-                # 5. ОТПРАВКА ПИСЬМА
+                # 5. Отправляем письмо с активацией и паролем
                 send_verification_email(user, pwd)
                 
                 return render(request, 'core/success.html', {
@@ -181,15 +169,11 @@ def register(request):
                 })
 
             except Exception as e:
-                # Логируем ошибку, чтобы не гадать, что упало
-                print(f"Ошибка при регистрации: {e}")
-                messages.error(request, f"Произошла ошибка: {e}")
-                # Все равно показываем страницу успеха, так как user уже в базе
-                return render(request, 'core/success.html', {
-                    'email': user.email, 
-                    'password': pwd,
-                    'error': str(e)
-                })
+                print(f"Ошибка при создании профиля: {e}")
+                # Если профиль не создался, лучше удалить пользователя, чтобы он мог попробовать снова
+                user.delete()
+                messages.error(request, f"Ошибка при регистрации: {e}")
+                return redirect('core:register')
                 
     else:
         form = RegistrationForm()

@@ -165,6 +165,7 @@ class Chat(models.Model):
     ad = models.ForeignKey(ProductAd, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     title = models.CharField(max_length=255, default="Диалог")
+    telegram_topic_id = models.IntegerField(null=True, blank=True)
 
     # Вспомогательный метод, чтобы бот знал, как назвать собеседника
     def get_opponent_name(self, current_user):

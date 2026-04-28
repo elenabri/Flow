@@ -38,6 +38,7 @@ core_patterns = ([
     # Роутер
     path('login-router/', views.login_router, name='login_router'),
     path('chats/room/<int:chat_id>/', views.chat_room_by_id, name='chat_room_by_id'),
+    path('api/connect-telegram/', views.connect_telegram_api, name='connect_telegram_api'),
     
 ], 'core')
 

@@ -1,7 +1,7 @@
 import telebot
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
-from core.models import Profile  # Проверь, что модель называется именно так
+from core.models import User  # Проверь, что модель называется именно так
 
 # Твой токен
 TOKEN = '8275098246:AAG0GwVR8FNSS7DhnmhCseZZwzXvO1h-n7k'
@@ -22,28 +22,12 @@ class Command(BaseCommand):
                 tg_chat_id = message.chat.id
                 
                 try:
-                    # Ищем профиль пользователя сайта
-                    profile = Profile.objects.get(user_id=django_user_id)
-                    profile.telegram_id = tg_chat_id
-                    profile.save()
+                    user = User.objects.get(id=django_user_id)
+                    user.tg_chat_id = tg_chat_id
+                    user.save()
                     
-                    bot.send_message(
-                        tg_chat_id, 
-                        f"✨ Привет, {profile.user.username}!\n\n"
-                        "Ваш аккаунт успешно связан. Теперь вы будете получать сообщения "
-                        "от рекламодателей и блогеров прямо здесь."
-                    )
-                    self.stdout.write(self.style.SUCCESS(f"Связан аккаунт: {profile.user.username} (TG: {tg_chat_id})"))
-                
-                except Profile.DoesNotExist:
-                    bot.send_message(tg_chat_id, "❌ Пользователь не найден. Попробуйте обновить страницу на сайте.")
-                except Exception as e:
-                    bot.send_message(tg_chat_id, f"❌ Произошла техническая ошибка: {e}")
-            else:
-                bot.send_message(
-                    message.chat.id, 
-                    "👋 Привет! Чтобы подключить уведомления, воспользуйтесь кнопкой на сайте TubeFlow."
-                )
-
+                    bot.send_message(tg_chat_id, f"✨ Привет, {user.username}! Аккаунт привязан.")
+                except User.DoesNotExist:
+                    bot.send_message(tg_chat_id, "❌ Пользователь не найден.")
         self.stdout.write(self.style.SUCCESS("--- Бот @TubeFlowSupport_bot запущен и слушает... ---"))
         bot.polling(none_stop=True)

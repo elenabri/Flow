@@ -893,13 +893,12 @@ def chat_room_by_id(request, chat_id):
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Profile # или там, где у тебя поле telegram_id
+from core.models import User
 import json
 
 @csrf_exempt
 def connect_telegram_api(request):
     if request.method == "POST":
-        # Для безопасности проверяем секретный ключ (придумай свой)
         secret_key = request.POST.get("secret_key")
         if secret_key != "MySuperSecretKey123":
             return JsonResponse({"status": "error", "message": "Unauthorized"}, status=403)
@@ -908,12 +907,11 @@ def connect_telegram_api(request):
         tg_id = request.POST.get("telegram_id")
 
         try:
-            # Находим профиль пользователя и сохраняем его TG ID
-            profile = Profile.objects.get(user_id=user_id)
-            profile.telegram_id = tg_id
-            profile.save()
+            # Ищем напрямую в модели User
+            user = User.objects.get(id=user_id)
+            user.tg_chat_id = tg_id  # Твоё поле из models.py
+            user.save()
             return JsonResponse({"status": "success"})
-        except Profile.DoesNotExist:
+        except User.DoesNotExist:
             return JsonResponse({"status": "error", "message": "User not found"}, status=404)
-    
     return JsonResponse({"status": "error"}, status=400)

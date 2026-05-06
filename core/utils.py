@@ -36,3 +36,34 @@ def send_verification_email(user, password):
         print(f"Ошибка внутри send_verification_email: {e}")
         raise e # Оставляем raise, чтобы view тоже видела ошибку
 
+from telebot import types
+from .models import Chat, Message
+
+# Главное меню, которое "приклеится" внизу
+def get_main_menu_keyboard():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.row(types.KeyboardButton("🏠 Главная"), types.KeyboardButton("📂 Мои диалоги"))
+    return markup
+
+# Инлайн-кнопки со списком чатов
+def get_chats_inline_menu(user, only_unread=False):
+    markup = types.InlineKeyboardMarkup()
+    chats = Chat.objects.filter(participants=user)
+    
+    if only_unread:
+        # Показываем только те, где есть непрочитанные (не от нас)
+        chats = chats.filter(messages__is_read=False).exclude(messages__sender=user).distinct()
+
+    for chat in chats:
+        # Используем ваш метод из модели для красивого имени
+        opponent_name = chat.get_opponent_name(user)
+        unread_count = chat.messages.filter(is_read=False).exclude(sender=user).count()
+        
+        icon = "🔴 " if unread_count > 0 else ""
+        count_str = f" (+{unread_count})" if unread_count > 0 else ""
+        
+        markup.add(types.InlineKeyboardButton(
+            text=f"{icon}{opponent_name}{count_str}", 
+            callback_data=f"select_chat_{chat.id}"
+        ))
+    return markup

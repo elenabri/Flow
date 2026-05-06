@@ -18,3 +18,4 @@ daphne
 channels
 channels-redis
 aiohttp
+pyTelegramBotAPI

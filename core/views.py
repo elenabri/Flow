@@ -34,6 +34,10 @@ from .models import (
     Message, AdContract, SupportTicket
 )
 from .constants import TOPIC_CHOICES, SUB_TOPICS_MAP
+from django.shortcuts import render, get_object_or_404, redirect  # Добавлен redirect
+from django.contrib.auth.decorators import login_required
+from .utils import get_main_menu_keyboard, get_chats_inline # Проверьте имя здесь!
+
 
 User = get_user_model()
 YOUTUBE_API_KEY = 'AIzaSyBIQSgM6nAcLnt5En1E59Ee65jL-NHTJDs'
@@ -754,7 +758,7 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from .models import User, Chat, Message
-from .utils import get_main_menu_keyboard, get_chats_inline_menu
+from .utils import get_main_menu_keyboard, get_chats_inline
 import telebot
 
 bot = telebot.TeleBot(settings.TELEGRAM_BOT_TOKEN)
@@ -889,9 +893,7 @@ def chat_room_by_id(request, chat_id):
         return redirect('core:chat_detail', user_id=other_user.id)
     
     return redirect('core:chat_list')
-    
-    return render(request, 'core/product_detail.html', {
-        'product': product,
+
     })
 
 from django.http import JsonResponse

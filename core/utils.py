@@ -39,10 +39,18 @@ def send_verification_email(user, password):
 from telebot import types
 from .models import Chat, Message
 
-# Главное меню, которое "приклеится" внизу
+
 def get_main_menu_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(types.KeyboardButton("🏠 Главная"), types.KeyboardButton("📂 Мои диалоги"))
+    # Создаем кнопку Web App
+    # URL должен вести на вашу страницу со списком чатов на Render
+    web_app = types.WebAppInfo(url="https://your-flow-app.onrender.com/chats/")
+    
+    btn_webapp = types.KeyboardButton(text="📱 Открыть Мессенджер", web_app=web_app)
+    btn_main = types.KeyboardButton(text="🏠 Главная")
+    
+    markup.row(btn_webapp)
+    markup.row(btn_main, types.KeyboardButton(text="📂 Мои диалоги"))
     return markup
 
 # Инлайн-кнопки со списком чатов

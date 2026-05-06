@@ -81,22 +81,20 @@ import telebot
 from django.conf import settings
 
 def send_telegram_notification(receiver_user, message_text, sender_name, chat_id):
-    """
-    Отправляет уведомление пользователю в Telegram
-    """
-    # Проверяем, есть ли у пользователя telegram_id (нужно добавить это поле в модель User)
-    if not receiver_user.telegram_id:
+    # Исправлено на tg_chat_id (как в вашей модели User)
+    if not receiver_user.tg_chat_id:
         return
 
     bot = telebot.TeleBot(settings.TELEGRAM_BOT_TOKEN)
     
+    # Используем HTML, так как Markdown иногда "падает" на спецсимволах
     text = (
-        f"📩 *Новое сообщение от {sender_name}*\n\n"
+        f"📩 <b>Новое сообщение от {sender_name}</b>\n\n"
         f"{message_text}\n\n"
         f"Чтобы ответить, откройте мессенджер в меню."
     )
     
     try:
-        bot.send_message(receiver_user.telegram_id, text, parse_mode="Markdown")
+        bot.send_message(receiver_user.tg_chat_id, text, parse_mode="HTML")
     except Exception as e:
-        print(f"Ошибка отправки сообщения в TG: {e}")
+        print(f"Ошибка отправки: {e}")

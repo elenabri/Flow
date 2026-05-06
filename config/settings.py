@@ -96,16 +96,21 @@ USE_I18N = True
 USE_TZ = True
 
 # --- СТАТИКА И МЕДИА ---
-STATIC_URL = 'static/'
+# --- СТАТИКА И МЕДИА ---
+STATIC_URL = '/static/'  # Добавлен ведущий слэш
+
 STATICFILES_DIRS = [
-    # BASE_DIR / 'static',  <-- Закомментируй это, если папка в корне пустая
-    BASE_DIR / 'core' / 'static', # Оставь только путь к реальным файлам
+    # Убедитесь, что эта папка существует в core/static
+    BASE_DIR / 'core' / 'static', 
 ]
+
+# Папка, куда collectstatic соберет ВСЁ (включая админку)
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# WhiteNoise для работы статики на хостинге
+# Важный параметр для работы WhiteNoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Настройки медиа (загрузки)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 

@@ -42,14 +42,16 @@ from .models import Chat, Message
 
 def get_main_menu_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    # Создаем кнопку Web App
-    # URL должен вести на вашу страницу со списком чатов на Render
-    web_app = types.WebAppInfo(url="https://your-flow-app.onrender.com/chats/")
+    
+    # ИСПОЛЬЗУЕМ ВАШ РЕАЛЬНЫЙ АДРЕС ИЗ ЛОГОВ RENDER
+    # Обязательно со слэшем в конце /chats/
+    web_app = types.WebAppInfo(url="https://tubeflow-mvfo.onrender.com/chats/")
     
     btn_webapp = types.KeyboardButton(text="📱 Открыть Мессенджер", web_app=web_app)
     btn_main = types.KeyboardButton(text="🏠 Главная")
     
     markup.row(btn_webapp)
+    # Добавляем кнопку профиля или вторую кнопку в ряд
     markup.row(btn_main, types.KeyboardButton(text="📂 Мои диалоги"))
     return markup
 

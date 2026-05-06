@@ -18,6 +18,14 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.template.loader import render_to_string
 from django.views.decorators.csrf import csrf_exempt
+import json
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+# И ваш импорт моделей:
+from .models import User, Chat, Message
 
 # Твои локальные файлы
 from .forms import RegistrationForm, EmailLoginForm
@@ -739,6 +747,12 @@ def send_tg_feedback(tg_id, text):
     except Exception as e:
         print(f"Ошибка отправки в TG: {e}")
 
+import telebot
+from django.conf import settings
+
+# Инициализируем бота (убедитесь, что TOKEN в settings.py)
+bot = telebot.TeleBot(settings.TELEGRAM_BOT_TOKEN)
+
 @csrf_exempt
 def telegram_webhook(request):
     if request.method != 'POST':
@@ -755,12 +769,12 @@ def telegram_webhook(request):
     message = data['message']
     tg_id = message['from']['id']
     text = message.get('text', '')
+    message_id = message.get('message_id')
 
     # --- 1. Поиск пользователя по tg_id ---
     try:
         sender = User.objects.get(tg_chat_id=tg_id)
     except User.DoesNotExist:
-        # Если юзера нет, проверяем команду привязки /start ID
         if text.startswith('/start'):
             parts = text.split()
             if len(parts) > 1:
@@ -775,7 +789,7 @@ def telegram_webhook(request):
             send_tg_feedback(tg_id, "Зарегистрируйтесь на сайте и привяжите Telegram через /start [ваш_id]")
         return HttpResponse(status=200)
 
-    # --- 2. Обработка команд переключения чата (/chat_42) ---
+    # --- 2. Обработка чата и создание ТОПИКА ---
     if text:
         chat = sender.current_tg_chat
         if not chat:
@@ -785,75 +799,56 @@ def telegram_webhook(request):
                 sender.save()
 
         if chat:
-            # Создаем сообщение в БД
-            new_msg = Message.objects.create(
+            # ПРОВЕРКА И СОЗДАНИЕ ТОПИКА
+            admin_group_id = settings.TELEGRAM_ADMIN_GROUP_ID
+            
+            if not chat.telegram_topic_id:
+                try:
+                    # Создаем новую тему в группе
+                    topic_name = f"Чат #{chat.id}: {sender.username or tg_id}"
+                    new_topic = bot.create_forum_topic(chat_id=admin_group_id, name=topic_name)
+                    chat.telegram_topic_id = new_topic.message_thread_id
+                    chat.save()
+                except Exception as e:
+                    print(f"Ошибка при создании темы: {e}")
+
+            # Сохраняем сообщение в БД
+            Message.objects.create(
                 chat=chat, sender=sender, text=text, is_from_tg=True
             )
+
+            # ПЕРЕСЫЛКА СООБЩЕНИЯ В ТОПИК (чтобы вы видели его в группе)
+            try:
+                bot.forward_message(
+                    chat_id=admin_group_id,
+                    from_chat_id=tg_id,
+                    message_id=message_id,
+                    message_thread_id=chat.telegram_topic_id
+                )
+            except Exception as e:
+                print(f"Ошибка пересылки в топик: {e}")
             
-            # Находим, кому отправить уведомление на сайте (WebSocket)
-            other_user = chat.participants.exclude(id=sender.id).first()
-            if other_user:
-                # Логика WebSocket (как у тебя была)
-                try:
+            # --- WebSocket: Отправка на сайт ---
+            try:
+                other_user = chat.participants.exclude(id=sender.id).first()
+                if other_user:
                     channel_layer = get_channel_layer()
-                    group_name = f'chat_{min(sender.id, other_user.id)}_{max(sender.id, other_user.id)}'
+                    ids = sorted([sender.id, other_user.id])
+                    group_name = f'chat_{ids[0]}_{ids[1]}'
                     async_to_sync(channel_layer.group_send)(
                         group_name,
                         {
                             'type': 'chat_message',
                             'message': text,
                             'sender_id': sender.id,
+                            'sender_name': sender.username,
                             'is_from_tg': True
                         }
                     )
-                except: pass 
-        else:
-            send_tg_feedback(tg_id, "ℹ️ У вас нет активных диалогов. Напишите кому-нибудь на сайте Vkusnevich!")
-
-    return HttpResponse(status=200)
-
-    # --- 3. Пересылка обычного сообщения ---
-    if text:
-        chat = sender.current_tg_chat
-        
-        # Если чат не выбран, пытаемся взять последний активный
-        if not chat:
-            chat = Chat.objects.filter(participants=sender).order_by('-created_at').first()
-            if chat:
-                sender.current_tg_chat = chat
-                sender.save()
-
-        if chat:
-            # Сохраняем в БД
-            new_msg = Message.objects.create(
-                chat=chat,
-                sender=sender,
-                text=text,
-                is_from_tg=True
-            )
-
-            # Отправляем на сайт через WebSocket
-            try:
-                channel_layer = get_channel_layer()
-                other_user = chat.participants.exclude(id=sender.id).first()
-                # Генерируем имя группы (должно совпадать с логикой в consumers.py)
-                ids = sorted([sender.id, other_user.id])
-                room_group_name = f'chat_{ids[0]}_{ids[1]}'
-
-                async_to_sync(channel_layer.group_send)(
-                    room_group_name,
-                    {
-                        'type': 'chat_message',
-                        'message': text,
-                        'sender_id': sender.id,
-                        'sender_name': sender.username,
-                        'is_from_tg': True
-                    }
-                )
             except Exception as e:
                 print(f"Ошибка WebSocket: {e}")
         else:
-            send_tg_feedback(tg_id, "❓ У вас нет активных чатов. Начните диалог на сайте.")
+            send_tg_feedback(tg_id, "ℹ️ У вас нет активных диалогов.")
 
     return HttpResponse(status=200)
 

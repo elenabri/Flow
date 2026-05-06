@@ -4,6 +4,7 @@
 
 {% block content %}
 {% csrf_token %}
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <a href="https://t.me/TubeFlowSupport_bot?start={{ request.user.id }}" target="_blank" class="btn" style="margin-bottom: 10px; display: inline-block;">
     Подключить Telegram
 </a>
@@ -107,9 +108,55 @@
         .chat-main-container { grid-template-columns: 1fr; height: 92dvh; margin: 0; border-radius: 0; border: none; }
         .right-panel { display: none; }
     }
+    /* Убираем лишние отступы для Web App */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--tg-theme-bg-color, #ffffff);
+    color: var(--tg-theme-text-color, #212529);
+}
+
+.chat-main-container {
+    height: 100vh; /* Занимаем всю высоту окна Web App */
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    max-width: none;
+}
+
+/* Кнопка "Подключить Telegram" внутри Web App обычно не нужна */
+.tg-hide {
+    display: none !important;
+}
 </style>
 
 <script>
+    // Инициализация Telegram Web App
+// Инициализация WebApp
+const tg = window.Telegram.WebApp;
+tg.expand();
+
+// Настройка кнопки "Назад"
+// Проверяем, запущено ли приложение внутри Telegram
+if (tg.initData.length > 0) {
+    // Показываем кнопку только если есть куда возвращаться в истории
+    if (window.history.length > 1) {
+        tg.BackButton.show();
+    }
+
+    tg.BackButton.onClick(() => {
+        // Если это страница чата, можно сделать редирект на список чатов
+        // или просто вернуться назад
+        window.history.back();
+    });
+}
+
+// При закрытии страницы или переходе, лучше скрывать кнопку, 
+// чтобы она не "залипла" на других экранах
+window.onbeforeunload = function() {
+    tg.BackButton.hide();
+};
+    
 // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Используем ID чата для всех подключений
 const chatId = "{{ chat.id }}"; 
 const currentUserId = "{{ user.id }}";

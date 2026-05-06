@@ -832,9 +832,11 @@ def telegram_webhook(request):
     # 3. Дальше кнопки меню (Главная, Диалоги) и пересылка...
 
     # РЕАКЦИЯ НА КНОПКИ МЕНЮ
+    # РЕАКЦИЯ НА КНОПКИ МЕНЮ
     if text == "🏠 Главная":
         unread_count = Message.objects.filter(chat__participants=sender, is_read=False).exclude(sender=sender).count()
-        markup = get_chats_inline_menu(sender, only_unread=True)
+        # ИСКУССТВЕННОЕ ИСПРАВЛЕНИЕ: имя функции должно совпадать с импортом
+        markup = get_chats_inline(sender, only_unread=True)
         
         msg = f"🏠 *Главная страница*\n\n"
         if unread_count > 0:
@@ -846,7 +848,8 @@ def telegram_webhook(request):
         return HttpResponse(status=200)
 
     if text == "📂 Мои диалоги":
-        markup = get_chats_inline_menu(sender)
+        # ИСКУССТВЕННОЕ ИСПРАВЛЕНИЕ: имя функции должно совпадать с импортом
+        markup = get_chats_inline(sender)
         bot.send_message(tg_id, "Выберите диалог из списка:", reply_markup=markup)
         return HttpResponse(status=200)
 

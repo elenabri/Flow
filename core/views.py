@@ -339,8 +339,17 @@ def chat_detail(request, user_id):
                 chat=chat,
                 text=txt
             )
+            if other_user.tg_chat_id:
+            title = f"✉️ Новое сообщение от {request.user.username}"
+            # Используем вашу функцию из предыдущего шага
+            send_sync_message(
+                chat_id=other_user.tg_chat_id, 
+                title=title, 
+                text=txt
+            )
             # Если это обычный POST (не AJAX), можно редиректить на тот же URL
             return redirect('core:chat_detail', user_id=user_id)
+    
 
     # 5. Сообщения для отображения
     msgs = chat.messages.all().order_by('created_at')

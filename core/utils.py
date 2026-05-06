@@ -77,3 +77,26 @@ def get_chats_inline(user, only_unread=False):
             callback_data=f"select_chat_{chat.id}"
         ))
     return markup
+import telebot
+from django.conf import settings
+
+def send_telegram_notification(receiver_user, message_text, sender_name, chat_id):
+    """
+    Отправляет уведомление пользователю в Telegram
+    """
+    # Проверяем, есть ли у пользователя telegram_id (нужно добавить это поле в модель User)
+    if not receiver_user.telegram_id:
+        return
+
+    bot = telebot.TeleBot(settings.TELEGRAM_BOT_TOKEN)
+    
+    text = (
+        f"📩 *Новое сообщение от {sender_name}*\n\n"
+        f"{message_text}\n\n"
+        f"Чтобы ответить, откройте мессенджер в меню."
+    )
+    
+    try:
+        bot.send_message(receiver_user.telegram_id, text, parse_mode="Markdown")
+    except Exception as e:
+        print(f"Ошибка отправки сообщения в TG: {e}")

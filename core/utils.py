@@ -46,7 +46,7 @@ def get_main_menu_keyboard():
     return markup
 
 # Инлайн-кнопки со списком чатов
-def get_chats_inline_menu(user, only_unread=False):
+def get_chats_inline(user, only_unread=False):
     markup = types.InlineKeyboardMarkup()
     chats = Chat.objects.filter(participants=user)
     

@@ -355,17 +355,22 @@ def chat_detail(request, user_id):
 
 from core.models import Chat, Message
 
+
 @login_required
 def chat_list(request):
-    # Получаем все чаты, где текущий пользователь является участником
     user_chats = Chat.objects.filter(participants=request.user).order_by('-created_at')
     
-    # Если тебе всё же нужен список последних сообщений для отображения:
-    msgs = Message.objects.filter(chat__participants=request.user).order_by('-created_at')
-    
+    chats_data = {}
+    for chat in user_chats:
+        # Находим, кто наш собеседник
+        opponent = chat.participants.exclude(id=request.user.id).first()
+        if opponent:
+            # Берем последнее сообщение в этом чате
+            last_msg = chat.messages.order_by('-created_at').first()
+            chats_data[opponent] = last_msg
+
     return render(request, 'core/chat_list.html', {
-        'chats': user_chats,
-        'messages': msgs
+        'chats': chats_data,  # Теперь это словарь, и .items в шаблоне заработает!
     })
 
 from django.shortcuts import render, get_object_or_404

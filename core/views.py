@@ -894,7 +894,6 @@ def chat_room_by_id(request, chat_id):
     
     return redirect('core:chat_list')
 
-    })
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt

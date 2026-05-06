@@ -804,24 +804,32 @@ def telegram_webhook(request):
         return HttpResponse(status=200)
 
     # --- 2. ОБРАБОТКА СООБЩЕНИЙ (Message) ---
+# --- 2. ОБРАБОТКА СООБЩЕНИЙ (Message) ---
     if 'message' not in data:
         return HttpResponse(status=200)
 
     message = data['message']
     tg_id = message['from']['id']
     text = message.get('text', '')
-    
-    # Ищем пользователя
+
+    # 1. Сначала обрабатываем /start (для всех)
+    if text.startswith('/start'):
+        # Логика приветствия и привязки
+        bot.send_message(
+            tg_id, 
+            "Добро пожаловать в Flow! 🚀\nИспользуйте меню ниже для навигации.", 
+            reply_markup=get_main_menu_keyboard()
+        )
+        return HttpResponse(status=200)
+
+    # 2. Ищем пользователя для остальных действий
     try:
         sender = User.objects.get(tg_chat_id=tg_id)
     except User.DoesNotExist:
-        # Логика /start для привязки аккаунта
-        if text.startswith('/start'):
-            # ... ваш существующий код привязки ...
-            # В конце привязки обязательно:
-            # bot.send_message(tg_id, "Аккаунт привязан!", reply_markup=get_main_menu_keyboard())
-            pass
+        bot.send_message(tg_id, "⚠️ Ваш аккаунт не привязан. Пожалуйста, авторизуйтесь через сайт.")
         return HttpResponse(status=200)
+
+    # 3. Дальше кнопки меню (Главная, Диалоги) и пересылка...
 
     # РЕАКЦИЯ НА КНОПКИ МЕНЮ
     if text == "🏠 Главная":

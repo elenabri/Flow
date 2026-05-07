@@ -1,0 +1,55 @@
+<div class="row">
+    {% for ad in ads %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-0" style="border-radius: 12px; background: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.04); transition: all 0.3s ease;">
+            
+            <!-- Изображение товара -->
+            <div class="position-relative">
+                <img src="{{ ad.image.url|default:ad.avatar_url }}" class="card-img-top" 
+                     style="height: 240px; object-fit: cover; border-radius: 12px 12px 0 0;">
+            </div>
+
+            <div class="card-body p-4">
+                <!-- Категория и Тип сотрудничества -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span style="font-size: 0.7rem; letter-spacing: 1px; color: #8e8e93; font-weight: 600; text-transform: uppercase;">
+                        {{ ad.get_short_categories }}
+                    </span>
+                    <!-- Пометка Бартер -->
+                    <span style="font-size: 0.7rem; color: #1c1c1e; background: #f2f2f7; padding: 4px 10px; border-radius: 6px; font-weight: 500;">
+                        БАРТЕР
+                    </span>
+                </div>
+                
+                <!-- Название продукта -->
+                <h5 class="fw-bold mb-3" style="color: #1c1c1e; font-size: 1.1rem;">
+                    {{ ad.name }}
+                </h5>
+                
+                <!-- Пояснение для блогера -->
+                <div class="mb-4" style="background: #f9f9fb; padding: 12px; border-radius: 8px;">
+                    <p style="font-size: 0.8rem; color: #3a3a3c; margin-bottom: 0; line-height: 1.5;">
+                        <span style="font-weight: 600; color: #1c1c1e;">Условия:</span> 
+                        Рекламодатель предоставляет продукт бесплатно для обзора и личного пользования. Дополнительная денежная оплата не предусмотрена.
+                    </p>
+                </div>
+
+                <!-- Кнопки действий -->
+                <div class="d-flex flex-column gap-2">
+                    {% if ad.link_wb or ad.link_ozon or ad.link_other %}
+                    <a href="{{ ad.link_wb|default:ad.link_ozon|default:ad.link_other }}" target="_blank" 
+                       class="btn btn-sm" style="border-radius: 8px; padding: 10px; font-weight: 500; color: #1c1c1e; background: transparent; border: 1px solid #d1d1d6;">
+                        Страница товара
+                    </a>
+                    {% endif %}
+
+                    <a href="{% url 'core:ad_detail' ad.id %}" class="btn btn-sm" 
+                       style="border-radius: 8px; padding: 10px; font-weight: 500; background: #1c1c1e; color: #ffffff;">
+                        Узнать подробности
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>

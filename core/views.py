@@ -199,18 +199,20 @@ def activate(request, uidb64, token):
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
-    except: user = None
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
 
     if user and default_token_generator.check_token(user, token):
         user.is_active = True
         user.save()
         
-        # АВТОВХОД: после клика по ссылке он уже внутри системы
-        login(request, user) 
-        
-        messages.success(request, "Аккаунт успешно активирован!")
-        return redirect('core:dashboard') # Или ваш login_router
+        # Автоматический вход в систему
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            
+        # СРАЗУ перенаправляем на маркетплейс
+        return redirect('core:marketplace') 
     
+    # Если токен невалидный, оставляем страницу с ошибкой
     return render(request, 'core/activation_invalid.html')
 
 def user_login(request):

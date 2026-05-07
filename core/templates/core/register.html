@@ -26,6 +26,7 @@
         .register-header h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
         #header-desc { color: var(--text-label); margin-top: 8px; font-size: 15px; }
 
+        /* Роли */
         .role-options { display: flex; gap: 10px; margin-bottom: 30px; }
         .role-option { flex: 1; cursor: pointer; display: flex; }
         .role-radio { display: none; }
@@ -42,7 +43,12 @@
             margin: 35px 0 15px 0; display: block; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;
         }
 
-        .form-group { margin-bottom: 20px; display: flex; flex-direction: column; }
+        .info-bubble { 
+            background: #f5f5f7; border-radius: 14px; padding: 16px; 
+            margin-bottom: 25px; font-size: 13px; color: var(--text-main); line-height: 1.5;
+        }
+
+        .form-group { margin-bottom: 20px; display: flex; flex-direction: column; position: relative; }
         .form-group label { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
         
         input[type="text"], input[type="email"], input[type="url"], input[type="number"], textarea { 
@@ -53,16 +59,20 @@
         input:focus { border-color: var(--primary); }
         input.invalid { border-color: var(--error); background: #fff8f8; }
 
+        /* Прайс-лист */
         .price-container { background: #f5f5f7; padding: 16px; border-radius: 18px; margin-bottom: 20px; }
         .price-group-title { font-size: 11px; font-weight: 800; color: var(--text-label); margin-bottom: 12px; text-transform: uppercase; }
-        .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .price-item label { font-size: 12px !important; margin-bottom: 4px; display: block; color: var(--text-label); }
+        .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .price-item label { font-size: 12px; color: var(--text-label); display: block; margin-bottom: 4px; }
 
-        .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        /* Категории (фиксированный размер) */
+        .category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .cat-item { display: flex; }
         .cat-item input { display: none; }
         .cat-btn { 
-            padding: 12px; border: 1px solid var(--border); border-radius: 12px; 
-            font-size: 13px; text-align: center; background: #fff; cursor: pointer; transition: 0.2s; font-weight: 500;
+            flex: 1; padding: 14px 10px; border: 1px solid var(--border); border-radius: 12px; 
+            font-size: 13px; text-align: center; background: #fff; cursor: pointer; transition: 0.2s; 
+            font-weight: 500; display: flex; align-items: center; justify-content: center; min-height: 50px;
         }
         .cat-item input:checked + .cat-btn { border-color: var(--primary); background: #e8f3ff; color: var(--primary); }
 
@@ -71,24 +81,15 @@
             border-radius: 18px; display: none; border: 1px solid #eee;
         }
         .sub-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-        .sub-tag { 
-            padding: 8px 16px; background: white; border: 1px solid var(--border); 
-            border-radius: 20px; font-size: 13px; cursor: pointer;
-        }
+        .sub-tag { padding: 8px 16px; background: white; border: 1px solid var(--border); border-radius: 20px; font-size: 13px; cursor: pointer; }
         .sub-tag.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        .file-zone {
-            border: 2px dashed var(--border); border-radius: 14px; padding: 25px;
-            text-align: center; cursor: pointer; background: #fff; color: var(--text-label); font-size: 14px;
-        }
-
-        .btn-submit { width: 100%; margin-top: 30px; padding: 18px; background: var(--text-dark); color: white; border: none; border-radius: 16px; font-weight: 700; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        .file-zone { border: 2px dashed var(--border); border-radius: 14px; padding: 25px; text-align: center; cursor: pointer; font-size: 14px; color: var(--text-label); }
+        .btn-submit { width: 100%; margin-top: 30px; padding: 18px; background: var(--text-dark); color: white; border: none; border-radius: 16px; font-weight: 700; cursor: pointer; font-size: 16px; }
+        
         #api-status { display: none; margin-top: 20px; padding: 15px; border-radius: 12px; font-size: 14px; }
 
-        @media (max-width: 480px) {
-            .price-grid { grid-template-columns: 1fr; }
-            .category-grid { grid-template-columns: 1fr 1fr; }
-        }
+        @media (min-width: 600px) { .category-grid { grid-template-columns: 1fr 1fr 1fr; } }
     </style>
 </head>
 <body>
@@ -135,15 +136,33 @@
                         <label>YouTube канал</label>
                         <input type="text" name="channel_link" placeholder="@channel_name" required>
                     </div>
+
                     <label class="section-label">Стоимость вашей рекламы</label>
+                    <div class="info-bubble">
+                        <b>Зачем указывать стоимость?</b> Это позволит брендам сразу видеть ваши условия. Указанные суммы являются ориентировочными, вы всегда сможете скорректировать цену в сделке.
+                    </div>
+
                     <div class="price-container">
-                        <div class="price-group-title">Long ролики</div>
+                        <div class="price-group-title">Длинная версия ролика</div>
                         <div class="price-grid">
-                            <div class="price-item"><label>Начало</label><input type="number" name="price_start" placeholder="₽" required></div>
-                            <div class="price-item"><label>Середина</label><input type="number" name="price_middle" placeholder="₽" required></div>
+                            <div class="price-item">
+                                <label>Начало ролика</label>
+                                <input type="number" name="price_start" class="p-input" placeholder="₽" required>
+                            </div>
+                            <div class="price-item">
+                                <label>Середина ролика</label>
+                                <input type="number" name="price_middle" class="p-input" placeholder="₽" required>
+                            </div>
+                            <div class="price-item" style="grid-column: span 2;">
+                                <label>Конец ролика</label>
+                                <input type="number" name="price_end" class="p-input" placeholder="₽" required>
+                            </div>
                         </div>
-                        <div class="price-group-title">Shorts</div>
-                        <div class="price-item"><input type="number" name="price_shorts" placeholder="₽" required></div>
+
+                        <div class="price-group-title">YouTube Shorts</div>
+                        <div class="price-item">
+                            <input type="number" name="price_shorts" class="p-input" placeholder="₽" required>
+                        </div>
                     </div>
                 </div>
 
@@ -158,31 +177,26 @@
                         <label>Продукт</label>
                         <input type="text" name="title" placeholder="Напр: Паштет из утки" required>
                     </div>
-                    <!-- ТО САМОЕ НОВОЕ ПОЛЕ -->
                     <div class="form-group">
                         <label>Краткое описание (УТП)</label>
-                        <input type="text" name="short_description" id="short_desc" 
-                               placeholder="Макс. 30 символов" 
-                               maxlength="30" required 
-                               oninput="updateCount()">
-                        <small id="char-count" style="color: var(--text-label); font-size: 11px; margin-top: 4px; text-align: right;">
-                            Осталось: 30 симв.
-                        </small>
+                        <input type="text" name="short_description" id="short_desc" maxlength="30" placeholder="Макс. 30 символов" oninput="updateCount()">
+                        <small id="char-count" style="font-size: 11px; color: var(--text-label); text-align: right; margin-top: 4px;">Осталось: 30 симв.</small>
                     </div>
                     <div class="form-group">
                         <label>Фото продукта</label>
-                        <div class="file-zone" id="drop-zone" onclick="document.getElementById('id_product_image').click()">
+                        <div class="file-zone" onclick="document.getElementById('id_product_image').click()">
                             <span id="file-name">Нажмите для загрузки</span>
-                            <input type="file" name="product_image" id="id_product_image" style="display:none;" required>
+                            <input type="file" name="product_image" id="id_product_image" style="display:none;">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>ТЗ</label>
-                        <textarea name="description" placeholder="Что нужно сказать?" required></textarea>
+                        <label>ТЗ (техническое задание)</label>
+                        <textarea name="description" placeholder="О чем должен рассказать блогер?"></textarea>
                     </div>
                 </div>
 
-                <label class="section-label">Категории</label>
+                <!-- КАТЕГОРИИ -->
+                <label class="section-label">Категории контента <span style="text-transform: none; font-weight: 400; font-size: 11px;">(можно выбрать несколько)</span></label>
                 <div class="category-grid">
                     {% for value, text in form.topics.field.choices %}
                         <label class="cat-item">
@@ -215,7 +229,6 @@
     function toggleRole(v) {
         document.getElementById('blogger-fields').style.display = v === 'blogger' ? 'block' : 'none';
         document.getElementById('advertiser-fields').style.display = v === 'advertiser' ? 'block' : 'none';
-        
         document.querySelectorAll('#advertiser-fields input, #advertiser-fields textarea').forEach(el => el.required = (v === 'advertiser'));
         document.querySelectorAll('#blogger-fields input').forEach(el => el.required = (v === 'blogger'));
     }
@@ -226,25 +239,54 @@
         document.getElementById('file-name').innerText = e.target.files[0] ? e.target.files[0].name : "Нажмите для загрузки";
     });
 
-    document.getElementById('submit-handler').addEventListener('click', () => {
+    document.getElementById('submit-handler').addEventListener('click', async () => {
         const form = document.getElementById('reg-form');
+        const role = document.querySelector('.role-radio:checked').value;
+        const submitBtn = document.getElementById('submit-handler');
+        const apiStatus = document.getElementById('api-status');
+
+        // Базовая валидация
         let isValid = true;
         const visibleFields = document.querySelectorAll(`#hidden-content input[required]:not([type="radio"]), #hidden-content textarea[required]`);
-        
-        visibleFields.forEach(field => {
-            if (field.closest('#blogger-fields, #advertiser-fields')?.style.display === 'none') return;
-            if (!field.value.trim()) {
-                field.classList.add('invalid');
-                isValid = false;
-            } else {
-                field.classList.remove('invalid');
-            }
+        visibleFields.forEach(f => {
+            if (!f.value.trim()) { f.classList.add('invalid'); isValid = false; }
+            else { f.classList.remove('invalid'); }
         });
 
-        if (isValid) form.submit();
-        else alert("Заполните обязательные поля");
-    });
-</script>
+        if (!isValid) { alert("Пожалуйста, заполните все поля"); return; }
 
+        if (role === 'blogger') {
+            // ПРОВЕРКА НА 0 В ПРАЙСЕ
+            const priceInputs = document.querySelectorAll('.p-input');
+            let zeroFound = false;
+            priceInputs.forEach(p => { if (p.value === "0") zeroFound = true; });
+
+            if (zeroFound) {
+                const confirmZero = confirm("Вы указали 0 ₽ в одном из полей стоимости. Это означает, что вы готовы работать по бартеру или бесплатно. Продолжить?");
+                if (!confirmZero) return;
+            }
+
+            // Имитация/Вызов API (как в прошлом примере)
+            submitBtn.disabled = true;
+            apiStatus.style.display = 'block';
+            apiStatus.innerHTML = "⏳ Проверка канала...";
+            
+            // Здесь ваш fetch к /api/fetch-youtube/
+            // Для примера просто отправляем форму через секунду
+            setTimeout(() => form.submit(), 1000);
+        } else {
+            form.submit();
+        }
+    });
+
+    toggleRole('blogger');
+
+    // Функция отрисовки подкатегорий (заглушка, если используете карту)
+    function renderSubTopics() {
+        const checked = document.querySelectorAll('input[name="topics"]:checked');
+        document.getElementById('sub-area').style.display = checked.length > 0 ? 'block' : 'none';
+        // Тут логика отрисовки sub-tags из прошлого сообщения
+    }
+</script>
 </body>
 </html>

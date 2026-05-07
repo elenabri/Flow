@@ -6,17 +6,15 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- БЕЗОПАСНОСТЬ ---
-SECRET_KEY = 'django-insecure-q(cs0^v-hof)#h-ql#774!$02yi%6j28(bud4xtc%sv9h-$l$u'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-default-key')
 DEBUG = False 
-ALLOWED_HOSTS = ['*']  # Позже замени на ['tubeflow-mvfo.onrender.com', '127.0.0.1']
-TELEGRAM_ADMIN_GROUP_ID = os.getenv('TELEGRAM_ADMIN_GROUP_ID')
+ALLOWED_HOSTS = ["tubeflow-mvfo.onrender.com", "localhost", "127.0.0.1"]
 
 # --- ПРИЛОЖЕНИЯ ---
 INSTALLED_APPS = [
     'daphne',
     'channels',
-    'cloudinary_storage',  # ДОБАВИТЬ СЮДА (обязательно выше staticfiles)
-    'core',
+    'cloudinary_storage',  # Должен быть выше staticfiles
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -25,10 +23,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'cloudinary',
+    'core',
 ]
-ASGI_APPLICATION = 'config.asgi.application'
 
-# Настройка твоего платного Redis (возьми URL из настроек Render)
+ASGI_APPLICATION = 'config.asgi.application'
+WSGI_APPLICATION = 'config.wsgi.application'
+
+# --- REDIS / CHANNELS ---
+# Если на Render есть Redis, замени 'InMemoryChannelLayer' на 'RedisChannelLayer'
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels.layers.InMemoryChannelLayer",
@@ -38,7 +40,7 @@ CHANNEL_LAYERS = {
 # --- MIDDLEWARE ---
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Для статики на Render
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Сразу после Security
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -53,10 +55,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            BASE_DIR / 'templates',
-            BASE_DIR / 'core' / 'templates',
-        ],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -70,8 +69,6 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
-
 # --- БАЗА ДАННЫХ ---
 DATABASES = {
     'default': dj_database_url.config(
@@ -84,66 +81,21 @@ DATABASES = {
 AUTH_USER_MODEL = 'core.User'
 AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend']
 
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
-
 # --- ИНТЕРНАЦИОНАЛИЗАЦИЯ ---
-LANGUAGE_CODE = 'ru-ru'  # Поставил русский по умолчанию
+LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
 USE_TZ = True
 
 # --- СТАТИКА И МЕДИА ---
-# --- СТАТИКА И МЕДИА ---
-STATIC_URL = '/static/'  # Добавлен ведущий слэш
-
-STATICFILES_DIRS = [
-    # Убедитесь, что эта папка существует в core/static
-    BASE_DIR / 'core' / 'static', 
-]
-
-# Папка, куда collectstatic соберет ВСЁ (включая админку)
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'core' / 'static']
 
-# Важный параметр для работы WhiteNoise
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Настройка WhiteNoise (убрал Manifest, чтобы избежать 404 при отсутствии файлов)
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
-# Настройки медиа (загрузки)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-# --- ПОЧТА (SMTP Gmail) ---
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True   # Именно TLS для 587 порта
-EMAIL_USE_SSL = False  # SSL должен быть False
-EMAIL_HOST_USER = 'len.bri14@gmail.com'
-EMAIL_HOST_PASSWORD = 'yvyojptzikbylojr'
-DEFAULT_FROM_EMAIL = 'Vkusnevich <len.bri14@gmail.com>'
-TELEGRAM_BOT_TOKEN = "8275098246:AAG0GwVR8FNSS7DhnmhCseZZwzXvO1h-n7k"
-
-# --- ПЕРЕЙТИ ПОСЛЕ ВХОДА ---
-LOGIN_REDIRECT_URL = 'core:login_router'
-LOGOUT_REDIRECT_URL = 'login'
-
-# --- ПРОЧИЕ НАСТРОЙКИ ---
-PASSWORD_RESET_TIMEOUT = 14400
-SITE_DOMAIN = 'tubeflow-mvfo.onrender.com'
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://tubeflow-mvfo.onrender.com",
-    "https://*.onrender.com"  # Это на случай, если домен чуть изменится
-]
-ALLOWED_HOSTS = ["tubeflow-mvfo.onrender.com", "localhost", "127.0.0.1"]
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-
+# Настройка Cloudinary для Медиа
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
@@ -151,3 +103,29 @@ CLOUDINARY_STORAGE = {
 }
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# --- ПОЧТА (SMTP Gmail) ---
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'len.bri14@gmail.com'
+EMAIL_HOST_PASSWORD = 'yvyojptzikbylojr' # Рекомендую заменить на переменную окружения
+DEFAULT_FROM_EMAIL = 'Vkusnevich <len.bri14@gmail.com>'
+
+# --- TELEGRAM ---
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', "8275098246:AAG0GwVR8FNSS7DhnmhCseZZwzXvO1h-n7k")
+TELEGRAM_ADMIN_GROUP_ID = os.getenv('TELEGRAM_ADMIN_GROUP_ID')
+
+# --- ПРОЧИЕ НАСТРОЙКИ ---
+LOGIN_REDIRECT_URL = 'core:login_router'
+LOGOUT_REDIRECT_URL = 'login'
+SITE_DOMAIN = 'tubeflow-mvfo.onrender.com'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://tubeflow-mvfo.onrender.com",
+    "https://*.onrender.com"
+]

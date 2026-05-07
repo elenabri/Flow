@@ -751,7 +751,8 @@ def verify_email(request, username):
         user = User.objects.get(username=username) # Проверь, ищет ли он по тому полю!
         user.is_active = True
         user.save()
-        return HttpResponse(f"УРА! Пользователь {username} найден и активирован. Теперь попробуй войти.")
+        login(request, user)
+        return redirect('dashboard')  # 'dashboard' — это name вашего URL в urls.py
     except User.DoesNotExist:
         return HttpResponse(f"ОШИБКА: В базе нет пользователя с username = {username}")
 

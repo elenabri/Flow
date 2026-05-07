@@ -13,6 +13,7 @@ core_patterns = ([
     path('register/', views.register, name='register'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('marketplace/', views.marketplace, name='marketplace'),
+    path('update-profile/', views.update_profile, name='update_profile'),
     
     # API и AJAX
     path('api/fetch-youtube/', views.fetch_youtube_data, name='fetch_youtube'),

@@ -1,0 +1,80 @@
+{% for blogger in bloggers %}
+<div class="blogger-card" style="background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px;">
+    
+    <!-- Шапка: Аватар и Имя -->
+    <div class="d-flex align-items-center mb-3">
+        <img src="{{ blogger.avatar_url|default:'https://via.placeholder.com/150' }}" 
+             style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #eee;">
+        <div class="ms-3">
+            <h5 class="mb-0 fw-bold">{{ blogger.channel_name }}</h5>
+            <span class="badge bg-soft-primary text-primary" style="background: #eef2ff;">
+                {{ blogger.subscribers_count }} подп.
+            </span>
+        </div>
+    </div>
+
+    <!-- Основная сетка данных -->
+    <div class="row g-3">
+        
+        <!-- Колонка: Длинные видео -->
+        <div class="col-md-6">
+            <div style="background: #f8f9fa; border-radius: 15px; padding: 15px;">
+                <div class="text-uppercase fw-bold mb-2" style="font-size: 0.7rem; color: #6c757d; letter-spacing: 1px;">
+          Длинные видео
+                </div>
+                
+                <div class="d-flex justify-content-between mb-2">
+                    <small>Средние просмотры:</small>
+                    <span class="fw-bold">{{ blogger.avg_long|default:"—" }}</span>
+                </div>
+
+                <div class="price-list small" style="color: #444;">
+                    <div class="d-flex justify-content-between"><span>Начало:</span> <span>{{ blogger.p_start|default:"—" }} ₽</span></div>
+                    <div class="d-flex justify-content-between"><span>Середина:</span> <span>{{ blogger.p_mid|default:"—" }} ₽</span></div>
+                    <div class="d-flex justify-content-between"><span>Конец:</span> <span>{{ blogger.p_end|default:"—" }} ₽</span></div>
+                </div>
+
+                <div class="mt-2 pt-2 border-top">
+                    <div style="font-size: 0.75rem; color: #888;">Стоимость 1 просмотра:</div>
+                    <div class="fw-bold text-dark">{{ blogger.display_cpv_long|default:"—" }} ₽</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Колонка: Shorts -->
+        <div class="col-md-6">
+            <div style="background: #fff0f3; border-radius: 15px; padding: 15px;">
+                <div class="text-uppercase fw-bold mb-2" style="font-size: 0.7rem; color: #dc3545; letter-spacing: 1px;">
+                    Shorts
+                </div>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <small>Средние просмотры:</small>
+                    <span class="fw-bold">{{ blogger.avg_shorts|default:"—" }}</span>
+                </div>
+
+                <div class="price-list small mb-3">
+                    <div class="d-flex justify-content-between"><span>Цена за ролик:</span> <span>{{ blogger.p_shorts|default:"—" }} ₽</span></div>
+                </div>
+
+                <div class="mt-2 pt-2 border-top" style="border-color: #ffdce3 !important;">
+                    <div style="font-size: 0.75rem; color: #a55;">Стоимость 1 просмотра:</div>
+                    <div class="fw-bold text-danger">{{ blogger.display_cpv_shorts|default:"—" }} ₽</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Кнопка действия -->
+    <div class="mt-3">
+        <a href="{% url 'core:blogger_detail' blogger.id %}" class="btn btn-dark w-100" style="border-radius: 12px; font-weight: 500;">
+            Посмотреть профиль
+        </a>
+    </div>
+</div>
+{% empty %}
+<div class="text-center py-5">
+    <p class="text-muted">Блогеры не найдены</p>
+</div>
+{% endfor %}

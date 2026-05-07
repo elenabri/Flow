@@ -129,3 +129,4 @@ CSRF_TRUSTED_ORIGINS = [
     "https://tubeflow-mvfo.onrender.com",
     "https://*.onrender.com"
 ]
+WHITENOISE_ROOT = BASE_DIR / 'staticfiles'

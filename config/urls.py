@@ -49,6 +49,7 @@ urlpatterns = [
     path('verify-email/<path:username>/', views.verify_email, name='verify_email'),
     # Подключаем наши основные пути через include с namespace
     path('', include(core_patterns)),
+    path('update-profile/', views.update_profile, name='update_profile'),
     
 
     # Встроенная авторизация (login/logout)

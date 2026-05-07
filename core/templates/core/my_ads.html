@@ -1,0 +1,60 @@
+<div id="add-product-form" class="content-card hidden" 
+     style="background: #fff; border: 1px solid #000; border-radius: 20px; padding: 40px; margin-bottom: 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.05); transition: all 0.3s ease;">
+    
+    <h3 style="margin-bottom: 30px; font-weight: 800; letter-spacing: -0.5px;">Новое предложение</h3>
+    
+    <form method="post" enctype="multipart/form-data" style="display: grid; gap: 24px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_product">
+        
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Название товара</label>
+                <input type="text" name="name" class="form-control-luxury" placeholder="Паштет из индейки" required 
+                       style="width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 10px;">
+            </div>
+            <div class="col-md-6">
+                <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Категории</label>
+                <input type="text" name="category" class="form-control-luxury" placeholder="Продукты, ЗОЖ"
+                       style="width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 10px;">
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Wildberries URL</label>
+                <input type="url" name="link_wb" class="form-control-luxury" style="width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 10px;">
+            </div>
+            <div class="col-md-4">
+                <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Ozon URL</label>
+                <input type="url" name="link_ozon" class="form-control-luxury" style="width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 10px;">
+            </div>
+            <div class="col-md-4">
+                <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Сайт</label>
+                <input type="url" name="link_other" class="form-control-luxury" style="width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 10px;">
+            </div>
+        </div>
+
+        <div>
+            <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">ТЗ для блогера</label>
+            <textarea name="description" rows="4" class="form-control-luxury" 
+                      placeholder="Опишите сценарий: например, завтрак с продукцией Вкусневич..."
+                      style="width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 10px;"></textarea>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Загрузить фото</label>
+                <input type="file" name="product_image" accept="image/*" style="display: block; margin-top: 5px;">
+            </div>
+            <div class="col-md-6">
+                <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Или ссылка на фото</label>
+                <input type="url" name="avatar_url" class="form-control-luxury" style="width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 10px;">
+            </div>
+        </div>
+
+        <button type="submit" class="btn-main" style="background: #000; color: #fff; padding: 16px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer;">
+            Опубликовать в маркетплейс
+        </button>
+    </form>
+</div>

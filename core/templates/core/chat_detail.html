@@ -6,288 +6,263 @@
 {% csrf_token %}
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-<!-- Кнопка подключения TG -->
-<a href="https://t.me/TubeFlowSupport_bot?start={{ request.user.id }}" target="_blank" class="btn-tg-link">
-    Подключить Telegram
-</a>
+<div class="chat-container-wrapper">
+    <a href="https://t.me/TubeFlowSupport_bot?start={{ request.user.id }}" target="_blank" class="tg-link-badge">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" width="15"> Подключить Telegram
+    </a>
 
-<div class="chat-main-container" id="chat-layout">
-    <main class="chat-section">
-        <!-- Шапка чата -->
-        <div class="chat-header">
-            <img src="{{ other_user.profile.avatar.url|default:'/static/img/default-avatar.png' }}" class="chat-avatar">
-            <div class="header-info">
-                <div class="user-name">
-                    {% if other_user.blogger_profile %}
-                        <a href="{{ other_user.blogger_profile.channel_url }}" target="_blank">📺 {{ other_user.username }}</a>
-                    {% else %}
-                        {{ other_user.username }}
-                    {% endif %}
-                </div>
-                <div class="status-text">● В сети / Vkusnevich</div>
-            </div>
-        </div>
-
-        <!-- Список сообщений -->
-        <div id="chat-log">
-            {% for msg in chat_messages %}
-                <div class="msg {% if msg.sender == user %}msg-me{% else %}msg-other{% endif %}" id="msg-{{ msg.id }}">
-                    <div class="msg-content">{{ msg.text }}</div>
-                    <div class="msg-footer">
-                        <span class="msg-time">{{ msg.created_at|date:"H:i" }}</span>
-                        {% if msg.sender == user %}
-                            <span class="status-icon {% if msg.is_read %}read{% endif %}">
-                                {% if msg.is_read %}✓✓{% else %}✓{% endif %}
-                            </span>
+    <div class="chat-main-layout" id="chat-layout">
+        <main class="chat-section">
+            <div class="chat-header">
+                <img src="{{ other_user.profile.avatar.url|default:'/static/img/default-avatar.png' }}" class="chat-avatar">
+                <div class="header-info">
+                    <div class="user-name">
+                        {% if other_user.blogger_profile %}
+                            <a href="{{ other_user.blogger_profile.channel_url }}" target="_blank">📺 {{ other_user.username }}</a>
+                        {% else %}
+                            {{ other_user.username }}
                         {% endif %}
                     </div>
-                </div>
-            {% endfor %}
-        </div>
-
-        <!-- Форма отправки -->
-        <div id="message-form">
-            <input type="text" id="chat-message-input" placeholder="Напишите сообщение..." autocomplete="off">
-            <button id="chat-message-submit">➤</button>
-        </div>
-    </main>
-
-    <!-- Правая панель -->
-    <aside class="right-panel">
-        <div class="tabs">
-            <button onclick="toggleRightTab('products')" id="btn-tab-products" class="tab-btn active">📦 ТОВАРЫ</button>
-            <button onclick="toggleRightTab('contract')" id="btn-tab-contract" class="tab-btn">📜 ДОГОВОР</button>
-        </div>
-
-        <div id="right-panel-content">
-            <div id="tab-products">
-                <h4 class="panel-title">Ваш перечень товаров:</h4>
-                <div class="product-grid">
-                    {% for product in advertiser_products %}
-                    <label class="product-item">
-                        <input type="checkbox" name="selected_prod" value="{{ product.id }}" 
-                               onchange="toggleProductSelection('{{ product.id }}', '{{ product.name }}')">
-                        <img src="{{ product.image_url }}" class="prod-img">
-                        <span class="prod-name">{{ product.name }}</span>
-                    </label>
-                    {% empty %}
-                    <p class="empty-text">Товары не найдены</p>
-                    {% endfor %}
+                    <div class="status-text">в сети</div>
                 </div>
             </div>
 
-            <div id="tab-contract" style="display: none;">
-                <div id="plan-editor-content"></div>
+            <div id="chat-log">
+                {% for msg in chat_messages %}
+                    <div class="msg-wrapper {% if msg.sender == user %}my-msg-row{% else %}other-msg-row{% endif %}">
+                        <div class="msg-bubble" id="msg-{{ msg.id }}">
+                            <div class="msg-text">{{ msg.text }}</div>
+                            <div class="msg-meta">
+                                <span class="msg-time">{{ msg.created_at|date:"H:i" }}</span>
+                                {% if msg.sender == user %}
+                                    <span class="status-icon {% if msg.is_read %}read{% endif %}">
+                                        {% if msg.is_read %}✓✓{% else %}✓{% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
             </div>
-        </div>
-    </aside>
+
+            <div id="message-form-container">
+                <div class="input-wrapper">
+                    <input type="text" id="chat-message-input" placeholder="Сообщение..." autocomplete="off">
+                    <button id="chat-message-submit">
+                        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
 </div>
 
 <style>
-    /* Глобальные настройки контейнера */
-    .chat-main-container {
-        display: grid;
-        grid-template-columns: 1fr 350px;
-        height: calc(100dvh - 100px);
-        background: white;
-        border: 1px solid #eee;
-        border-radius: 12px;
-        overflow: hidden;
-        max-width: 1400px;
-        margin: 0 auto;
+    :root {
+        --bg-color: #f0f2f5;
+        --my-msg-color: #effdde;
+        --other-msg-color: #ffffff;
+        --accent-color: #0088cc;
+        --text-main: #222;
+        --text-muted: #888;
     }
 
-    /* Шапка */
+    .chat-container-wrapper {
+        max-width: 900px; /* Сузили чат для удобства чтения на ПК */
+        margin: 0 auto;
+        padding: 10px;
+    }
+
+    .tg-link-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 6px 12px;
+        border-radius: 20px;
+        text-decoration: none;
+        color: var(--accent-color);
+        font-size: 13px;
+        margin-bottom: 10px;
+        transition: 0.2s;
+    }
+
+    .tg-link-badge:hover { background: #f9f9f9; }
+
+    .chat-main-layout {
+        height: 75vh;
+        background: #e6ebee; /* Фон как в TG */
+        background-image: url('https://www.transparenttextures.com/patterns/cubes.png'); /* Легкий паттерн */
+        border-radius: 15px;
+        overflow: hidden;
+        display: flex;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .chat-section { display: flex; flex-direction: column; width: 100%; }
+
     .chat-header {
         display: flex;
         align-items: center;
-        padding: 10px 15px;
-        border-bottom: 1px solid #eee;
+        padding: 10px 20px;
         background: #fff;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        z-index: 10;
     }
 
     .chat-avatar {
-        width: 40px; height: 40px;
+        width: 42px; height: 42px;
         border-radius: 50%;
         object-fit: cover;
-        margin-right: 12px;
+        margin-right: 15px;
     }
 
-    .user-name { font-weight: bold; font-size: 15px; }
-    .status-text { font-size: 11px; color: #28a745; }
+    .user-name a { color: var(--text-main); text-decoration: none; font-weight: 600; }
+    .status-text { font-size: 12px; color: var(--accent-color); }
 
-    /* Лог сообщений */
     #chat-log {
         flex: 1;
         overflow-y: auto;
-        padding: 15px;
+        padding: 20px;
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        background: #f9f9f9;
-    }
-
-    /* Сообщения */
-    .msg {
-        max-width: 80%;
-        padding: 8px 12px;
-        border-radius: 15px;
-        font-size: 14px;
-        position: relative;
-        line-height: 1.4;
-    }
-    .msg-me { align-self: flex-end; background: #007bff; color: white; border-bottom-right-radius: 2px; }
-    .msg-other { align-self: flex-start; background: #e9e9eb; color: #333; border-bottom-left-radius: 2px; }
-
-    .msg-footer {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
         gap: 4px;
-        font-size: 10px;
-        margin-top: 4px;
-        opacity: 0.8;
     }
 
-    .status-icon { font-size: 12px; color: rgba(255,255,255,0.7); }
-    .status-icon.read { color: #4fc3f7; }
-    .msg-other .status-icon { color: #999; }
+    /* Пузыри сообщений */
+    .msg-wrapper { display: flex; width: 100%; margin-bottom: 2px; }
+    .my-msg-row { justify-content: flex-end; }
+    .other-msg-row { justify-content: flex-start; }
 
-    /* Форма ввода */
-    #message-form {
+    .msg-bubble {
+        max-width: 70%;
+        padding: 8px 12px;
+        position: relative;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         display: flex;
-        padding: 10px;
-        border-top: 1px solid #eee;
-        gap: 10px;
+        flex-direction: column;
+    }
+
+    .my-msg-row .msg-bubble {
+        background: var(--my-msg-color);
+        border-radius: 15px 15px 2px 15px;
+        color: #000;
+    }
+
+    .other-msg-row .msg-bubble {
+        background: var(--other-msg-color);
+        border-radius: 15px 15px 15px 2px;
+        color: #000;
+    }
+
+    .msg-text { font-size: 14.5px; line-height: 1.5; word-wrap: break-word; }
+
+    .msg-meta {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 4px;
+        font-size: 11px;
+        margin-top: 2px;
+        color: #6a6a6a;
+    }
+
+    .status-icon { color: #4fc3f7; font-weight: bold; }
+    .status-icon.read { color: #4fc3f7; }
+
+    /* Поле ввода */
+    #message-form-container {
+        padding: 15px 20px;
         background: #fff;
     }
+
+    .input-wrapper {
+        display: flex;
+        align-items: center;
+        background: #f1f1f1;
+        border-radius: 25px;
+        padding: 5px 15px;
+    }
+
     #chat-message-input {
         flex: 1;
-        padding: 10px 15px;
-        border-radius: 20px;
-        border: 1px solid #ddd;
+        border: none;
+        background: none;
+        padding: 10px;
         outline: none;
+        font-size: 15px;
     }
 
-    /* Правая панель и ТОВАРЫ */
-    .right-panel { border-left: 1px solid #eee; background: #fff; display: flex; flex-direction: column; }
-    .tabs { display: flex; border-bottom: 1px solid #eee; }
-    .tab-btn { flex: 1; padding: 12px; border: none; background: none; cursor: pointer; font-size: 12px; font-weight: bold; color: #666; }
-    .tab-btn.active { color: #007bff; border-bottom: 2px solid #007bff; }
-
-    .product-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 10px;
-        padding: 15px;
-    }
-    .prod-img {
-        width: 80px; height: 80px; /* Фикс гигантских иконок */
-        object-fit: contain;
-        border: 1px solid #f0f0f0;
-        border-radius: 8px;
-    }
-    .prod-name { font-size: 11px; margin-top: 5px; display: block; text-align: center; }
-
-    .btn-tg-link {
-        background: #0088cc; color: white; padding: 8px 16px; 
-        border-radius: 8px; text-decoration: none; font-size: 13px;
-        margin-bottom: 10px; display: inline-block;
+    #chat-message-submit {
+        background: none;
+        border: none;
+        color: var(--accent-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        padding: 5px;
     }
 
-    @media (max-width: 850px) {
-        .chat-main-container { grid-template-columns: 1fr; height: 100dvh; }
-        .right-panel { display: none; }
+    /* Скрываем правую панель как просили */
+    .right-panel { display: none; }
+
+    @media (max-width: 600px) {
+        .chat-main-layout { height: 85vh; border-radius: 0; }
+        .msg-bubble { max-width: 85%; }
     }
 </style>
 
 <script>
-const tg = window.Telegram.WebApp;
-tg.expand();
-tg.ready();
+    // Вебсокет логика остается прежней
+    const chatId = "{{ chat.id }}"; 
+    const currentUserId = "{{ user.id }}";
+    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+    const chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/${chatId}/`);
 
-const chatId = "{{ chat.id }}"; 
-const currentUserId = "{{ user.id }}";
-const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-const chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/${chatId}/`);
+    const chatLog = document.querySelector('#chat-log');
+    const messageInput = document.querySelector('#chat-message-input');
 
-const chatLog = document.querySelector('#chat-log');
-const messageInput = document.querySelector('#chat-message-input');
-
-function scrollToBottom(smooth = true) {
-    chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
-}
-
-function sendMessage() {
-    const text = messageInput.value.trim();
-    if (text) {
-        chatSocket.send(JSON.stringify({'message': text}));
-        messageInput.value = '';
-        messageInput.focus();
-    }
-}
-
-chatSocket.onmessage = function(e) {
-    const data = JSON.parse(e.data);
-    
-    if (data.type === 'read_confirmation') {
-        const icon = document.querySelector(`#msg-${data.message_id} .status-icon`);
-        if (icon) { icon.innerHTML = '✓✓'; icon.classList.add('read'); }
-        return;
+    function scrollToBottom() {
+        chatLog.scrollTop = chatLog.scrollHeight;
     }
 
-    const isMe = data.sender_id == currentUserId;
-    const msgId = data.message_id || Date.now();
-    
-    const html = `
-        <div class="msg ${isMe ? 'msg-me' : 'msg-other'}" id="msg-${msgId}">
-            <div class="msg-content">${data.message}</div>
-            <div class="msg-footer">
-                <span class="msg-time">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                ${isMe ? '<span class="status-icon">✓</span>' : ''}
-            </div>
-        </div>`;
-    
-    chatLog.insertAdjacentHTML('beforeend', html);
-    if (!isMe && document.hasFocus()) {
-        chatSocket.send(JSON.stringify({'type': 'read_event', 'message_id': msgId}));
-    }
-    scrollToBottom();
-};
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        
+        if (data.type === 'read_confirmation') {
+            const icon = document.querySelector(`#msg-${data.message_id} .status-icon`);
+            if (icon) { icon.innerHTML = '✓✓'; icon.classList.add('read'); }
+            return;
+        }
 
-document.querySelector('#chat-message-submit').onclick = sendMessage;
-messageInput.onkeydown = (e) => { if(e.key === 'Enter') { e.preventDefault(); sendMessage(); } };
+        const isMe = data.sender_id == currentUserId;
+        const msgId = data.message_id || Date.now();
+        
+        const html = `
+            <div class="msg-wrapper ${isMe ? 'my-msg-row' : 'other-msg-row'}">
+                <div class="msg-bubble" id="msg-${msgId}">
+                    <div class="msg-text">${data.message}</div>
+                    <div class="msg-meta">
+                        <span class="msg-time">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                        ${isMe ? '<span class="status-icon">✓</span>' : ''}
+                    </div>
+                </div>
+            </div>`;
+        
+        chatLog.insertAdjacentHTML('beforeend', html);
+        scrollToBottom();
+    };
 
-messageInput.addEventListener('focus', () => setTimeout(() => scrollToBottom(true), 300));
-window.onload = () => scrollToBottom(false);
+    document.querySelector('#chat-message-submit').onclick = () => {
+        const msg = messageInput.value.trim();
+        if(msg) {
+            chatSocket.send(JSON.stringify({'message': msg}));
+            messageInput.value = '';
+        }
+    };
 
-// Вкладки
-function toggleRightTab(tab) {
-    document.getElementById('tab-products').style.display = tab === 'products' ? 'block' : 'none';
-    document.getElementById('tab-contract').style.display = tab === 'contract' ? 'block' : 'none';
-    document.getElementById('btn-tab-products').classList.toggle('active', tab === 'products');
-    document.getElementById('btn-tab-contract').classList.toggle('active', tab === 'contract');
-    if (tab === 'contract') renderPlanEditor();
-}
-
-function renderPlanEditor() {
-    const container = document.getElementById('plan-editor-content');
-    container.innerHTML = `<div style="padding:20px; text-align:center;">
-        <p style="font-size:13px; color:#666;">Черновик договора Вкусневич</p>
-        <button onclick="signContract()" style="width:100%; padding:12px; background:#28a745; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:15px;">ПОДПИСАТЬ</button>
-    </div>`;
-}
-
-function signContract() {
-    if(confirm("Подписать?")) saveData();
-}
-
-function saveData() {
-    fetch(`/chats/save_contract/${chatId}/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value },
-        body: JSON.stringify({isSigned: true})
-    }).then(() => alert("Договор подписан"));
-}
+    messageInput.onkeydown = (e) => { if(e.key === 'Enter') document.querySelector('#chat-message-submit').click(); };
+    window.onload = scrollToBottom;
 </script>
 {% endblock %}

@@ -1,5 +1,4 @@
 {% block content %}
-<!-- Meta-тег — это КРИТИЧЕСКИ важно, чтобы iPhone не зумил сайт сам -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -13,12 +12,22 @@
         --bg: #f5f5f7;
     }
 
-    body {
+    /* Убираем прокрутку и фиксируем высоту под экран устройства */
+    html, body {
         margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden; 
         font-family: 'Inter', -apple-system, sans-serif;
         background: #fff;
-        color: var(--dark);
-        -webkit-font-smoothing: antialiased;
+    }
+
+    .wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100vh; /* Ровно высота экрана */
+        width: 100vw;
+        box-sizing: border-box;
     }
 
     /* --- NAV --- */
@@ -26,203 +35,168 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0 5%;
-        height: 60px;
-        position: sticky;
-        top: 0;
-        background: rgba(255,255,255,0.8);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        z-index: 1000;
+        padding: 0 20px;
+        height: 50px; /* Уменьшили высоту */
+        flex-shrink: 0;
         border-bottom: 1px solid rgba(0,0,0,0.05);
     }
 
     .logo {
         font-weight: 800;
-        font-size: 20px;
+        font-size: 18px;
         display: flex;
         align-items: center;
-        gap: 8px;
-        letter-spacing: -0.5px;
+        gap: 6px;
     }
 
     .logo-icon {
         background: var(--primary);
-        width: 26px;
-        height: 26px;
-        border-radius: 7px;
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
         color: #fff;
-        font-size: 11px;
+        font-size: 10px;
     }
 
-    /* --- HERO --- */
+    /* --- HERO (Центрированный контент) --- */
     .hero {
-        padding: 60px 20px;
+        flex-grow: 1; /* Занимает всё свободное место */
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Центровка по вертикали */
+        align-items: center;
         text-align: center;
+        padding: 0 20px;
         background: radial-gradient(circle at 50% 0%, #f5faff 0%, #ffffff 100%);
     }
 
     .hero h1 {
-        font-size: clamp(32px, 8vw, 56px); /* Резиновый шрифт: не мелкий на мобиле, крупный на ПК */
+        font-size: clamp(24px, 7vw, 42px); /* Уменьшили размер */
         font-weight: 800;
         line-height: 1.1;
-        letter-spacing: -1.5px;
-        margin-bottom: 20px;
+        letter-spacing: -1px;
+        margin: 0 0 10px 0;
     }
 
     .hero p {
-        font-size: clamp(16px, 4vw, 19px);
+        font-size: clamp(14px, 3.5vw, 16px);
         color: var(--gray);
-        max-width: 600px;
-        margin: 0 auto 40px;
-        line-height: 1.5;
+        max-width: 320px;
+        margin: 0 auto 25px auto;
     }
 
     /* --- GRID --- */
     .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-        max-width: 1100px;
-        margin: 0 auto 50px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+        max-width: 340px; /* Ограничили ширину, чтобы не ехало влево */
+        margin-bottom: 25px;
     }
 
     .card {
         background: #fff;
-        padding: 30px;
-        border-radius: 24px;
+        padding: 15px 20px;
+        border-radius: 18px;
         border: 1px solid #f0f0f2;
         text-align: left;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
     }
 
     .card i {
         color: var(--primary);
-        font-size: 24px;
-        margin-bottom: 15px;
+        font-size: 18px;
+        width: 25px;
+        text-align: center;
     }
 
-    .card h3 {
-        font-size: 20px;
-        margin: 0 0 10px 0;
-    }
-
-    .card p {
+    .card div h3 {
         font-size: 15px;
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .card div p {
+        font-size: 12px;
         color: var(--gray);
         margin: 0;
     }
 
     /* --- CTA --- */
-    .cta-bar {
-        background: var(--bg);
-        padding: 20px 30px;
-        border-radius: 24px;
-        display: inline-flex;
-        align-items: center;
-        gap: 20px;
+    .cta-container {
+        width: 100%;
+        max-width: 340px;
     }
 
     .btn-dark {
+        display: block;
         background: var(--dark);
         color: #fff;
-        padding: 14px 28px;
+        padding: 14px;
         border-radius: 14px;
         text-decoration: none;
         font-weight: 600;
+        font-size: 14px;
         transition: 0.2s;
     }
 
-    /* --- MEDIA QUERIES (iPhone Оптимизация) --- */
+    /* Устранение смещения влево на iPhone */
     @media (max-width: 600px) {
-        .nav-custom { padding: 0 15px; }
-        .hero { padding: 40px 15px; }
-        .features-grid { grid-template-columns: 1fr; } /* Всегда 1 колонка на iPhone */
-        
-        .cta-bar {
-            flex-direction: column;
-            width: 100%;
-            text-align: center;
+        .hero { padding: 0 20px; }
+        .features-grid, .cta-container {
+            margin-left: auto;
+            margin-right: auto;
         }
-        
-        .btn-dark { width: 100%; text-align: center; }
-        
-        #supportLink { display: none; } /* Скрываем лишнее в меню */
-    }
-
-    /* Горизонтальный режим (Landscape) */
-    @media (max-height: 500px) and (orientation: landscape) {
-        .hero { padding: 20px 15px; }
-        .features-grid { grid-template-columns: 1fr 1fr; }
-        .hero h1 { font-size: 28px; }
     }
 </style>
 
-<div class="main-content">
+<div class="wrapper">
     <nav class="nav-custom">
         <div class="logo">
             <div class="logo-icon"><i class="fas fa-play"></i></div>
             Tube<span style="color: var(--primary)">Flow</span>
         </div>
-        
-        <div style="display: flex; gap: 15px; align-items: center;">
-            <a href="#" id="supportLink" style="text-decoration: none; color: var(--gray); font-size: 13px;">Поддержка</a>
+        <div style="display: flex; gap: 10px;">
             {% if not user.is_authenticated %}
-                <a href="{% url 'login' %}" style="text-decoration: none; color: var(--dark); font-size: 14px; font-weight: 600;">Войти</a>
-                <a href="{% url 'core:register' %}" class="btn-dark" style="padding: 8px 16px; font-size: 13px;">Начать</a>
+                <a href="{% url 'login' %}" style="text-decoration: none; color: var(--dark); font-size: 13px; font-weight: 600; padding: 8px;">Войти</a>
             {% else %}
-                <a href="{% url 'core:marketplace' %}" class="btn-dark" style="background: var(--bg); color: var(--dark); border: 1px solid #d2d2d7; padding: 8px 16px; font-size: 13px;">Маркет</a>
+                <a href="{% url 'core:marketplace' %}" style="text-decoration: none; color: var(--primary); font-size: 13px; font-weight: 600;">Личный кабинет</a>
             {% endif %}
         </div>
     </nav>
 
     <section class="hero">
-        <h1>Видеоинтеграции.<br>Прозрачно. <span style="color: var(--primary)">Безопасно.</span></h1>
-        <p>Автоматическая маркировка рекламы и прямая статистика из YouTube API.</p>
+        <h1>Прозрачные<br>интеграции.</h1>
+        <p>Маркировка рекламы и прямая статистика YouTube в одном приложении.</p>
 
         <div class="features-grid">
             <div class="card">
-                <i class="fas fa-chart-line"></i>
-                <h3>Авто-аналитика</h3>
-                <p>Просмотры подгружаются автоматически. Никаких поддельных скриншотов.</p>
+                <i class="fas fa-chart-bar"></i>
+                <div>
+                    <h3>Авто-аналитика</h3>
+                    <p>Данные напрямую из YouTube API.</p>
+                </div>
             </div>
             <div class="card">
-                <i class="fas fa-shield-check"></i>
-                <h3>Маркировка</h3>
-                <p>Автоматическое получение ERID и отчетность в ОРД. Всё по закону.</p>
+                <i class="fas fa-check-circle"></i>
+                <div>
+                    <h3>Маркировка</h3>
+                    <p>Авто-отчеты в ОРД и ERID.</p>
+                </div>
             </div>
         </div>
 
-        <div class="cta-bar">
-            <span style="font-weight: 700;">Готовы к работе?</span>
-            <a href="{% url 'core:register' %}" class="btn-dark">Зарегистрироваться</a>
+        <div class="cta-container">
+            <a href="{% url 'core:register' %}" class="btn-dark">Начать работу</a>
         </div>
     </section>
 </div>
-
-<!-- Модалка (адаптивная) -->
-<div id="supportModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); z-index: 2000; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #fff; padding: 30px; border-radius: 28px; width: 100%; max-width: 400px; position: relative;">
-        <button onclick="closeSupport()" style="position: absolute; top: 15px; right: 15px; border: none; background: var(--bg); width: 30px; height: 30px; border-radius: 50%;">&times;</button>
-        <h3 style="text-align: center; margin-bottom: 20px;">Поддержка</h3>
-        <form style="display: flex; flex-direction: column; gap: 15px;">
-            <input type="email" placeholder="Email" style="padding: 14px; border-radius: 12px; border: 1px solid #d2d2d7; font-size: 16px;">
-            <textarea placeholder="Ваш вопрос" style="padding: 14px; border-radius: 12px; border: 1px solid #d2d2d7; height: 100px; font-size: 16px;"></textarea>
-            <button type="submit" class="btn-dark" style="border: none; cursor: pointer;">Отправить</button>
-        </form>
-    </div>
-</div>
-
-<script>
-    const modal = document.getElementById('supportModal');
-    const link = document.getElementById('supportLink');
-    function openSupport(e) { e.preventDefault(); modal.style.display = 'flex'; }
-    function closeSupport() { modal.style.display = 'none'; }
-    link.addEventListener('click', openSupport);
-    window.onclick = (e) => { if (e.target == modal) closeSupport(); }
-</script>
 
 {% endblock %}

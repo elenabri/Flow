@@ -193,6 +193,16 @@
                         <label>ТЗ (техническое задание)</label>
                         <textarea name="description" placeholder="О чем должен рассказать блогер?"></textarea>
                     </div>
+                    <div class="form-group" style="margin-top: 10px;">
+    <label class="barter-label" style="display: flex; align-items: center; cursor: pointer; background: #f5f5f7; padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border);">
+        <input type="checkbox" name="is_barter" id="barter-check" style="width: 20px; height: 20px; margin-right: 12px; accent-color: var(--primary);">
+        <span style="font-size: 15px; font-weight: 600;">Только бартер</span>
+    </label>
+</div>
+
+<div id="barter-info" class="info-bubble" style="display: none; background: #eef7ff; border: 1px solid #cce5ff; margin-top: -10px;">
+    <strong>Что это значит?</strong> Рекламная кампания будет проводиться без денежной оплаты. Вы предоставляете блогеру свой товар или услугу бесплатно, а он, в свою очередь, выпускает рекламный ролик.
+</div>
                 </div>
 
                 <!-- КАТЕГОРИИ -->
@@ -237,6 +247,10 @@
 
     document.getElementById('id_product_image')?.addEventListener('change', (e) => {
         document.getElementById('file-name').innerText = e.target.files[0] ? e.target.files[0].name : "Нажмите для загрузки";
+    });
+    document.getElementById('barter-check').addEventListener('change', function() {
+        const info = document.getElementById('barter-info');
+        info.style.display = this.checked ? 'block' : 'none';
     });
 
     document.getElementById('submit-handler').addEventListener('click', async () => {

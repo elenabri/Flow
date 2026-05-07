@@ -15,6 +15,7 @@ TELEGRAM_ADMIN_GROUP_ID = os.getenv('TELEGRAM_ADMIN_GROUP_ID')
 INSTALLED_APPS = [
     'daphne',
     'channels',
+    'cloudinary_storage',  # ДОБАВИТЬ СЮДА (обязательно выше staticfiles)
     'core',
     'django.contrib.admin',
     'django.contrib.auth',

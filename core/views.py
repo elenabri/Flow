@@ -961,3 +961,43 @@ def connect_telegram_api(request):
         except User.DoesNotExist:
             return JsonResponse({"status": "error", "message": "User not found"}, status=404)
     return JsonResponse({"status": "error"}, status=400)
+
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+
+@login_required
+def update_profile(request):
+    if request.method == 'POST':
+        user = request.user
+        
+        # Общие поля для всех
+        user.inn = request.POST.get('inn')
+        user.bik = request.POST.get('bik')
+        user.account_number = request.POST.get('account_number')
+        
+        # Поля для блогера
+        if user.role == 'blogger':
+            user.channel_link = request.POST.get('channel_link')
+            user.channel_description = request.POST.get('channel_description')
+            user.bank_receiver = request.POST.get('bank_receiver')
+            
+        # Поля для рекламодателя
+        else:
+            user.company_name = request.POST.get('company_name')
+            user.legal_address = request.POST.get('legal_address')
+            user.website = request.POST.get('website')
+            user.ogrn = request.POST.get('ogrn')
+
+        # Обработка динамических полей (сохраняем как JSON)
+        labels = request.POST.getlist('custom_label[]')
+        values = request.POST.getlist('custom_value[]')
+        # Объединяем их в словарь { "Telegram": "@user", ... }
+        user.custom_data = dict(zip(labels, values))
+        
+        user.save()
+        messages.success(request, "Профиль успешно обновлен!")
+        return redirect('dashboard')
+        
+    return redirect('dashboard')

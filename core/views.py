@@ -297,6 +297,21 @@ def marketplace(request):
             ads = ads.filter(budget__lte=budget_max)
         
         ads = ads.order_by('-created_at')
+    for blogger in bloggers:
+        # Средние просмотры: если 0, ставим None, чтобы сработал фильтр |default:"—"
+        blogger.avg_long = blogger.median_views if blogger.median_views > 0 else None
+        blogger.avg_shorts = blogger.median_views_shorts if blogger.median_views_shorts > 0 else None
+
+        # Цены: переводим 0 в None для красоты отображения
+        blogger.p_start = blogger.price_start if blogger.price_start > 0 else None
+        blogger.p_mid = blogger.price_middle if blogger.price_middle > 0 else None
+        blogger.p_end = blogger.price_end if blogger.price_end > 0 else None
+        blogger.p_shorts = blogger.price_shorts if blogger.price_shorts > 0 else None
+
+        # Стоимость 1 просмотра (CPV): используем твои @property из моделей
+        # Твоя модель уже считает cpv_long, мы просто проверяем его на 0
+        blogger.display_cpv_long = blogger.cpv_long if blogger.cpv_long > 0 else None
+        blogger.display_cpv_shorts = blogger.cpv_shorts if blogger.cpv_shorts > 0 else None
 
     context = {
         'active_tab': active_tab,

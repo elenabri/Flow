@@ -5,16 +5,18 @@
 {% block content %}
 {% csrf_token %}
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
 <!-- Кнопка подключения TG -->
-<a href="https://t.me/TubeFlowSupport_bot?start={{ request.user.id }}" target="_blank" class="btn" style="margin-bottom: 10px; display: inline-block;">
+<a href="https://t.me/TubeFlowSupport_bot?start={{ request.user.id }}" target="_blank" class="btn-tg-link">
     Подключить Telegram
 </a>
 
 <div class="chat-main-container" id="chat-layout">
     <main class="chat-section">
+        <!-- Шапка чата -->
         <div class="chat-header">
-            <img src="{{ other_user.profile.avatar.url|default:'/static/img/default-avatar.png' }}" class="avatar">
-            <div>
+            <img src="{{ other_user.profile.avatar.url|default:'/static/img/default-avatar.png' }}" class="chat-avatar">
+            <div class="header-info">
                 <div class="user-name">
                     {% if other_user.blogger_profile %}
                         <a href="{{ other_user.blogger_profile.channel_url }}" target="_blank">📺 {{ other_user.username }}</a>
@@ -22,7 +24,7 @@
                         {{ other_user.username }}
                     {% endif %}
                 </div>
-                <div class="status">● В сети / Vkusnevich</div>
+                <div class="status-text">● В сети / Vkusnevich</div>
             </div>
         </div>
 
@@ -30,11 +32,9 @@
         <div id="chat-log">
             {% for msg in chat_messages %}
                 <div class="msg {% if msg.sender == user %}msg-me{% else %}msg-other{% endif %}" id="msg-{{ msg.id }}">
-                    {{ msg.text }}
+                    <div class="msg-content">{{ msg.text }}</div>
                     <div class="msg-footer">
                         <span class="msg-time">{{ msg.created_at|date:"H:i" }}</span>
-                        
-                        {# Галочки отображаем только для наших сообщений #}
                         {% if msg.sender == user %}
                             <span class="status-icon {% if msg.is_read %}read{% endif %}">
                                 {% if msg.is_read %}✓✓{% else %}✓{% endif %}
@@ -45,13 +45,14 @@
             {% endfor %}
         </div>
 
+        <!-- Форма отправки -->
         <div id="message-form">
             <input type="text" id="chat-message-input" placeholder="Напишите сообщение..." autocomplete="off">
             <button id="chat-message-submit">➤</button>
         </div>
     </main>
 
-    <!-- Правая панель (Товары/Договор) -->
+    <!-- Правая панель -->
     <aside class="right-panel">
         <div class="tabs">
             <button onclick="toggleRightTab('products')" id="btn-tab-products" class="tab-btn active">📦 ТОВАРЫ</button>
@@ -60,17 +61,17 @@
 
         <div id="right-panel-content">
             <div id="tab-products">
-                <h4 style="margin-bottom: 15px; font-size: 14px;">Ваш перечень товаров:</h4>
+                <h4 class="panel-title">Ваш перечень товаров:</h4>
                 <div class="product-grid">
                     {% for product in advertiser_products %}
                     <label class="product-item">
                         <input type="checkbox" name="selected_prod" value="{{ product.id }}" 
                                onchange="toggleProductSelection('{{ product.id }}', '{{ product.name }}')">
-                        <img src="{{ product.image_url }}">
-                        <span>{{ product.name }}</span>
+                        <img src="{{ product.image_url }}" class="prod-img">
+                        <span class="prod-name">{{ product.name }}</span>
                     </label>
                     {% empty %}
-                    <p style="color: #999; font-size: 12px;">Товары не найдены</p>
+                    <p class="empty-text">Товары не найдены</p>
                     {% endfor %}
                 </div>
             </div>
@@ -83,278 +84,210 @@
 </div>
 
 <style>
-    /* Основной контейнер чата */
+    /* Глобальные настройки контейнера */
     .chat-main-container {
         display: grid;
-        grid-template-columns: 1fr 380px;
-        height: calc(100dvh - 60px); /* Вычитаем высоту шапки если она есть */
+        grid-template-columns: 1fr 350px;
+        height: calc(100dvh - 100px);
         background: white;
-        border: 1px solid #ddd;
-        border-radius: 15px;
+        border: 1px solid #eee;
+        border-radius: 12px;
         overflow: hidden;
+        max-width: 1400px;
         margin: 0 auto;
-        max-width: 1500px;
     }
 
-    /* Секция самого чата */
-    .chat-section { 
-        display: flex; 
-        flex-direction: column; 
-        height: 100%; /* Важно для фиксации футера внизу */
+    /* Шапка */
+    .chat-header {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        border-bottom: 1px solid #eee;
+        background: #fff;
+    }
+
+    .chat-avatar {
+        width: 40px; height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 12px;
+    }
+
+    .user-name { font-weight: bold; font-size: 15px; }
+    .status-text { font-size: 11px; color: #28a745; }
+
+    /* Лог сообщений */
+    #chat-log {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        background: #f9f9f9;
+    }
+
+    /* Сообщения */
+    .msg {
+        max-width: 80%;
+        padding: 8px 12px;
+        border-radius: 15px;
+        font-size: 14px;
         position: relative;
+        line-height: 1.4;
+    }
+    .msg-me { align-self: flex-end; background: #007bff; color: white; border-bottom-right-radius: 2px; }
+    .msg-other { align-self: flex-start; background: #e9e9eb; color: #333; border-bottom-left-radius: 2px; }
+
+    .msg-footer {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 4px;
+        font-size: 10px;
+        margin-top: 4px;
+        opacity: 0.8;
     }
 
-    /* Список сообщений - должен занимать все свободное место */
-    #chat-log { 
-        flex: 1; 
-        overflow-y: auto; 
-        padding: 15px; 
-        display: flex; 
-        flex-direction: column; 
-        gap: 10px; 
-        background: #fcfcfc; 
-        -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+    .status-icon { font-size: 12px; color: rgba(255,255,255,0.7); }
+    .status-icon.read { color: #4fc3f7; }
+    .msg-other .status-icon { color: #999; }
+
+    /* Форма ввода */
+    #message-form {
+        display: flex;
+        padding: 10px;
+        border-top: 1px solid #eee;
+        gap: 10px;
+        background: #fff;
+    }
+    #chat-message-input {
+        flex: 1;
+        padding: 10px 15px;
+        border-radius: 20px;
+        border: 1px solid #ddd;
+        outline: none;
     }
 
-    /* Форма ввода - ВСЕГДА ПРИЖАТА К НИЗУ */
-    #message-form { 
-        padding: 10px 15px; 
-        border-top: 1px solid #eee; 
-        display: flex; 
-        gap: 8px; 
-        background: white; 
-        padding-bottom: env(safe-area-inset-bottom); /* Отступ для "челки" iPhone */
+    /* Правая панель и ТОВАРЫ */
+    .right-panel { border-left: 1px solid #eee; background: #fff; display: flex; flex-direction: column; }
+    .tabs { display: flex; border-bottom: 1px solid #eee; }
+    .tab-btn { flex: 1; padding: 12px; border: none; background: none; cursor: pointer; font-size: 12px; font-weight: bold; color: #666; }
+    .tab-btn.active { color: #007bff; border-bottom: 2px solid #007bff; }
+
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 10px;
+        padding: 15px;
+    }
+    .prod-img {
+        width: 80px; height: 80px; /* Фикс гигантских иконок */
+        object-fit: contain;
+        border: 1px solid #f0f0f0;
+        border-radius: 8px;
+    }
+    .prod-name { font-size: 11px; margin-top: 5px; display: block; text-align: center; }
+
+    .btn-tg-link {
+        background: #0088cc; color: white; padding: 8px 16px; 
+        border-radius: 8px; text-decoration: none; font-size: 13px;
+        margin-bottom: 10px; display: inline-block;
     }
 
-    #chat-message-input { 
-        flex: 1; 
-        padding: 10px 15px; 
-        border: 1px solid #ddd; 
-        border-radius: 20px; 
-        outline: none; 
-        font-size: 16px; /* 16px предотвращает зум на iOS при фокусе */
-    }
-
-    /* МОБИЛЬНАЯ ВЕРСИЯ (Адаптация) */
     @media (max-width: 850px) {
-        .chat-main-container { 
-            grid-template-columns: 1fr; 
-            height: 100dvh; /* Занимаем весь экран */
-            margin: 0; 
-            border: none; 
-            border-radius: 0; 
-        }
-        .right-panel { display: none; } /* Скрываем боковую панель на мобилках */
-        
-        .chat-header {
-            padding: 8px 12px;
-        }
+        .chat-main-container { grid-template-columns: 1fr; height: 100dvh; }
+        .right-panel { display: none; }
     }
-
-    .msg { max-width: 85%; padding: 8px 12px; border-radius: 18px; font-size: 14px; position: relative; }
-    .msg-me { align-self: flex-end; background: #007bff; color: white; border-bottom-right-radius: 4px; }
-    .msg-other { align-self: flex-start; background: #e9e9eb; color: #333; border-bottom-left-radius: 4px; }
-    .msg-time {
-    font-size: 9px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 4px;
-}
-
-.status-icon {
-    font-size: 12px;
-    color: #999; /* Серый — доставлено */
-}
-
-.status-icon.read {
-    color: #4fc3f7; /* Голубой — прочитано */
-}
 </style>
 
 <script>
-/**
- * Инициализация Telegram Web App
- */
 const tg = window.Telegram.WebApp;
 tg.expand();
 tg.ready();
 
-// Настройка кнопки "Назад"
-if (tg.initData.length > 0) {
-    if (window.history.length > 1) {
-        tg.BackButton.show();
-    }
-    tg.BackButton.onClick(() => {
-        window.history.back();
-    });
-}
-
-window.onbeforeunload = function() {
-    tg.BackButton.hide();
-};
-
-/**
- * WebSocket и Работа с чатом
- */
 const chatId = "{{ chat.id }}"; 
 const currentUserId = "{{ user.id }}";
 const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-const chatSocket = new WebSocket(wsScheme + '://' + window.location.host + '/ws/chat/' + chatId + '/');
+const chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/${chatId}/`);
 
 const chatLog = document.querySelector('#chat-log');
 const messageInput = document.querySelector('#chat-message-input');
-const messageSubmit = document.querySelector('#chat-message-submit');
 
-// Плавная прокрутка вниз
 function scrollToBottom(smooth = true) {
-    chatLog.scrollTo({
-        top: chatLog.scrollHeight,
-        behavior: smooth ? 'smooth' : 'auto'
-    });
+    chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
 }
 
-// Отправка сообщения
 function sendMessage() {
-    const message = messageInput.value.trim();
-    if (message !== "") {
-        chatSocket.send(JSON.stringify({'message': message}));
+    const text = messageInput.value.trim();
+    if (text) {
+        chatSocket.send(JSON.stringify({'message': text}));
         messageInput.value = '';
         messageInput.focus();
-        // Небольшая задержка перед скроллом, чтобы DOM успел обновиться
-        setTimeout(() => scrollToBottom(true), 50);
     }
 }
 
 chatSocket.onmessage = function(e) {
     const data = JSON.parse(e.data);
     
-    // Если это подтверждение прочтения (событие от сервера)
     if (data.type === 'read_confirmation') {
-        const msgEl = document.querySelector(`#msg-${data.message_id} .status-icon`);
-        if (msgEl) {
-            msgEl.innerHTML = '✓✓';
-            msgEl.classList.add('read'); // Красим в синий через CSS
-        }
+        const icon = document.querySelector(`#msg-${data.message_id} .status-icon`);
+        if (icon) { icon.innerHTML = '✓✓'; icon.classList.add('read'); }
         return;
     }
 
-    // Отрисовка обычного сообщения (добавьте ID в верстку)
-const isMe = data.sender_id == currentUserId;
-    const msgId = data.message_id; 
+    const isMe = data.sender_id == currentUserId;
+    const msgId = data.message_id || Date.now();
     
     const html = `
         <div class="msg ${isMe ? 'msg-me' : 'msg-other'}" id="msg-${msgId}">
-            ${data.message}
+            <div class="msg-content">${data.message}</div>
             <div class="msg-footer">
-                <span class="msg-time">
-                    ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                </span>
+                <span class="msg-time">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                 ${isMe ? '<span class="status-icon">✓</span>' : ''}
             </div>
         </div>`;
     
     chatLog.insertAdjacentHTML('beforeend', html);
-    
-    // Если сообщение пришло от другого пользователя и окно активно — шлем серверу уведомление "прочитано"
     if (!isMe && document.hasFocus()) {
-        chatSocket.send(JSON.stringify({
-            'type': 'read_event',
-            'message_id': msgId
-        }));
+        chatSocket.send(JSON.stringify({'type': 'read_event', 'message_id': msgId}));
     }
-    
     scrollToBottom();
 };
 
-// События ввода
-messageSubmit.onclick = sendMessage;
+document.querySelector('#chat-message-submit').onclick = sendMessage;
+messageInput.onkeydown = (e) => { if(e.key === 'Enter') { e.preventDefault(); sendMessage(); } };
 
-messageInput.onkeydown = function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault(); // Запрещаем перенос строки
-        sendMessage();
-    }
-};
-
-// Фикс для мобильной клавиатуры: скроллим при фокусе
-messageInput.addEventListener('focus', () => {
-    setTimeout(() => scrollToBottom(true), 300);
-});
-
-// Первичная прокрутка
+messageInput.addEventListener('focus', () => setTimeout(() => scrollToBottom(true), 300));
 window.onload = () => scrollToBottom(false);
 
-
-/**
- * Логика вкладок и Контрактов
- */
-let activeChatId = chatId; 
-let adPlans = { 
-    [activeChatId]: { 
-        isSigned: false, 
-        productIds: [], 
-        videos: [], 
-        platformsBlogger: [], 
-        platformsAdv: [], 
-        needMarking: true, 
-        guarantees: { low: 0, high: 0 } 
-    } 
-};
-
+// Вкладки
 function toggleRightTab(tab) {
-    const tabProducts = document.getElementById('tab-products');
-    const tabContract = document.getElementById('tab-contract');
-    const btnProducts = document.getElementById('btn-tab-products');
-    const btnContract = document.getElementById('btn-tab-contract');
-
-    if (tab === 'products') {
-        tabProducts.style.display = 'block';
-        tabContract.style.display = 'none';
-        btnProducts.classList.add('active');
-        btnContract.classList.remove('active');
-    } else {
-        tabProducts.style.display = 'none';
-        tabContract.style.display = 'block';
-        btnProducts.classList.remove('active');
-        btnContract.classList.add('active');
-        renderPlanEditor();
-    }
+    document.getElementById('tab-products').style.display = tab === 'products' ? 'block' : 'none';
+    document.getElementById('tab-contract').style.display = tab === 'contract' ? 'block' : 'none';
+    document.getElementById('btn-tab-products').classList.toggle('active', tab === 'products');
+    document.getElementById('btn-tab-contract').classList.toggle('active', tab === 'contract');
+    if (tab === 'contract') renderPlanEditor();
 }
 
 function renderPlanEditor() {
-    const plan = adPlans[activeChatId];
     const container = document.getElementById('plan-editor-content');
-    container.innerHTML = `
-        <div class="card">
-            <h3 style="font-size:14px; margin-bottom:10px;">📜 Статус: ${plan.isSigned ? 'Подписано' : 'Черновик'}</h3>
-            <button onclick="alert('Функция добавления видео в разработке')" class="tab-btn" style="background:#007bff; color:#fff; border-radius:5px; width:100%;">+ Видео</button>
-        </div>
-        <div style="margin-top:20px;">
-            <button onclick="signContract()" style="width:100%; padding:12px; background:#28a745; color:white; border:none; border-radius:10px; font-weight:bold;">ПОДПИСАТЬ</button>
-        </div>`;
+    container.innerHTML = `<div style="padding:20px; text-align:center;">
+        <p style="font-size:13px; color:#666;">Черновик договора Вкусневич</p>
+        <button onclick="signContract()" style="width:100%; padding:12px; background:#28a745; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:15px;">ПОДПИСАТЬ</button>
+    </div>`;
 }
 
-function signContract() { 
-    if (confirm("Подписать договор?")) { 
-        adPlans[activeChatId].isSigned = true; 
-        renderPlanEditor(); 
-        saveData(); 
-    } 
+function signContract() {
+    if(confirm("Подписать?")) saveData();
 }
 
-function saveData() { 
-    fetch(`/chats/save_contract/${activeChatId}/`, { 
-        method: "POST", 
-        headers: { 
-            "Content-Type": "application/json", 
-            "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value 
-        }, 
-        body: JSON.stringify(adPlans[activeChatId]) 
-    })
-    .then(res => res.json())
-    .then(data => console.log("Сохранено"))
-    .catch(err => console.error("Ошибка:", err));
+function saveData() {
+    fetch(`/chats/save_contract/${chatId}/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: JSON.stringify({isSigned: true})
+    }).then(() => alert("Договор подписан"));
 }
 </script>
 {% endblock %}

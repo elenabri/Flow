@@ -1,34 +1,130 @@
-{% block content %}
-<div style="display: flex; justify-content: center; align-items: center; min-height: 70vh; font-family: 'Inter', -apple-system, sans-serif;">
-    <div style="background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; max-width: 500px; width: 90%;">
-        
-        <div style="width: 70px; height: 70px; background: #e6fffa; color: #38b2ac; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 32px;">
-            ✓
-        </div>
+{% extends "core/base.html" %}
 
-        <h2 style="color: #2d3748; margin-bottom: 10px; font-weight: 700;">Регистрация успешна!</h2>
-        <p style="color: #718096; line-height: 1.5;">Мы создали ваш аккаунт. Пароль также отправлен на почту:<br>
-            <strong style="color: #4a5568;">{{ email }}</strong>
+{% block content %}
+<!-- Meta-тег для правильного масштаба на мобильных -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+    .success-wrapper {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: radial-gradient(circle at 50% 0%, #f5faff 0%, #ffffff 100%);
+        font-family: 'Inter', -apple-system, sans-serif;
+    }
+
+    .success-card {
+        background: white;
+        padding: 40px 30px;
+        border-radius: 32px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.05);
+        border: 1px solid rgba(0,0,0,0.03);
+        max-width: 480px;
+        width: 100%;
+        text-align: center;
+        animation: cardAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes cardAppear {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .icon-box {
+        width: 80px;
+        height: 80px;
+        background: #e8f3ff;
+        color: #0071e3;
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        margin: 0 auto 24px;
+    }
+
+    .success-card h1 {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -1px;
+        color: #1d1d1f;
+        margin-bottom: 16px;
+    }
+
+    .success-card p {
+        font-size: 16px;
+        color: #86868b;
+        line-height: 1.6;
+        margin-bottom: 32px;
+    }
+
+    .btn-primary-luxury {
+        display: inline-block;
+        background: #0071e3;
+        color: white;
+        padding: 14px 32px;
+        border-radius: 16px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-primary-luxury:hover {
+        background: #0077ed;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,113,227,0.2);
+    }
+
+    .resend-link {
+        display: block;
+        margin-top: 24px;
+        font-size: 14px;
+        color: #86868b;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .resend-link:hover {
+        color: #0071e3;
+    }
+
+    /* Мобильная адаптация */
+    @media (max-width: 480px) {
+        .success-card {
+            padding: 32px 20px;
+            border-radius: 24px;
+        }
+        .success-card h1 {
+            font-size: 24px;
+        }
+    }
+</style>
+
+<div class="success-wrapper">
+    <div class="success-card">
+        <div class="icon-box">
+            <i class="fas fa-envelope-open-text"></i>
+        </div>
+        
+        <h1>Почти готово!</h1>
+        
+        <p>
+            Мы отправили письмо с подтверждением на вашу почту. Пожалуйста, перейдите по ссылке в письме, чтобы активировать аккаунт и получить доступ к TubeFlow.
         </p>
 
-        <div style="background: #f7fafc; border: 1px dashed #cbd5e0; padding: 25px; margin: 30px 0; border-radius: 15px; position: relative;">
-            <p style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #a0aec0; margin-bottom: 10px; font-weight: 600;">
-                Ваш временный пароль
-            </p>
-            <code style="font-size: 28px; color: #2d3748; font-family: 'Courier New', monospace; font-weight: bold; letter-spacing: 2px;">{{ password }}</code>
-            
-            <p style="font-size: 12px; color: #f56565; margin-top: 15px;">
-                ⚠️ Обязательно сохраните его сейчас, он понадобится для входа.
-            </p>
-        </div>
+        <a href="/" class="btn-primary-luxury">
+            На главную
+        </a>
 
-        <a href="{% url 'login' %}" 
-           style="display: inline-block; background: #4a90e2; color: white; padding: 15px 35px; border-radius: 12px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);"
-           onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(74, 144, 226, 0.4)';"
-           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(74, 144, 226, 0.3)';"
-        >
-            Перейти ко входу
+        <a href="#" class="resend-link" onclick="location.reload(); return false;">
+            Не пришло письмо? Отправить еще раз
         </a>
     </div>
 </div>
+
 {% endblock %}

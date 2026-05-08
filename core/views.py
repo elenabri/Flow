@@ -225,103 +225,7 @@ def user_login(request):
                 return redirect('core:marketplace')
     return render(request, 'registration/login.html', {'form': EmailLoginForm()})
 
-# --- 3. МАРКЕТПЛЕЙС И ДЕТАЛИ ---
 
-from django.shortcuts import render
-from django.db.models import Q
-from .models import BloggerProfile, ProductAd  # Исправленные имена моделей
-from .constants import TOPIC_CHOICES
-
-def marketplace(request):
-    # 1. Получаем базовые параметры
-    active_tab = request.GET.get('tab', 'ads')
-    query = request.GET.get('q', '')
-    selected_cats = request.GET.getlist('cat')
-    
-    # 2. Инициализируем QuerySets
-    bloggers = BloggerProfile.objects.all()
-    ads = ProductAd.objects.filter(is_active=True)
-
-    # 3. Поиск по тексту
-    if query:
-        ads = ads.filter(
-            Q(name__icontains=query) | 
-            Q(description__icontains=query) | 
-            Q(advertiser__company_name__icontains=query)
-        )
-        bloggers = bloggers.filter(
-            Q(channel_name__icontains=query) | 
-            Q(categories__icontains=query)
-        )
-
-    # 4. Фильтр по категориям
-    if selected_cats:
-        ad_cat_queries = Q()
-        blog_cat_queries = Q()
-        for cat in selected_cats:
-            ad_cat_queries |= Q(category__icontains=cat)
-            blog_cat_queries |= Q(categories__icontains=cat)
-        ads = ads.filter(ad_cat_queries)
-        bloggers = bloggers.filter(blog_cat_queries)
-
-    # 5. Специфические фильтры
-    if active_tab == 'bloggers':
-        # Подписчики
-        subs_min = request.GET.get('subs_min')
-        subs_max = request.GET.get('subs_max')
-        if subs_min:
-            bloggers = bloggers.filter(subscribers_count__gte=subs_min)
-        if subs_max:
-            bloggers = bloggers.filter(subscribers_count__lte=subs_max)
-
-        # Цена
-        price_min = request.GET.get('price_min')
-        price_max = request.GET.get('price_max')
-        if price_min:
-            bloggers = bloggers.filter(price_start__gte=price_min)
-        if price_max:
-            bloggers = bloggers.filter(price_start__lte=price_max)
-
-        # Сортировка
-        sort_blog = request.GET.get('sort_blog', '-subscribers_count')
-        # Если сортировка по CPV, используем property или аннотацию (здесь простая по подпискам)
-        if sort_blog in ['-subscribers_count', 'subscribers_count', '-median_views']:
-            bloggers = bloggers.order_by(sort_blog)
-
-    else:  # Вкладка товаров (ads)
-        budget_min = request.GET.get('budget_min')
-        budget_max = request.GET.get('budget_max')
-        if budget_min:
-            ads = ads.filter(budget__gte=budget_min)
-        if budget_max:
-            ads = ads.filter(budget__lte=budget_max)
-        
-        ads = ads.order_by('-created_at')
-    for blogger in bloggers:
-        # Средние просмотры: если 0, ставим None, чтобы сработал фильтр |default:"—"
-        blogger.avg_long = blogger.median_views if blogger.median_views > 0 else None
-        blogger.avg_shorts = blogger.median_views_shorts if blogger.median_views_shorts > 0 else None
-
-        # Цены: переводим 0 в None для красоты отображения
-        blogger.p_start = blogger.price_start if blogger.price_start > 0 else None
-        blogger.p_mid = blogger.price_middle if blogger.price_middle > 0 else None
-        blogger.p_end = blogger.price_end if blogger.price_end > 0 else None
-        blogger.p_shorts = blogger.price_shorts if blogger.price_shorts > 0 else None
-
-        # Стоимость 1 просмотра (CPV): используем твои @property из моделей
-        # Твоя модель уже считает cpv_long, мы просто проверяем его на 0
-        blogger.display_cpv_long = blogger.cpv_long if blogger.cpv_long > 0 else None
-        blogger.display_cpv_shorts = blogger.cpv_shorts if blogger.cpv_shorts > 0 else None
-
-    context = {
-        'active_tab': active_tab,
-        'query': query,
-        'selected_cats': selected_cats,
-        'bloggers': bloggers,
-        'ads': ads,
-        'TOPIC_CHOICES': TOPIC_CHOICES,
-    }
-    return render(request, 'core/marketplace.html', context)
 from django.db.models import Count
 
 @login_required
@@ -1059,3 +963,48 @@ def update_profile(request):
 
         messages.success(request, "Профиль успешно обновлен!")
         return redirect('core:dashboard')
+from django.shortcuts import render
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+def blogger_list(request):
+    """
+    Отображает список всех зарегистрированных блогеров.
+    """
+    # Получаем всех пользователей, у которых роль 'blogger'
+    # .order_by('-subscribers_count') выведет самых популярных первыми
+    bloggers = User.objects.filter(role='blogger').order_by('-subscribers_count')
+    
+    return render(request, 'core/blogger_list.html', {
+        'bloggers': bloggers
+    })
+
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from .models import Product # Убедитесь, что модель называется Product или Ad
+
+def marketplace(request):
+    """
+    Общий маркетплейс объявлений (Ad List).
+    Виден всем: и блогерам (чтобы искать работу), и рекламодателям.
+    """
+    # Забираем все объявления. Можно добавить фильтрацию по статусу 'active', если есть такое поле
+    ads = Product.objects.all().order_by('-created_at') 
+    
+    return render(request, 'core/ad_list.html', {
+        'ads': ads
+    })
+
+@login_required
+def manage_products(request):
+    """
+    Личный кабинет рекламодателя (My Ads).
+    Показывает только те объявления, которые создал текущий пользователь.
+    """
+    # Фильтруем объявления по автору (текущему пользователю)
+    my_ads = Product.objects.filter(author=request.user).order_by('-created_at')
+    
+    return render(request, 'core/my_ads.html', {
+        'my_ads': my_ads
+    })

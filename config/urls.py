@@ -13,19 +13,19 @@ core_patterns = ([
     path('dashboard/', views.dashboard, name='dashboard'),
     
     # Объявления (Маркетплейс)
-    path('marketplace/', views.marketplace, name='ad_list'), # Общий список для всех
-    path('my-ads/', views.manage_products, name='my_ads'), # Только свои для рекламодателя
+    path('marketplace/', views.marketplace, name='ad_list'), 
+    path('my-ads/', views.manage_products, name='my_ads'), 
     path('product/<int:pk>/', views.product_detail, name='product_detail'),
     path('my-products/edit/<int:pk>/', views.edit_product, name='edit_product'),
     path('my-products/delete/<int:pk>/', views.delete_product, name='delete_product'),
     
     # Блогеры
-    path('bloggers/', views.blogger_list, name='blogger_list'),
+    path('bloggers/', views.blogger_list, name='blogger_list'), # Теперь ведет на правильный view
     path('blogger/<int:blogger_id>/', views.blogger_detail, name='blogger_detail'),
-    path('blogger/profile/edit/', views.edit_blogger_profile, name='edit_profile'), # Настройка цен
+    path('blogger/profile/edit/', views.edit_blogger_profile, name='edit_profile'), 
     
     # Взаимодействие и Интеграции
-    path('integration/', views.integration, name='integration_list'), # Список сделок "Моя реклама"
+    path('integration/', views.integration, name='integration_list'), 
     path('seller/<int:pk>/', views.seller_profile, name='seller_profile'),
     path('send_response/<int:ad_id>/', views.send_response, name='send_response'),
     
@@ -43,9 +43,8 @@ core_patterns = ([
     path('api/connect-telegram/', views.connect_telegram_api, name='connect_telegram_api'),
     path('bulk-message-setup/', views.bulk_message_setup, name='bulk_message_setup'),
     path('update-profile/', views.update_profile, name='update_profile'),
-    path('marketplace/', views.marketplace, name='ad_list'), 
-    path('marketplace/old/', views.marketplace, name='marketplace'), # Добавьте эту строку
     
+    # Мы убрали дубликаты marketplace, которые были в конце списка
 ], 'core')
 
 urlpatterns = [

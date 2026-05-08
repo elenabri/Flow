@@ -14,7 +14,7 @@ ALLOWED_HOSTS = ["tubeflow-mvfo.onrender.com", "localhost", "127.0.0.1"]
 INSTALLED_APPS = [
     'daphne',
     'channels',
-    'cloudinary_storage',  # Должен быть выше staticfiles
+    'cloudinary_storage',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -89,11 +89,15 @@ USE_TZ = True
 
 # --- СТАТИКА И МЕДИА ---
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'core' / 'static']
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Убедитесь, что папка 'static' находится ВНУТРИ папки 'core'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'core', 'static'),
+]
 
 # Настройка WhiteNoise (убрал Manifest, чтобы избежать 404 при отсутствии файлов)
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+SSTATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
 
 # Настройка Cloudinary для Медиа
 CLOUDINARY_STORAGE = {

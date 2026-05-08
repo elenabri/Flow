@@ -88,24 +88,20 @@ USE_I18N = True
 USE_TZ = True
 
 # --- СТАТИКА И МЕДИА ---
+# --- СТАТИКА И МЕДИА ---
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Убедитесь, что папка 'static' находится ВНУТРИ папки 'core'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'core', 'static'),
 ]
-# Универсальная настройка хранилищ для Django 5.1+
-STORAGES = {
-    "default": {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.StaticFilesStorage",
-    },
-}
 
-# Эти параметры всё еще нужны для Cloudinary
+# Возвращаем классическую переменную, так как Cloudinary Storage ищет именно её
+STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
+
+# Настройки для Медиа (Cloudinary)
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),

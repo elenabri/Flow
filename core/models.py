@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from .constants import TOPIC_CHOICES
+from django.db.models import JSONField
 
 # --- ПОЛЬЗОВАТЕЛЬ ---
 
@@ -38,6 +39,7 @@ class BloggerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='blogger_profile')
     channel_name = models.CharField("Название канала", max_length=255)
     channel_link = models.URLField("Ссылка на канал")
+    channel_description = models.TextField("Описание", blank=True)
     subscribers_count = models.PositiveIntegerField(default=0, verbose_name="Подписчиков")
     avatar_url = models.URLField(max_length=500, null=True, blank=True)
     banner_url = models.URLField(max_length=500, null=True, blank=True, verbose_name="Баннер канала")
@@ -53,7 +55,16 @@ class BloggerProfile(models.Model):
     price_shorts = models.DecimalField("Цена за Shorts", max_digits=10, decimal_places=2, default=0)
     
     categories = models.CharField("Тематики", max_length=500) 
-    description = models.TextField("Описание канала", blank=True)
+    
+
+    # Реквизиты для выплат
+    bank_receiver = models.CharField("ФИО получателя", max_length=255, blank=True)
+    inn = models.CharField("ИНН", max_length=12, blank=True)
+    bik = models.CharField("БИК", max_length=9, blank=True)
+    account_number = models.CharField("Расчетный счет", max_length=20, blank=True)
+    
+    # Сюда будут сохраняться динамические поля из JS
+    custom_data = JSONField("Доп. поля", default=dict, blank=True)
 
     # Логика сокращения категорий (для карточки)
     def get_short_categories(self):
@@ -77,10 +88,10 @@ class BloggerProfile(models.Model):
         return ", ".join(russian_list)
 
     @property
-    def price_long_min(self):
-        prices = [self.price_start, self.price_middle, self.price_end]
-        valid_prices = [p for p in prices if p > 0]
-        return min(valid_prices) if valid_prices else 0
+        def price_long_min(self):
+            prices = [self.price_start, self.price_middle, self.price_end]
+            valid_prices = [p for p in prices if p > 0]
+            return min(valid_prices) if valid_prices else 0
 
     @property
     def cpv_long(self):
@@ -102,6 +113,17 @@ class BloggerProfile(models.Model):
 class AdvertiserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='advertiser_profile')
     company_name = models.CharField("Название компании", max_length=255)
+    legal_address = models.CharField("Юр. адрес", max_length=500, blank=True)
+    website = models.URLField("Сайт", blank=True)
+    
+    # Реквизиты
+    inn = models.CharField("ИНН", max_length=12, blank=True)
+    bik = models.CharField("БИК", max_length=9, blank=True)
+    account_number = models.CharField("Расчетный счет", max_length=20, blank=True)
+    ogrn = models.CharField("ОГРН", max_length=15, blank=True)
+    
+    # Сюда будут сохраняться динамические поля из JS
+    custom_data = JSONField("Доп. поля", default=dict, blank=True)
 
     def __str__(self):
         return self.company_name
@@ -113,7 +135,9 @@ class ProductAd(models.Model):
     
     # Исправили title -> name, так как во views.py мы обращаемся к .name
     name = models.CharField("Название", max_length=200) 
-    
+    short_description = models.TextField(verbose_name="Краткое описание", max_length=30, blank=True)
+    additional_info = models.TextField(verbose_name="Доп. информация", blank=True)
+    barter_terms = models.TextField(verbose_name="Условия бартера", blank=True)
     description = models.TextField("Описание и ТЗ")
     category = models.CharField("Категории (через запятую)", max_length=500)
     
@@ -130,7 +154,6 @@ class ProductAd(models.Model):
     # Исправили link_site -> link_other, чтобы views.py видел это поле
     link_other = models.URLField("Сайт/Другое", max_length=500, null=True, blank=True)
     
-    budget = models.DecimalField("Бюджет/Цена", max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField("Опубликовать", default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

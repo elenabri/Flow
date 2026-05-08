@@ -43,6 +43,8 @@ core_patterns = ([
     path('api/connect-telegram/', views.connect_telegram_api, name='connect_telegram_api'),
     path('bulk-message-setup/', views.bulk_message_setup, name='bulk_message_setup'),
     path('update-profile/', views.update_profile, name='update_profile'),
+    path('marketplace/', views.marketplace, name='ad_list'), 
+    path('marketplace/old/', views.marketplace, name='marketplace'), # Добавьте эту строку
     
 ], 'core')
 

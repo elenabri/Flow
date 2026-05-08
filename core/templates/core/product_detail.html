@@ -2,77 +2,155 @@
 {% load static %}
 
 {% block content %}
-<div style="max-width: 1000px; margin: 40px auto; padding: 20px; font-family: 'Inter', sans-serif;">
-    <a href="{% url 'core:marketplace' %}" style="text-decoration: none; color: #666; font-size: 14px;">← Вернуться в маркетплейс</a>
+<!-- Шрифты и иконки -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+<style>
+    body { background-color: #fbfbfd; font-family: 'Manrope', sans-serif; padding-bottom: 80px; }
     
-    <div style="display: flex; gap: 40px; margin-top: 20px; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 300px;">
+    .product-container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+    
+    .back-link { text-decoration: none; color: #8e8e93; font-size: 14px; display: flex; align-items: center; gap: 5px; margin-bottom: 20px; transition: 0.3s; }
+    .back-link:hover { color: #1c1c1e; }
+
+    .main-card { background: #fff; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.04); padding: 30px; display: flex; gap: 40px; flex-wrap: wrap; }
+    
+    .image-side { flex: 1; min-width: 320px; }
+    .content-side { flex: 1.2; min-width: 320px; }
+
+    .product-img { width: 100%; border-radius: 20px; object-fit: cover; aspect-ratio: 1/1; }
+
+    .badge-barter { background: #f2f2f7; color: #1c1c1e; padding: 6px 14px; border-radius: 10px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; }
+    
+    .price-tag { font-size: 28px; font-weight: 800; color: #1c1c1e; margin: 15px 0; }
+
+    /* Стили для раскрывающегося ТЗ */
+    .tz-block { background: #f9f9fb; border-radius: 16px; padding: 20px; border: 1px solid #efeff4; margin-top: 20px; }
+    .tz-content { 
+        font-size: 14px; color: #3a3a3c; line-height: 1.6; 
+        max-height: 80px; overflow: hidden; position: relative; transition: max-height 0.3s ease;
+    }
+    .tz-content.expanded { max-height: 2000px; }
+    .tz-toggle { color: #007aff; cursor: pointer; font-size: 14px; font-weight: 600; margin-top: 10px; display: inline-block; }
+
+    /* Плавающая кнопка внизу */
+    .fixed-action-bar {
+        position: fixed; bottom: 0; left: 0; right: 0; 
+        background: rgba(255,255,255,0.8); backdrop-filter: blur(20px);
+        padding: 15px 20px; border-top: 1px solid #efeff4; z-index: 1000;
+        display: flex; justify-content: center;
+    }
+    .action-btn {
+        max-width: 600px; width: 100%; background: #1c1c1e; color: #fff; 
+        padding: 16px; border-radius: 16px; text-decoration: none; 
+        font-weight: 700; text-align: center; font-size: 16px; transition: 0.3s;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .action-btn:hover { background: #000; transform: translateY(-2px); color: #fff; }
+
+    @media (max-width: 768px) {
+        .main-card { padding: 20px; gap: 20px; }
+        .price-tag { font-size: 24px; }
+    }
+</style>
+
+<div class="product-container">
+    <a href="{% url 'core:marketplace' %}" class="back-link">
+        <i class="bi bi-arrow-left"></i> Назад к товарам
+    </a>
+    
+    <div class="main-card">
+        <!-- Фото -->
+        <div class="image-side">
             {% if ad.image %}
-                <img src="{{ ad.image.url }}" style="width: 100%; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <img src="{{ ad.image.url }}" class="product-img">
             {% else %}
-                <div style="width: 100%; height: 400px; background: #f0f2f5; border-radius: 15px; display: flex; align-items: center; justify-content: center; color: #999;">📸 Нет фото</div>
+                <div style="width: 100%; aspect-ratio: 1/1; background: #f0f2f5; border-radius: 20px; display: flex; align-items: center; justify-content: center; color: #999;">📸 Нет фото</div>
             {% endif %}
         </div>
 
-        <div style="flex: 1; min-width: 300px;">
-            <span style="background: #e8f5e9; color: #2e7d32; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: bold;">
-                {{ ad.get_category_display }}
-            </span>
+        <!-- Описание -->
+        <div class="content-side">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="badge-barter">БАРТЕР</span>
+                <span style="color: #8e8e93; font-size: 13px; font-weight: 600;">{{ ad.get_category_display }}</span>
+            </div>
             
-            <h1 style="margin: 15px 0; font-size: 32px;">{{ ad.title }}</h1>
+            <h1 style="font-weight: 800; font-size: 32px; color: #1c1c1e; margin-bottom: 5px;">{{ ad.title }}</h1>
             
-            <div style="font-size: 24px; font-weight: bold; color: #333; margin-bottom: 20px;">
-                {{ ad.budget }} ₽ <span style="font-size: 14px; color: #888; font-weight: normal;">бюджет кампании</span>
+            <!-- Краткое описание -->
+            <p style="color: #8e8e93; font-size: 16px; margin-bottom: 20px;">
+                {{ ad.short_description|default:"Качественный продукт для вашей аудитории" }}
+            </p>
+
+            <div class="price-tag">
+                {% if ad.budget %} {{ ad.budget }} ₽ {% else %} Без оплаты {% endif %}
+                <span style="font-size: 14px; color: #8e8e93; font-weight: 400; margin-left: 5px;">бюджет кампании</span>
             </div>
 
-            <div style="margin-bottom: 25px;">
-                <h4 style="margin-bottom: 10px; color: #555;">Описание задачи для блогера:</h4>
-                <p style="line-height: 1.6; color: #333; white-space: pre-wrap;">{{ ad.description }}</p>
-            </div>
-
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; border: 1px solid #eee;">
-                <p style="margin: 0; font-size: 14px; color: #666;">Заказчик:</p>
-                <a href="#" style="font-size: 18px; font-weight: bold; color: #007bff; text-decoration: none;">
-                     {{ ad.advertiser.company_name|default:ad.advertiser.user.username }}
-                </a>
-            </div>
-
-            <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
-                <h4 style="margin-bottom: 5px;">Изучить продукт:</h4>
-                
+            <!-- Ссылки -->
+            <div style="display: flex; gap: 10px; margin-bottom: 30px;">
                 {% if ad.link_wb %}
-                    <a href="{{ ad.link_wb }}" target="_blank" style="display: flex; align-items: center; justify-content: center; background: #cb11ab; color: white; padding: 12px; border-radius: 10px; text-decoration: none; font-weight: bold;">
+                    <a href="{{ ad.link_wb }}" target="_blank" style="flex: 1; background: #cb11ab; color: white; padding: 12px; border-radius: 12px; text-decoration: none; font-weight: bold; text-align: center; font-size: 14px;">
                         Wildberries
                     </a>
                 {% endif %}
-
                 {% if ad.link_ozon %}
-                    <a href="{{ ad.link_ozon }}" target="_blank" style="display: flex; align-items: center; justify-content: center; background: #005bff; color: white; padding: 12px; border-radius: 10px; text-decoration: none; font-weight: bold;">
+                    <a href="{{ ad.link_ozon }}" target="_blank" style="flex: 1; background: #005bff; color: white; padding: 12px; border-radius: 12px; text-decoration: none; font-weight: bold; text-align: center; font-size: 14px;">
                         Ozon
                     </a>
                 {% endif %}
             </div>
 
-            <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 10px;">
-                {% if user.is_authenticated %}
-                    {% if user != ad.advertiser.user %}
-                        {# Ссылка на чат с владельцем бренда #}
-                        <a href="{% url 'core:chat_detail' user_id=ad.advertiser.user.id %}" 
-                           style="display: flex; align-items: center; justify-content: center; width: 100%; background: #28a745; color: white; padding: 15px; border-radius: 10px; text-decoration: none; font-size: 16px; font-weight: bold; text-align: center; transition: background 0.3s;"
-                           onmouseover="this.style.background='#218838'" 
-                           onmouseout="this.style.background='#28a745'">
-                            Обсудить сотрудничество (в чате)
-                        </a>
-                    {% else %}
-                        <p style="text-align: center; color: #888; font-style: italic;">Это ваше объявление</p>
-                    {% endif %}
-                {% else %}
-                    <a href="{% url 'core:login' %}" style="display: flex; align-items: center; justify-content: center; width: 100%; background: #6c757d; color: white; padding: 15px; border-radius: 10px; text-decoration: none; font-weight: bold;">
-                        Войдите, чтобы откликнуться
-                    </a>
-                {% endif %}
-            </div>v
+            <!-- Техническое задание -->
+            <div class="tz-block">
+                <h4 style="font-weight: 700; font-size: 16px; margin-bottom: 10px;">Техническое задание</h4>
+                <div class="tz-content" id="tzContent">
+                    {{ ad.description|linebreaks }}
+                </div>
+                <div class="tz-toggle" id="tzToggle" onclick="toggleTZ()">Показать полностью...</div>
+            </div>
+
+            <div style="margin-top: 25px; padding: 15px; border-radius: 14px; background: #fff; border: 1px solid #efeff4;">
+                <span style="font-size: 12px; color: #8e8e93;">Заказчик</span>
+                <div style="font-weight: 700; font-size: 16px; color: #1c1c1e;">
+                    {{ ad.advertiser.company_name|default:ad.advertiser.user.username }}
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Фиксированная кнопка написать -->
+<div class="fixed-action-bar">
+    {% if user.is_authenticated %}
+        {% if user != ad.advertiser.user %}
+            <a href="{% url 'core:chat_detail' user_id=ad.advertiser.user.id %}" class="action-btn">
+                <i class="bi bi-chat-dots-fill me-2"></i> Обсудить сотрудничество
+            </a>
+        {% else %}
+            <div style="color: #8e8e93; font-size: 14px; font-weight: 600;">Это ваше объявление</div>
+        {% endif %}
+    {% else %}
+        <a href="{% url 'core:login' %}" class="action-btn" style="background: #8e8e93;">
+            Войдите, чтобы откликнуться
+        </a>
+    {% endif %}
+</div>
+
+<script>
+    function toggleTZ() {
+        const content = document.getElementById('tzContent');
+        const btn = document.getElementById('tzToggle');
+        
+        if (content.classList.contains('expanded')) {
+            content.classList.remove('expanded');
+            btn.innerText = 'Показать полностью...';
+        } else {
+            content.classList.add('expanded');
+            btn.innerText = 'Свернуть';
+        }
+    }
+</script>
 {% endblock %}

@@ -3,145 +3,164 @@
 {% block title %}Маркетплейс блогеров{% endblock %}
 
 {% block content %}
-<!-- Подключаем шрифты и иконки, если их нет в base.html -->
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-
 <style>
-    .blogger-card {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        border: 1px solid #f2f2f7;
+    /* Наследуем Inter из base.html */
+    .blogger-list-container {
+        max-width: 1200px;
+        margin: 20px auto;
+        padding: 0 15px;
     }
+
+    .blogger-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid var(--mp-border);
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 24px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
     .blogger-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 12px 30px rgba(0,0,0,0.08) !important;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.06) !important;
+        border-color: var(--mp-accent);
     }
-    .lock-overlay {
-        font-size: 0.85rem;
-        color: #8e8e93;
-        display: flex;
-        align-items: center;
-        gap: 5px;
+
+    .stat-box {
+        border-radius: 18px;
+        padding: 16px;
+        height: 100%;
+        transition: background 0.2s;
+    }
+
+    .cpv-badge {
+        background: #fff;
+        border-radius: 8px;
+        padding: 4px 8px;
+        font-size: 0.75rem;
+        display: inline-block;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .avatar-img {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        object-fit: cover;
+        background: #f8fafc;
+    }
+
+    @media (max-width: 576px) {
+        .blogger-list-container { margin: 10px auto; }
+        .avatar-img { width: 50px; height: 50px; }
+        .blogger-card { padding: 16px; border-radius: 20px; }
     }
 </style>
 
-<div style="max-width: 1200px; margin: 40px auto; padding: 0 20px; font-family: 'Manrope', sans-serif;">
+<div class="blogger-list-container">
     
-    <div class="d-flex justify-content-between align-items-center mb-5">
-        <h2 style="font-weight: 800; margin: 0;">Доступные каналы</h2>
-        <span style="color: #8e8e93; font-weight: 600;">Найдено: {{ bloggers|length }}</span>
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-end mb-4 px-2">
+        <div>
+            <h2 class="fw-800 mb-0" style="letter-spacing: -0.5px;">Авторы</h2>
+            <p class="text-muted small mb-0">Проверенные каналы для вашей рекламы</p>
+        </div>
+        <span class="badge bg-light text-dark border fw-600 px-3 py-2 rounded-pill">
+            {{ bloggers|length }}
+        </span>
     </div>
 
-    <div class="row">
+    <!-- Сетка карточек -->
+    <div class="row row-cols-1 row-cols-lg-2 g-4">
         {% for blogger in bloggers %}
-        <div class="col-lg-6 mb-4">
-            <div class="blogger-card" style="background: #fff; border-radius: 24px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); height: 100%; display: flex; flex-direction: column;">
+        <div class="col">
+            <div class="blogger-card">
                 
-                <!-- Шапка: Аватар и Имя -->
-                <div class="d-flex align-items-center mb-4">
-                    <img src="{{ blogger.avatar_url|default:'https://via.placeholder.com/150' }}" 
-                         style="width: 70px; height: 70px; border-radius: 20px; object-fit: cover; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
-                    <div class="ms-3">
-                        <h5 class="mb-1 fw-bold" style="font-size: 1.25rem;">{{ blogger.channel_name }}</h5>
-                        <div class="d-flex gap-2 align-items-center">
-                            <span class="badge" style="background: #eef2ff; color: #5856d6; border-radius: 8px; font-weight: 700;">
-                                <i class="bi bi-people-fill me-1"></i> {{ blogger.subscribers_count }}
-                            </span>
-                            <a href="{{ blogger.channel_link }}" target="_blank" style="color: #ff0000; text-decoration: none; font-size: 0.9rem;">
-                                <i class="bi bi-youtube"></i>
-                            </a>
+                <!-- Шапка -->
+                <div class="d-flex align-items-start justify-content-between mb-4">
+                    <div class="d-flex align-items-center">
+                        <img src="{{ blogger.avatar_url|default:'https://via.placeholder.com/150' }}" class="avatar-img shadow-sm" alt="avatar">
+                        <div class="ms-3">
+                            <h5 class="mb-1 fw-bold">{{ blogger.channel_name }}</h5>
+                            <div class="d-flex gap-2 align-items-center">
+                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2">
+                                    <i class="bi bi-people-fill me-1"></i> {{ blogger.subscribers_count }}
+                                </span>
+                                <a href="{{ blogger.channel_link }}" target="_blank" class="text-danger">
+                                    <i class="bi bi-youtube fs-5"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Основная сетка данных -->
-                <div class="row g-3 mb-4" style="flex-grow: 1;">
-                    
-                    <!-- Колонка: Длинные видео -->
-                    <div class="col-sm-6">
-                        <div style="background: #f8f9fa; border-radius: 18px; padding: 18px; height: 100%;">
-                            <div class="text-uppercase fw-bold mb-3" style="font-size: 0.65rem; color: #8e8e93; letter-spacing: 1px;">
-                                <i class="bi bi-play-btn-fill"></i> Видео (Long)
+                <!-- Данные -->
+                <div class="row g-3 mb-4 flex-grow-1">
+                    <!-- Long Video -->
+                    <div class="col-6">
+                        <div class="stat-box" style="background: #f8fafc;">
+                            <div class="text-uppercase fw-bold mb-2" style="font-size: 10px; color: var(--mp-text-muted); letter-spacing: 0.5px;">
+                                <i class="bi bi-play-circle-fill me-1"></i> Видео
                             </div>
-                            
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <small style="color: #6c757d;">Просмотры:</small>
+                            <div class="d-flex justify-content-between mb-2">
+                                <small class="text-muted">Views:</small>
                                 <span class="fw-bold">{{ blogger.median_views|default:"0" }}</span>
                             </div>
-
-                            <div class="price-list" style="font-size: 0.9rem; border-top: 1px dashed #dee2e6; pt-3; margin-top: 5px;">
-                                {% if user.role == 'advertiser' or user.is_staff %}
-                                    <div class="d-flex justify-content-between mt-2">
-                                        <span style="color: #6c757d;">Интеграция:</span> 
-                                        <span class="fw-bold">{{ blogger.price_middle|default:"—" }} ₽</span>
+                            {% if user.role == 'advertiser' or user.is_staff %}
+                                <div class="border-top pt-2 mt-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold text-primary">{{ blogger.price_middle|default:"—" }} ₽</span>
+                                        <div class="cpv-badge">CPV: <b>{{ blogger.display_cpv_long|default:"—" }}</b></div>
                                     </div>
-                                    <div class="mt-2 text-center" style="background: #fff; border-radius: 10px; padding: 5px;">
-                                        <small style="color: #8e8e93; font-size: 0.7rem;">CPV:</small>
-                                        <span class="fw-bold text-primary">{{ blogger.display_cpv_long|default:"—" }} ₽</span>
-                                    </div>
-                                {% else %}
-                                    <div class="lock-overlay mt-2">
-                                        <i class="bi bi-lock-fill text-warning"></i> 
-                                        <span>Цены скрыты</span>
-                                    </div>
-                                {% endif %}
-                            </div>
+                                </div>
+                            {% else %}
+                                <div class="text-muted small mt-2"><i class="bi bi-lock-fill"></i> Цены скрыты</div>
+                            {% endif %}
                         </div>
                     </div>
 
-                    <!-- Колонка: Shorts -->
-                    <div class="col-sm-6">
-                        <div style="background: #fff0f3; border-radius: 18px; padding: 18px; height: 100%;">
-                            <div class="text-uppercase fw-bold mb-3" style="font-size: 0.65rem; color: #ff2d55; letter-spacing: 1px;">
-                                <i class="bi bi-lightning-charge-fill"></i> Shorts
+                    <!-- Shorts -->
+                    <div class="col-6">
+                        <div class="stat-box" style="background: #fff5f7;">
+                            <div class="text-uppercase fw-bold mb-2" style="font-size: 10px; color: #ff2d55; letter-spacing: 0.5px;">
+                                <i class="bi bi-lightning-fill me-1"></i> Shorts
                             </div>
-
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <small style="color: #a55;">Просмотры:</small>
+                            <div class="d-flex justify-content-between mb-2">
+                                <small class="text-muted">Views:</small>
                                 <span class="fw-bold text-dark">{{ blogger.median_views_shorts|default:"0" }}</span>
                             </div>
-
-                            <div class="price-list" style="font-size: 0.9rem; border-top: 1px dashed #ffdce3; pt-3; margin-top: 5px;">
-                                {% if user.role == 'advertiser' or user.is_staff %}
-                                    <div class="d-flex justify-content-between mt-2">
-                                        <span style="color: #a55;">Ролик:</span> 
-                                        <span class="fw-bold">{{ blogger.price_shorts|default:"—" }} ₽</span>
+                            {% if user.role == 'advertiser' or user.is_staff %}
+                                <div class="border-top pt-2 mt-2" style="border-color: #ffdce3 !important;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold" style="color: #ff2d55;">{{ blogger.price_shorts|default:"—" }} ₽</span>
+                                        <div class="cpv-badge">CPV: <b>{{ blogger.display_cpv_shorts|default:"—" }}</b></div>
                                     </div>
-                                    <div class="mt-2 text-center" style="background: #fff; border-radius: 10px; padding: 5px;">
-                                        <small style="color: #8e8e93; font-size: 0.7rem;">CPV:</small>
-                                        <span class="fw-bold text-danger">{{ blogger.display_cpv_shorts|default:"—" }} ₽</span>
-                                    </div>
-                                {% else %}
-                                    <div class="lock-overlay mt-2" style="color: #ff2d55;">
-                                        <i class="bi bi-lock-fill"></i> 
-                                        <span>Скрыто</span>
-                                    </div>
-                                {% endif %}
-                            </div>
+                                </div>
+                            {% else %}
+                                <div class="small mt-2" style="color: #ff2d55;"><i class="bi bi-lock-fill"></i> Скрыто</div>
+                            {% endif %}
                         </div>
                     </div>
-
                 </div>
 
-                <!-- Кнопка действия -->
-                <div>
-                    {% if user.role == 'advertiser' or user.is_staff %}
-                        <a href="{% url 'core:blogger_detail' blogger.id %}" class="btn btn-dark w-100" style="border-radius: 14px; padding: 12px; font-weight: 700; background: #1a1a1a;">
-                            Аналитика и заказ <i class="bi bi-arrow-right ms-1"></i>
-                        </a>
-                    {% else %}
-                        <button class="btn btn-outline-secondary w-100" style="border-radius: 14px; padding: 12px; font-weight: 600; cursor: not-allowed;" disabled>
-                            <i class="bi bi-shield-lock me-1"></i> Только для рекламодателей
-                        </button>
-                    {% endif %}
-                </div>
+                <!-- Кнопка -->
+                {% if user.role == 'advertiser' or user.is_staff %}
+                    <a href="{% url 'core:blogger_detail' blogger.id %}" class="btn btn-dark w-100 py-3 shadow-sm" style="border-radius: 16px; font-weight: 700;">
+                        Аналитика и заказ
+                    </a>
+                {% else %}
+                    <button class="btn btn-outline-secondary w-100 py-3" style="border-radius: 16px; opacity: 0.6;" disabled>
+                        Только для рекламодателей
+                    </button>
+                {% endif %}
             </div>
         </div>
         {% empty %}
         <div class="col-12 text-center py-5">
-            <div style="font-size: 4rem; color: #f2f2f7;"><i class="bi bi-search"></i></div>
-            <h3 class="mt-3" style="font-weight: 800; color: #8e8e93;">Блогеры не найдены</h3>
-            <p class="text-muted">Попробуйте изменить параметры поиска или загляните позже.</p>
+            <i class="bi bi-search display-1 text-light"></i>
+            <h4 class="mt-3 fw-bold text-muted">Блогеры не найдены</h4>
         </div>
         {% endfor %}
     </div>

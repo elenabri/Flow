@@ -228,6 +228,16 @@
 </div>
 
 <script>
+    // 1. Карта соответствия (Ключи должны совпадать с choices в Django!)
+    const subTopicsMap = {
+        'tech': ['Обзоры смартфонов', 'Гаджеты', 'Нейросети', 'Программирование'],
+        'beauty': ['Макияж', 'Уход за кожей', 'Прически', 'Парфюм'],
+        'food': ['Рецепты', 'Обзоры ресторанов', 'Стрит-фуд', 'Веганство'],
+        // Добавьте сюда остальные категории из вашего списка
+    };
+
+    let selectedSubTopics = new Set();
+
     function updateCount() {
         const input = document.getElementById('short_desc');
         const count = document.getElementById('char-count');
@@ -239,19 +249,45 @@
     function toggleRole(v) {
         document.getElementById('blogger-fields').style.display = v === 'blogger' ? 'block' : 'none';
         document.getElementById('advertiser-fields').style.display = v === 'advertiser' ? 'block' : 'none';
-        document.querySelectorAll('#advertiser-fields input, #advertiser-fields textarea').forEach(el => el.required = (v === 'advertiser'));
+        
+        // Переключаем обязательность полей в зависимости от роли
+        document.querySelectorAll('#advertiser-fields input, #advertiser-fields textarea').forEach(el => {
+            if (el.type !== 'checkbox') el.required = (v === 'advertiser');
+        });
         document.querySelectorAll('#blogger-fields input').forEach(el => el.required = (v === 'blogger'));
     }
 
-    document.querySelectorAll('.role-radio').forEach(r => r.addEventListener('change', () => toggleRole(r.value)));
+    function renderSubTopics() {
+        const checked = Array.from(document.querySelectorAll('input[name="topics"]:checked')).map(el => el.value);
+        const subGrid = document.getElementById('sub-grid');
+        const subArea = document.getElementById('sub-area');
+        
+        subGrid.innerHTML = '';
+        if (checked.length === 0) { 
+            subArea.style.display = 'none'; 
+            document.getElementById('id_sub_topics_json').value = "";
+            return; 
+        }
+        
+        subArea.style.display = 'block';
+        checked.forEach(cat => {
+            if (subTopicsMap[cat]) {
+                subTopicsMap[cat].forEach(sub => {
+                    const tag = document.createElement('div');
+                    tag.className = `sub-tag ${selectedSubTopics.has(sub) ? 'active' : ''}`;
+                    tag.innerText = sub;
+                    tag.onclick = () => {
+                        tag.classList.toggle('active');
+                        tag.classList.contains('active') ? selectedSubTopics.add(sub) : selectedSubTopics.delete(sub);
+                        document.getElementById('id_sub_topics_json').value = JSON.stringify(Array.from(selectedSubTopics));
+                    };
+                    subGrid.appendChild(tag);
+                });
+            }
+        });
+    }
 
-    document.getElementById('id_product_image')?.addEventListener('change', (e) => {
-        document.getElementById('file-name').innerText = e.target.files[0] ? e.target.files[0].name : "Нажмите для загрузки";
-    });
-    document.getElementById('barter-check').addEventListener('change', function() {
-        const info = document.getElementById('barter-info');
-        info.style.display = this.checked ? 'block' : 'none';
-    });
+    document.querySelectorAll('.role-radio').forEach(r => r.addEventListener('change', () => toggleRole(r.value)));
 
     document.getElementById('submit-handler').addEventListener('click', async () => {
         const form = document.getElementById('reg-form');
@@ -259,48 +295,51 @@
         const submitBtn = document.getElementById('submit-handler');
         const apiStatus = document.getElementById('api-status');
 
-        // Базовая валидация
+        // Валидация видимых требуемых полей
         let isValid = true;
-        const visibleFields = document.querySelectorAll(`#hidden-content input[required]:not([type="radio"]), #hidden-content textarea[required]`);
-        visibleFields.forEach(f => {
+        const currentFields = role === 'blogger' ? '#blogger-fields' : '#advertiser-fields';
+        const fieldsToVerify = document.querySelectorAll(`${currentFields} input[required], #hidden-content > .form-group input[required]`);
+        
+        fieldsToVerify.forEach(f => {
             if (!f.value.trim()) { f.classList.add('invalid'); isValid = false; }
             else { f.classList.remove('invalid'); }
         });
 
-        if (!isValid) { alert("Пожалуйста, заполните все поля"); return; }
+        if (!isValid) { alert("Пожалуйста, заполните все обязательные поля"); return; }
 
         if (role === 'blogger') {
-            // ПРОВЕРКА НА 0 В ПРАЙСЕ
-            const priceInputs = document.querySelectorAll('.p-input');
-            let zeroFound = false;
-            priceInputs.forEach(p => { if (p.value === "0") zeroFound = true; });
-
-            if (zeroFound) {
-                const confirmZero = confirm("Вы указали 0 ₽ в одном из полей стоимости. Это означает, что вы готовы работать по бартеру или бесплатно. Продолжить?");
-                if (!confirmZero) return;
-            }
-
-            // Имитация/Вызов API (как в прошлом примере)
+            const channelLink = document.querySelector('input[name="channel_link"]').value;
             submitBtn.disabled = true;
             apiStatus.style.display = 'block';
-            apiStatus.innerHTML = "⏳ Проверка канала...";
-            
-            // Здесь ваш fetch к /api/fetch-youtube/
-            // Для примера просто отправляем форму через секунду
-            setTimeout(() => form.submit(), 1000);
+            apiStatus.innerHTML = "⏳ Синхронизация с YouTube API...";
+
+            try {
+                // Прямой вызов вашего Django View
+                const response = await fetch(`/api/fetch-youtube/?handle=${encodeURIComponent(channelLink)}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    document.getElementById('id_api_name').value = data.title;
+                    document.getElementById('id_api_subs').value = data.subs;
+                    apiStatus.style.background = '#e8f3ff';
+                    apiStatus.innerHTML = `✅ Канал найден: <b>${data.title}</b>`;
+                    setTimeout(() => form.submit(), 1000);
+                } else {
+                    apiStatus.style.background = '#fff8f8';
+                    apiStatus.innerHTML = `❌ Ошибка: ${data.message}`;
+                    submitBtn.disabled = false;
+                }
+            } catch (e) {
+                apiStatus.innerHTML = "❌ Ошибка связи с сервером";
+                submitBtn.disabled = false;
+            }
         } else {
             form.submit();
         }
     });
 
+    // Инициализация при загрузке
     toggleRole('blogger');
-
-    // Функция отрисовки подкатегорий (заглушка, если используете карту)
-    function renderSubTopics() {
-        const checked = document.querySelectorAll('input[name="topics"]:checked');
-        document.getElementById('sub-area').style.display = checked.length > 0 ? 'block' : 'none';
-        // Тут логика отрисовки sub-tags из прошлого сообщения
-    }
 </script>
 </body>
 </html>

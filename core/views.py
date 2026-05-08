@@ -402,8 +402,6 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .models import Chat, Message
 
-
-@login_required
 @login_required
 def bulk_message_setup(request):
     if request.method == 'POST':
@@ -506,56 +504,109 @@ def home(request): return render(request, 'core/index.html')
 # --- 7. ПАНЕЛИ УПРАВЛЕНИЯ (DASHBOARDS) ---
 
 
+import json
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import ProductAd, Message, AdContract
+
 @login_required
 def dashboard(request):
     user = request.user
     
     if request.method == 'POST':
+        # --- 1. ЛОГИКА БЛОГЕРА ---
         if hasattr(user, 'blogger_profile'):
-            # Обновление прайса для блогера
             profile = user.blogger_profile
-            # Используем .get(..., 0) и приводим к числу, чтобы избежать ошибок в базе
-            profile.price_start = request.POST.get('price_start', 0)
-            profile.price_middle = request.POST.get('price_middle', 0)
-            profile.price_end = request.POST.get('price_end', 0) # Исправили с .end на .price_end
-            profile.price_shorts = request.POST.get('price_shorts', 0)
-            profile.save()
-            messages.success(request, "Прайс-лист успешно обновлен")
-        
-        elif hasattr(user, 'advertiser_profile'):
-            # Добавление товара для Вкусневич (исправляем TypeError)
-            ProductAd.objects.create(
-                advertiser=user.advertiser_profile,
-                name=request.POST.get('name'),           # Новое название поля в модели
-                category=request.POST.get('category'),   # Категории
-                description=request.POST.get('description'),
-                link_wb=request.POST.get('link_wb'),     # Новые поля ссылок
-                link_ozon=request.POST.get('link_ozon'),
-                link_other=request.POST.get('link_other'),
-                image=request.FILES.get('product_image'), # Обработка файла
-                avatar_url=request.POST.get('avatar_url') # Ссылка на фото
-            )
-            messages.success(request, "Товар успешно добавлен в маркетплейс")
             
+            # Обновляем прайс и статистику
+            profile.price_start = request.POST.get('price_start') or 0
+            profile.price_middle = request.POST.get('price_middle') or 0
+            profile.price_end = request.POST.get('price_end') or 0
+            profile.price_shorts = request.POST.get('price_shorts') or 0
+            
+            profile.median_views = int(request.POST.get('median_views') or 0)
+            profile.median_views_shorts = int(request.POST.get('median_views_shorts') or 0)
+            
+            # Реквизиты
+            profile.bank_receiver = request.POST.get('bank_receiver')
+            profile.inn = request.POST.get('inn')
+            profile.bik = request.POST.get('bik')
+            profile.account_number = request.POST.get('account_number')
+            
+            # Динамические поля (JSON)
+            custom_json = request.POST.get('custom_data_json')
+            if custom_json:
+                profile.custom_data = json.loads(custom_json)
+            
+            profile.save()
+            messages.success(request, "Профиль блогера обновлен!")
+
+        # --- 2. ЛОГИКА РЕКЛАМОДАТЕЛЯ ---
+        elif hasattr(user, 'advertiser_profile'):
+            profile = user.advertiser_profile
+            
+            # А. Действие: Обновление реквизитов компании
+            if 'update_company' in request.POST:
+                profile.company_name = request.POST.get('company_name', profile.company_name)
+                profile.inn = request.POST.get('inn')
+                profile.bik = request.POST.get('bik')
+                profile.account_number = request.POST.get('account_number')
+                profile.ogrn = request.POST.get('ogrn')
+                profile.legal_address = request.POST.get('legal_address')
+                profile.save()
+                messages.success(request, "Данные компании сохранены")
+
+            # Б. Действие: Создание нового товара (Маркетплейс)
+            elif 'add_product' in request.POST:
+                ProductAd.objects.create(
+                    advertiser=profile,
+                    name=request.POST.get('name'), 
+                    short_description=request.POST.get('short_description', '')[:30],
+                    description=request.POST.get('description'),
+                    additional_info=request.POST.get('additional_info'),
+                    barter_terms=request.POST.get('barter_terms'),
+                    category=request.POST.get('category'),
+                    # Изображения (Файл + Ссылка)
+                    image=request.FILES.get('product_image'),
+                    avatar_url=request.POST.get('avatar_url'),
+                    # Ссылки (Исправленные имена согласно модели)
+                    link_wb=request.POST.get('link_wb'),
+                    link_ozon=request.POST.get('link_ozon'),
+                    link_other=request.POST.get('link_other') 
+                )
+                messages.success(request, "Товар успешно добавлен в маркетплейс")
+        
         return redirect('core:dashboard')
 
-    # Сбор данных для отображения (GET)
-    context = {}
+    # --- 3. ЛОГИКА ОТОБРАЖЕНИЯ (GET) ---
+    context = {'user': user}
     
+    if hasattr(user, 'blogger_profile'):
+        context['profile'] = user.blogger_profile
+        context['active_contracts'] = AdContract.objects.filter(blogger=user).exclude(status='completed')
+        # Последние входящие сообщения
+        context['recent_messages'] = Message.objects.filter(chat__participants=user).exclude(sender=user).order_by('-created_at')[:5]
+        
+    elif hasattr(user, 'advertiser_profile'):
+        context['profile'] = user.advertiser_profile
+        # Список товаров этого рекламодателя для управления ими
+        context['products'] = ProductAd.objects.filter(advertiser=user.advertiser_profile)
+        context['active_contracts'] = AdContract.objects.filter(advertiser=user).exclude(status='completed')
+
+    return render(request, 'core/dashboard.html', context)
+    # --- СБОР ДАННЫХ (GET) ---
+    context = {}
     if hasattr(user, 'blogger_profile'):
         context['profile'] = user.blogger_profile
         context['recent_messages'] = Message.objects.filter(chat__participants=user).exclude(sender=user).order_by('-created_at')[:5]
         context['active_contracts'] = AdContract.objects.filter(blogger=user).exclude(status='completed')
-        return render(request, 'core/dashboard.html', context)
     
     elif hasattr(user, 'advertiser_profile'):
         context['profile'] = user.advertiser_profile
-        # Используем 'products', так как в шаблоне прописано {% for product in products %}
         context['products'] = ProductAd.objects.filter(advertiser=user.advertiser_profile).order_by('-created_at')
         context['active_contracts'] = AdContract.objects.filter(advertiser=user).exclude(status='completed')
-        return render(request, 'core/dashboard.html', context)
     
-    # Если у пользователя нет профиля (редкий случай), просто рендерим пустой шаблон или редирект
     return render(request, 'core/dashboard.html', context)
     
     

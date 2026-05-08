@@ -969,12 +969,11 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 def blogger_list(request):
-    """
-    Отображает список всех зарегистрированных блогеров.
-    """
-    # Получаем всех пользователей, у которых роль 'blogger'
-    # .order_by('-subscribers_count') выведет самых популярных первыми
-    bloggers = User.objects.filter(role='blogger').order_by('-subscribers_count')
+    from .models import BloggerProfile
+    
+    # Получаем все профили блогеров
+    # Мы используем select_related, чтобы Django не делал 100 запросов к базе
+    bloggers = BloggerProfile.objects.select_related('user').all()
     
     return render(request, 'core/blogger_list.html', {
         'bloggers': bloggers
@@ -982,15 +981,28 @@ def blogger_list(request):
 
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Product # Убедитесь, что модель называется Product или Ad
+from django.contrib.auth import get_user_model
+from .models import BloggerProfile, ProductAd  # Используем ПРАВИЛЬНЫЕ имена моделей
+
+User = get_user_model()
+
+def blogger_list(request):
+    """
+    Список блогеров для маркетплейса.
+    """
+    # select_related('user') подтягивает данные из таблицы User за один запрос
+    bloggers = BloggerProfile.objects.select_related('user').all()
+    
+    return render(request, 'core/blogger_list.html', {
+        'bloggers': bloggers
+    })
 
 def marketplace(request):
     """
     Общий маркетплейс объявлений (Ad List).
-    Виден всем: и блогерам (чтобы искать работу), и рекламодателям.
     """
-    # Забираем все объявления. Можно добавить фильтрацию по статусу 'active', если есть такое поле
-    ads = Product.objects.all().order_by('-created_at') 
+    # ИСПРАВЛЕНО: используем ProductAd вместо Product
+    ads = ProductAd.objects.filter(is_active=True).order_by('-created_at') 
     
     return render(request, 'core/ad_list.html', {
         'ads': ads
@@ -1002,9 +1014,14 @@ def manage_products(request):
     Личный кабинет рекламодателя (My Ads).
     Показывает только те объявления, которые создал текущий пользователь.
     """
-    # Фильтруем объявления по автору (текущему пользователю)
-    my_ads = Product.objects.filter(author=request.user).order_by('-created_at')
-    
+    # ИСПРАВЛЕНО: 
+    # 1. Используем ProductAd
+    # 2. Фильтруем через профиль рекламодателя (advertiser)
+    if hasattr(request.user, 'advertiser_profile'):
+        my_ads = ProductAd.objects.filter(advertiser=request.user.advertiser_profile).order_by('-created_at')
+    else:
+        my_ads = []
+
     return render(request, 'core/my_ads.html', {
         'my_ads': my_ads
     })

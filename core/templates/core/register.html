@@ -86,10 +86,19 @@
 
         .file-zone { border: 2px dashed var(--border); border-radius: 14px; padding: 25px; text-align: center; cursor: pointer; font-size: 14px; color: var(--text-label); }
         .btn-submit { width: 100%; margin-top: 30px; padding: 18px; background: var(--text-dark); color: white; border: none; border-radius: 16px; font-weight: 700; cursor: pointer; font-size: 16px; }
-        
+        textarea { 
+    resize: none; 
+    min-height: 120px; 
+    font-family: inherit; 
+}
+.btn-submit:disabled {
+    background: var(--border);
+    cursor: not-allowed;
+}
         #api-status { display: none; margin-top: 20px; padding: 15px; border-radius: 12px; font-size: 14px; }
 
         @media (min-width: 600px) { .category-grid { grid-template-columns: 1fr 1fr 1fr; } }
+        
     </style>
 </head>
 <body>

@@ -87,15 +87,18 @@ TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
 USE_TZ = True
 
-# --- СТАТИКА И МЕДИА ---
+# --- СТАТИКА ---
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# Используем абсолютный путь через Path для надежности
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'core', 'static'),
 ]
 
-# Возвращаем классическую переменную, так как Cloudinary Storage ищет именно её
+# Важнейшая настройка для WhiteNoise на Render
+# Она заставляет WhiteNoise работать, даже если папка пуста в момент старта
+WHITENOISE_USE_FINDERS = True
 STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
 
 # Настройки для Медиа (Cloudinary)

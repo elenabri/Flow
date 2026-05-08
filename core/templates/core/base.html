@@ -230,9 +230,7 @@
                         <a href="{% url 'core:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                             Кабинет
                         </a>
-                        <form action="{% url 'logout' %}" method="post" class="d-lg-none w-100">
-                            {% csrf_token %}<button type="submit" class="btn btn-outline-danger btn-sm w-100">Выйти</button>
-                        </form>
+
                     {% else %}
                         <a href="{% url 'login' %}" class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm">Войти</a>
                     {% endif %}

@@ -21,3 +21,4 @@ aiohttp
 pyTelegramBotAPI
 cloudinary
 django-cloudinary-storage
+Pillow

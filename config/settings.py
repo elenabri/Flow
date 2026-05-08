@@ -7,7 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- БЕЗОПАСНОСТЬ ---
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-default-key')
-DEBUG = False 
+DEBUG = False
 ALLOWED_HOSTS = ["tubeflow-mvfo.onrender.com", "localhost", "127.0.0.1"]
 
 # --- ПРИЛОЖЕНИЯ ---
@@ -95,20 +95,25 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'core', 'static'),
 ]
+# Универсальная настройка хранилищ для Django 5.1+
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.StaticFilesStorage",
+    },
+}
 
-# Настройка WhiteNoise (убрал Manifest, чтобы избежать 404 при отсутствии файлов)
-SSTATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
-
-# Настройка Cloudinary для Медиа
+# Эти параметры всё еще нужны для Cloudinary
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET')
 }
 
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # --- ПОЧТА (SMTP Gmail) ---
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

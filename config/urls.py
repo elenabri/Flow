@@ -20,7 +20,7 @@ core_patterns = ([
     path('my-products/delete/<int:pk>/', views.delete_product, name='delete_product'),
     
     # Блогеры
-    path('bloggers/', views.marketplace, name='blogger_list'), # Список блогеров (можно натравить на другой view)
+    path('bloggers/', views.blogger_list, name='blogger_list'),
     path('blogger/<int:blogger_id>/', views.blogger_detail, name='blogger_detail'),
     path('blogger/profile/edit/', views.edit_blogger_profile, name='edit_profile'), # Настройка цен
     

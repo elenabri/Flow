@@ -21,7 +21,7 @@
         /* Header */
         .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         h1 { font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
-        .logout-btn { color: var(--error); text-decoration: none; font-weight: 600; font-size: 14px; padding: 8px 16px; border: 1px solid var(--error); border-radius: 10px; transition: 0.2s; }
+        .logout-btn { color: var(--error); text-decoration: none; font-weight: 600; font-size: 14px; padding: 8px 16px; border: 1px solid var(--error); border-radius: 10px; transition: 0.2s; background: none; cursor: pointer;}
         .logout-btn:hover { background: var(--error); color: white; }
 
         /* Card Styles */
@@ -50,7 +50,7 @@
         .btn { padding: 14px 28px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; font-size: 15px; }
         .btn-primary { background: var(--text-main); color: white; }
         .btn-primary:hover { opacity: 0.9; }
-        .btn-secondary { background: #e5e5e7; color: var(--text-main); }
+        .btn-secondary { background: #e5e5e7; color: var(--text-main); text-decoration: none; display: inline-block; text-align: center; }
 
         @media (max-width: 600px) { 
             .info-grid { grid-template-columns: 1fr; } 
@@ -63,12 +63,11 @@
 
 <div class="container">
     <div class="header-flex">
-        {% if user.role == 'blogger' %}
-            <h1>Кабинет блогера</h1>
-        {% else %}
-            <h1>Профиль бренда</h1>
-        {% endif %}
-        <a href="{% url 'logout' %}" class="logout-btn">Выйти</a>
+        <h1>{% if user.role == 'blogger' %}Кабинет блогера{% else %}Профиль бренда{% endif %}</h1>
+        <form action="{% url 'logout' %}" method="post" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="logout-btn">Выйти</button>
+        </form>
     </div>
 
     <form method="POST" action="{% url 'core:update_profile' %}">
@@ -81,11 +80,34 @@
                 <div class="info-grid">
                     <div class="info-item" style="grid-column: span 2;">
                         <label>YouTube Канал (ссылка)</label>
-                        <input type="url" name="channel_link" value="{{ user.channel_link }}" placeholder="https://youtube.com/@..." required>
+                        <input type="url" name="channel_link" value="{{ user.blogger_profile.channel_link }}" placeholder="https://youtube.com/@..." required>
                     </div>
                     <div class="info-item" style="grid-column: span 2;">
                         <label>Описание контента</label>
-                        <textarea name="channel_description" placeholder="Расскажите брендам, о чем ваш канал...">{{ user.channel_description }}</textarea>
+                        <textarea name="channel_description" placeholder="Расскажите брендам, о чем ваш канал...">{{ user.blogger_profile.channel_description }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- РЕКВИЗИТЫ БЛОГЕРА -->
+            <div class="card">
+                <div class="card-title">Банковские реквизиты</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>ФИО получателя</label>
+                        <input type="text" name="bank_receiver" value="{{ user.blogger_profile.bank_receiver }}" placeholder="Иванов Иван Иванович">
+                    </div>
+                    <div class="info-item">
+                        <label>ИНН</label>
+                        <input type="text" name="inn" value="{{ user.blogger_profile.inn }}" placeholder="1234567890">
+                    </div>
+                    <div class="info-item">
+                        <label>БИК Банка</label>
+                        <input type="text" name="bik" value="{{ user.blogger_profile.bik }}" placeholder="044525...">
+                    </div>
+                    <div class="info-item">
+                        <label>Расчетный счет</label>
+                        <input type="text" name="account_number" value="{{ user.blogger_profile.account_number }}" placeholder="40702810...">
                     </div>
                 </div>
             </div>
@@ -96,50 +118,41 @@
                 <div class="info-grid">
                     <div class="info-item">
                         <label>Название компании / ООО</label>
-                        <input type="text" name="company_name" value="{{ user.company_name }}" placeholder="ООО Вкусневич" required>
+                        <input type="text" name="company_name" value="{{ user.advertiser_profile.company_name }}" placeholder="ООО Вкусневич" required>
                     </div>
                     <div class="info-item">
                         <label>Юридический адрес</label>
-                        <input type="text" name="legal_address" value="{{ user.legal_address }}" placeholder="г. Москва, ул...">
+                        <input type="text" name="legal_address" value="{{ user.advertiser_profile.legal_address }}" placeholder="г. Москва, ул...">
                     </div>
                     <div class="info-item" style="grid-column: span 2;">
-                        <label>Ссылка на сайт или бренд-канал</label>
-                        <input type="url" name="website" value="{{ user.website }}" placeholder="https://...">
+                        <label>Ссылка на сайт</label>
+                        <input type="url" name="website" value="{{ user.advertiser_profile.website }}" placeholder="https://...">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Реквизиты организации</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>ИНН</label>
+                        <input type="text" name="inn" value="{{ user.advertiser_profile.inn }}" placeholder="1234567890">
+                    </div>
+                    <div class="info-item">
+                        <label>ОГРН</label>
+                        <input type="text" name="ogrn" value="{{ user.advertiser_profile.ogrn }}" placeholder="1234567890123">
+                    </div>
+                    <div class="info-item">
+                        <label>БИК Банка</label>
+                        <input type="text" name="bik" value="{{ user.advertiser_profile.bik }}" placeholder="044525...">
+                    </div>
+                    <div class="info-item">
+                        <label>Расчетный счет</label>
+                        <input type="text" name="account_number" value="{{ user.advertiser_profile.account_number }}" placeholder="40702810...">
                     </div>
                 </div>
             </div>
         {% endif %}
-
-        <!-- ОБЩАЯ СЕКЦИЯ: РЕКВИЗИТЫ -->
-        <div class="card">
-            <div class="card-title">Банковские реквизиты</div>
-            <div class="info-grid">
-                {% if user.role == 'blogger' %}
-                    <div class="info-item">
-                        <label>ФИО получателя</label>
-                        <input type="text" name="bank_receiver" value="{{ user.bank_receiver }}" placeholder="Елена Александровна П.">
-                    </div>
-                {% endif %}
-                <div class="info-item">
-                    <label>ИНН</label>
-                    <input type="text" name="inn" value="{{ user.inn }}" placeholder="1234567890">
-                </div>
-                <div class="info-item">
-                    <label>БИК Банка</label>
-                    <input type="text" name="bik" value="{{ user.bik }}" placeholder="044525...">
-                </div>
-                <div class="info-item">
-                    <label>Расчетный счет</label>
-                    <input type="text" name="account_number" value="{{ user.account_number }}" placeholder="40702810...">
-                </div>
-                {% if user.role == 'advertiser' %}
-                    <div class="info-item">
-                        <label>ОГРН</label>
-                        <input type="text" name="ogrn" value="{{ user.ogrn }}" placeholder="1234567890123">
-                    </div>
-                {% endif %}
-            </div>
-        </div>
 
         <!-- СЕКЦИЯ: ДОПОЛНИТЕЛЬНЫЕ ПОЛЯ -->
         <div class="card" id="custom-fields-card">
@@ -149,44 +162,46 @@
             </div>
             
             <div id="custom-fields-container">
-                <!-- Здесь могут быть уже сохраненные поля из БД (цикл Django) -->
-                {% for key, value in user.custom_data.items %}
-                <div class="custom-field-row">
-                    <div class="info-item">
-                        <label>Название</label>
-                        <input type="text" name="custom_label[]" value="{{ key }}" required>
+                {% if user.role == 'blogger' %}
+                    {% for key, value in user.blogger_profile.custom_data.items %}
+                    <div class="custom-field-row">
+                        <div class="info-item">
+                            <label>Название</label>
+                            <input type="text" name="custom_label[]" value="{{ key }}" required>
+                        </div>
+                        <div class="info-item">
+                            <label>Значение</label>
+                            <input type="text" name="custom_value[]" value="{{ value }}" required>
+                        </div>
+                        <button type="button" class="remove-field" onclick="this.parentElement.remove()">×</button>
                     </div>
-                    <div class="info-item">
-                        <label>Значение</label>
-                        <input type="text" name="custom_value[]" value="{{ value }}" required>
+                    {% endfor %}
+                {% else %}
+                    {% for key, value in user.advertiser_profile.custom_data.items %}
+                    <div class="custom-field-row">
+                        <div class="info-item">
+                            <label>Название</label>
+                            <input type="text" name="custom_label[]" value="{{ key }}" required>
+                        </div>
+                        <div class="info-item">
+                            <label>Значение</label>
+                            <input type="text" name="custom_value[]" value="{{ value }}" required>
+                        </div>
+                        <button type="button" class="remove-field" onclick="this.parentElement.remove()">×</button>
                     </div>
-                    <button type="button" class="remove-field" onclick="this.parentElement.remove()">×</button>
-                </div>
-                {% endfor %}
+                    {% endfor %}
+                {% endif %}
             </div>
         </div>
 
-        <!-- КНОПКИ -->
         <div class="edit-controls">
             <button type="submit" class="btn btn-primary">Сохранить всё</button>
-            <button type="button" class="btn btn-secondary" onclick="window.location.reload()">Отменить изменения</button>
+            <a href="{% url 'core:dashboard' %}" class="btn btn-secondary">Отменить</a>
         </div>
     </form>
 </div>
 
 <script>
-    // Простая проверка перед отправкой (опционально)
-document.querySelector('form').addEventListener('submit', function(e) {
-    const labels = document.querySelectorAll('input[name="custom_label[]"]');
-    const values = document.querySelectorAll('input[name="custom_value[]"]');
-    
-    labels.forEach((el, i) => {
-        if (el.value.trim() === "" || values[i].value.trim() === "") {
-            // Если вдруг попало пустое поле, можем либо удалить его, либо предупредить
-            console.log("Пустое поле проигнорировано");
-        }
-    });
-});
     function addCustomField() {
         const container = document.getElementById('custom-fields-container');
         const row = document.createElement('div');
@@ -194,16 +209,15 @@ document.querySelector('form').addEventListener('submit', function(e) {
         
         row.innerHTML = `
             <div class="info-item">
-                <label>Название поля (напр. Telegram)</label>
+                <label>Название (напр. Telegram)</label>
                 <input type="text" name="custom_label[]" placeholder="Поле" required>
             </div>
             <div class="info-item">
-                <label>Содержимое</label>
+                <label>Значение</label>
                 <input type="text" name="custom_value[]" placeholder="Значение" required>
             </div>
             <button type="button" class="remove-field" onclick="this.parentElement.remove()">×</button>
         `;
-        
         container.appendChild(row);
     }
 </script>

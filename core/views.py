@@ -1029,32 +1029,35 @@ def update_profile(request):
     if request.method == 'POST':
         user = request.user
         
-        # Общие поля для всех
+        # 1. Сохраняем основные поля
         user.inn = request.POST.get('inn')
         user.bik = request.POST.get('bik')
         user.account_number = request.POST.get('account_number')
         
-        # Поля для блогера
         if user.role == 'blogger':
             user.channel_link = request.POST.get('channel_link')
             user.channel_description = request.POST.get('channel_description')
             user.bank_receiver = request.POST.get('bank_receiver')
-            
-        # Поля для рекламодателя
         else:
             user.company_name = request.POST.get('company_name')
             user.legal_address = request.POST.get('legal_address')
             user.website = request.POST.get('website')
             user.ogrn = request.POST.get('ogrn')
 
-        # Обработка динамических полей (сохраняем как JSON)
+        # 2. Магия динамических полей
         labels = request.POST.getlist('custom_label[]')
         values = request.POST.getlist('custom_value[]')
-        # Объединяем их в словарь { "Telegram": "@user", ... }
-        user.custom_data = dict(zip(labels, values))
         
+        # Создаем словарь, исключая пустые строки
+        new_custom_data = {}
+        for label, val in zip(labels, values):
+            if label.strip() and val.strip():
+                new_custom_data[label.strip()] = val.strip()
+        
+        user.custom_data = new_custom_data
         user.save()
-        messages.success(request, "Профиль успешно обновлен!")
-        return redirect('dashboard')
         
-    return redirect('dashboard')
+        messages.success(request, "Данные успешно обновлены!")
+        return redirect('core:dashboard') # Убедитесь, что namespace совпадает
+        
+    return redirect('core:dashboard')

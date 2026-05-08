@@ -83,7 +83,6 @@
             to { transform: translateY(0); }
         }
 
-        /* Ссылки меню */
         .nav-left, .nav-right { flex: 1; display: flex; align-items: center; }
         .nav-right { justify-content: flex-end; }
         .nav-center { display: flex; gap: 32px; align-items: center; }
@@ -131,75 +130,71 @@
 
     <!-- Навигация -->
     <nav class="navbar">
-    <!-- Левая часть: Кабинет (общий для всех) -->
-    <div class="nav-left">
-        {% if user.is_authenticated %}
-            <a href="{% url 'core:dashboard' %}" class="nav-link {% if 'dashboard' in request.path %}active{% endif %}">
-                <i class="bi bi-speedometer2 me-1"></i> Кабинет
-            </a>
-        {% endif %}
-    </div>
-
-    <!-- Центральная часть: Динамическое меню в зависимости от роли -->
-    <div class="nav-center">
-        {% if user.is_authenticated %}
-            
-            {% if user.is_advertiser %}
-                <!-- МЕНЮ РЕКЛАМОДАТЕЛЯ -->
-                <a href="{% url 'core:blogger_list' %}" class="nav-link {% if 'blogger_list' in request.path %}active{% endif %}">Блогеры</a>
-                <a href="{% url 'core:ad_list' %}" class="nav-link {% if 'ad_list' in request.path and 'my_ads' not in request.path %}active{% endif %}">Все объявления</a>
-                <a href="{% url 'core:my_ads' %}" class="nav-link {% if 'my_ads' in request.path %}active{% endif %}">Мои объявления</a>
-            {% else %}
-                <!-- МЕНЮ БЛОГЕРА -->
-                <a href="{% url 'core:ad_list' %}" class="nav-link {% if 'ad_list' in request.path %}active{% endif %}">Объявления на рекламу</a>
-                <a href="{% url 'core:blogger_list' %}" class="nav-link {% if 'blogger_list' in request.path %}active{% endif %}">Блогеры</a>
-                <a href="{% url 'core:edit_profile' %}" class="nav-link {% if 'edit_profile' in request.path %}active{% endif %}">Мои цены</a>
+        <div class="nav-left">
+            {% if user.is_authenticated %}
+                <a href="{% url 'core:dashboard' %}" class="nav-link {% if 'dashboard' in request.path %}active{% endif %}">
+                    <i class="bi bi-speedometer2 me-1"></i> Кабинет
+                </a>
             {% endif %}
+        </div>
 
-            <!-- ОБЩИЕ ПУНКТЫ -->
-            <a href="{% url 'core:integration_list' %}" class="nav-link {% if 'integration' in request.path %}active{% endif %}">Моя реклама</a>
-            
-            <a href="{% url 'core:chat_list' %}" class="nav-link {% if 'chat' in request.path %}active{% endif %}">
-                Сообщения
-                {% if unread_messages_count > 0 %}
-                    <span class="badge">{{ unread_messages_count }}</span>
+        <div class="nav-center">
+            {% if user.is_authenticated %}
+                
+                {# Проверка роли напрямую из поля role #}
+                {% if user.role == 'advertiser' %}
+                    <!-- МЕНЮ РЕКЛАМОДАТЕЛЯ -->
+                    <a href="{% url 'core:blogger_list' %}" class="nav-link {% if 'blogger_list' in request.path %}active{% endif %}">Блогеры</a>
+                    <a href="{% url 'core:ad_list' %}" class="nav-link {% if 'ad_list' in request.path and 'my_ads' not in request.path %}active{% endif %}">Все объявления</a>
+                    <a href="{% url 'core:my_ads' %}" class="nav-link {% if 'my_ads' in request.path %}active{% endif %}">Мои объявления</a>
+                {% elif user.role == 'blogger' %}
+                    <!-- МЕНЮ БЛОГЕРА -->
+                    <a href="{% url 'core:ad_list' %}" class="nav-link {% if 'ad_list' in request.path %}active{% endif %}">Объявления на рекламу</a>
+                    <a href="{% url 'core:blogger_list' %}" class="nav-link {% if 'blogger_list' in request.path %}active{% endif %}">Блогеры</a>
+                    <a href="{% url 'core:edit_profile' %}" class="nav-link {% if 'edit_profile' in request.path %}active{% endif %}">Мои цены</a>
                 {% endif %}
-            </a>
 
-        {% else %}
-            <!-- Для неавторизованных -->
-            <a href="{% url 'core:marketplace' %}" class="nav-link">Маркетплейс</a>
-        {% endif %}
-    </div>
+                <!-- ОБЩИЕ ПУНКТЫ -->
+                <a href="{% url 'core:integration_list' %}" class="nav-link {% if 'integration' in request.path %}active{% endif %}">Моя реклама</a>
+                
+                <a href="{% url 'core:chat_list' %}" class="nav-link {% if 'chat' in request.path %}active{% endif %}">
+                    Сообщения
+                    {% if unread_messages_count > 0 %}
+                        <span class="badge">{{ unread_messages_count }}</span>
+                    {% endif %}
+                </a>
 
-    <!-- Правая часть: Выход/Вход -->
-    <div class="nav-right">
-        {% if user.is_authenticated %}
-            <span class="me-3 d-none d-lg-inline text-muted" style="font-size: 13px;">{{ user.username }}</span>
-            <form action="{% url 'logout' %}" method="post" id="logout-form" style="display: none;">
-                {% csrf_token %}
-            </form>
-            <button type="button" class="btn-logout" onclick="document.getElementById('logout-form').submit();">
-                Выйти
-            </button>
-        {% else %}
-            <a href="{% url 'login' %}" class="nav-link">Войти</a>
-        {% endif %}
-    </div>
-</nav>
+            {% else %}
+                <a href="{% url 'core:marketplace' %}" class="nav-link">Маркетплейс</a>
+            {% endif %}
+        </div>
 
-    <!-- Баннер Telegram (Исправлено условие: user.tg_chat_id) 
+        <div class="nav-right">
+            {% if user.is_authenticated %}
+                <span class="me-3 d-none d-lg-inline text-muted" style="font-size: 13px;">{{ user.username }}</span>
+                <form action="{% url 'logout' %}" method="post" id="logout-form" style="display: none;">
+                    {% csrf_token %}
+                </form>
+                <button type="button" class="btn-logout" onclick="document.getElementById('logout-form').submit();">
+                    Выйти
+                </button>
+            {% else %}
+                <a href="{% url 'login' %}" class="nav-link">Войти</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Баннер Telegram -->
     {% if user.is_authenticated and not user.tg_chat_id %}
     <div class="tg-connect-banner">
         <i class="fab fa-telegram"></i>
         <span>Отвечайте на сообщения и управляйте сделками прямо в Telegram!</span>
-        <a href="https://t.me/TubeFlowSupport_bot?start={{ user.id }}" target="_blank" class="btn-tg-link">
+        <a href="https://t.me/ВашБот?start={{ user.id }}" target="_blank" class="btn-tg-link">
             Подключить
         </a>
     </div>
-    {% endif %}-->
+    {% endif %}
 
-    <!-- Контент -->
     <main class="main-container">
         {% block content %}{% endblock %}
     </main>

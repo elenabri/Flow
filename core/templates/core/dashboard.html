@@ -175,6 +175,18 @@
 </div>
 
 <script>
+    // Простая проверка перед отправкой (опционально)
+document.querySelector('form').addEventListener('submit', function(e) {
+    const labels = document.querySelectorAll('input[name="custom_label[]"]');
+    const values = document.querySelectorAll('input[name="custom_value[]"]');
+    
+    labels.forEach((el, i) => {
+        if (el.value.trim() === "" || values[i].value.trim() === "") {
+            // Если вдруг попало пустое поле, можем либо удалить его, либо предупредить
+            console.log("Пустое поле проигнорировано");
+        }
+    });
+});
     function addCustomField() {
         const container = document.getElementById('custom-fields-container');
         const row = document.createElement('div');

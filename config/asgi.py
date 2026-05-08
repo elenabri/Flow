@@ -2,19 +2,28 @@ import os
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
-from whitenoise.asgi import WhiteNoiseASGI # Импортируем ASGI-версию WhiteNoise
+from whitenoise.asgi import WhiteNoiseASGI
+
+# Импортируйте ваш файл routing из приложения core
+# Убедитесь, что файл core/routing.py существует
+try:
+    from core.routing import websocket_urlpatterns
+except ImportError:
+    websocket_urlpatterns = []
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
-# Инициализируем стандартное ASGI приложение
+# Инициализация Django ASGI приложения
 django_asgi_app = get_asgi_application()
 
-# Оборачиваем его в WhiteNoise, чтобы он отдавал статику до Channels
 application = ProtocolTypeRouter({
-    "http": WhiteNoiseASGI(django_asgi_app), 
+    # WhiteNoiseASGI обрабатывает статику для HTTP запросов
+    "http": WhiteNoiseASGI(django_asgi_app),
+    
+    # AuthMiddlewareStack обеспечивает доступ к user в сокетах
     "websocket": AuthMiddlewareStack(
-        URLRouter([
-            # Здесь будут ваши пути для вебсокетов (routing.py)
-        ])
+        URLRouter(
+            websocket_urlpatterns
+        )
     ),
 })

@@ -1,55 +1,132 @@
-<div class="row">
-    {% for ad in ads %}
-    <div class="col-md-4 mb-4">
-        <div class="card h-100 border-0" style="border-radius: 12px; background: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.04); transition: all 0.3s ease;">
-            
-            <!-- Изображение товара -->
-            <div class="position-relative">
-                <img src="{{ ad.image.url|default:ad.avatar_url }}" class="card-img-top" 
-                     style="height: 240px; object-fit: cover; border-radius: 12px 12px 0 0;">
-            </div>
+{% extends "core/base.html" %}
 
-            <div class="card-body p-4">
-                <!-- Категория и Тип сотрудничества -->
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span style="font-size: 0.7rem; letter-spacing: 1px; color: #8e8e93; font-weight: 600; text-transform: uppercase;">
-                        {{ ad.get_short_categories }}
-                    </span>
-                    <!-- Пометка Бартер -->
-                    <span style="font-size: 0.7rem; color: #1c1c1e; background: #f2f2f7; padding: 4px 10px; border-radius: 6px; font-weight: 500;">
+{% block title %}Биржа заказов | TubeFlow{% endblock %}
+
+{% block content %}
+<!-- Шрифты и иконки -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+<style>
+    body {
+        background-color: #fbfbfd;
+        font-family: 'Manrope', sans-serif;
+    }
+    .ad-card {
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        border: none;
+        border-radius: 20px;
+        background: #ffffff;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+        overflow: hidden;
+    }
+    .ad-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important;
+    }
+    .btn-wb {
+        background: #8e24aa;
+        color: white;
+        border: none;
+    }
+    .btn-wb:hover {
+        background: #7b1fa2;
+        color: white;
+    }
+    .btn-ozon {
+        background: #005bff;
+        color: white;
+        border: none;
+    }
+    .btn-ozon:hover {
+        background: #004ecc;
+        color: white;
+    }
+</style>
+
+<div class="container py-5">
+    <!-- Заголовок секции -->
+    <div class="d-flex justify-content-between align-items-end mb-5">
+        <div>
+            <h2 style="font-weight: 800; color: #1c1c1e; margin-bottom: 10px;">Актуальные предложения</h2>
+            <p class="text-muted mb-0">Выберите товар для обзора и предложите сотрудничество</p>
+        </div>
+        <div class="badge bg-white text-dark border p-2 px-3" style="border-radius: 12px; font-weight: 700;">
+            Найдено: {{ ads|length }}
+        </div>
+    </div>
+
+    <div class="row">
+        {% for ad in ads %}
+        <div class="col-md-4 mb-4">
+            <div class="card ad-card h-100">
+                
+                <!-- Изображение товара -->
+                <div class="position-relative" style="height: 240px; overflow: hidden;">
+                    <img src="{{ ad.image.url|default:ad.avatar_url }}" 
+                         class="card-img-top w-100 h-100" 
+                         style="object-fit: cover;" 
+                         alt="{{ ad.name }}">
+                    
+                    <!-- Бейдж Бартер -->
+                    <div style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.9); backdrop-filter: blur(8px); color: #1c1c1e; padding: 6px 14px; border-radius: 12px; font-size: 0.7rem; font-weight: 800; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                         БАРТЕР
-                    </span>
+                    </div>
                 </div>
-                
-                <!-- Название продукта -->
-                <h5 class="fw-bold mb-3" style="color: #1c1c1e; font-size: 1.1rem;">
-                    {{ ad.name }}
-                </h5>
-                
-                <!-- Пояснение для блогера -->
-                <div class="mb-4" style="background: #f9f9fb; padding: 12px; border-radius: 8px;">
-                    <p style="font-size: 0.8rem; color: #3a3a3c; margin-bottom: 0; line-height: 1.5;">
-                        <span style="font-weight: 600; color: #1c1c1e;">Условия:</span> 
-                        Рекламодатель предоставляет продукт бесплатно для обзора и личного пользования. Дополнительная денежная оплата не предусмотрена.
+
+                <div class="card-body p-4 d-flex flex-column">
+                    <!-- Категория -->
+                    <div class="mb-2">
+                        <span style="font-size: 0.7rem; color: #5856d6; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                            {{ ad.get_short_categories|default:"Общее" }}
+                        </span>
+                    </div>
+                    
+                    <!-- Название продукта -->
+                    <h5 class="fw-bold mb-1" style="color: #1a1a1a; font-size: 1.15rem; line-height: 1.2;">
+                        {{ ad.name }}
+                    </h5>
+
+                    <!-- Краткое описание из БД (ограничение 30 символов) -->
+                    <p style="font-size: 0.85rem; color: #8e8e93; margin-bottom: 20px; min-height: 2.4rem;">
+                        {{ ad.short_description|default:ad.description|truncatechars:30 }}
                     </p>
-                </div>
+                    
+                    <!-- Блок условий (как купон) -->
+                    <div class="mb-4 mt-auto" style="background: #f2f2f7; padding: 12px 15px; border-radius: 14px; border: 1px dashed #d1d1d6;">
+                        <p style="font-size: 0.8rem; color: #3a3a3c; margin-bottom: 0; line-height: 1.4;">
+                            <span style="font-weight: 700; color: #1c1c1e;">Условия:</span> 
+                            Рекламодатель предоставляет продукт бесплатно для обзора.
+                        </p>
+                    </div>
 
-                <!-- Кнопки действий -->
-                <div class="d-flex flex-column gap-2">
-                    {% if ad.link_wb or ad.link_ozon or ad.link_other %}
-                    <a href="{{ ad.link_wb|default:ad.link_ozon|default:ad.link_other }}" target="_blank" 
-                       class="btn btn-sm" style="border-radius: 8px; padding: 10px; font-weight: 500; color: #1c1c1e; background: transparent; border: 1px solid #d1d1d6;">
-                        Страница товара
-                    </a>
-                    {% endif %}
+                    <!-- Кнопки действий -->
+                    <div class="d-flex flex-column gap-2">
+                        {% if ad.link_wb %}
+                            <a href="{{ ad.link_wb }}" target="_blank" class="btn btn-sm btn-wb" style="border-radius: 12px; padding: 12px; font-weight: 600;">
+                                <i class="bi bi-bag-check-fill me-1"></i> Wildberries
+                            </a>
+                        {% elif ad.link_ozon %}
+                            <a href="{{ ad.link_ozon }}" target="_blank" class="btn btn-sm btn-ozon" style="border-radius: 12px; padding: 12px; font-weight: 600;">
+                                <i class="bi bi-bag-check-fill me-1"></i> Ozon
+                            </a>
+                        {% endif %}
 
-                    <a href="{% url 'core:ad_detail' ad.id %}" class="btn btn-sm" 
-                       style="border-radius: 8px; padding: 10px; font-weight: 500; background: #1c1c1e; color: #ffffff;">
-                        Узнать подробности
-                    </a>
+                        <!-- Переход на страницу продукта -->
+                        <a href="{% url 'core:product_detail' ad.id %}" class="btn btn-sm d-flex align-items-center justify-content-center gap-2" 
+                           style="border-radius: 12px; padding: 12px; font-weight: 700; background: #1c1c1e; color: #ffffff; transition: 0.3s;">
+                            Узнать подробности <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="bi bi-clipboard-x" style="font-size: 3rem; color: #dee2e6;"></i>
+            <h4 class="mt-3 text-muted">Пока нет активных заказов</h4>
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
 </div>
+{% endblock %}

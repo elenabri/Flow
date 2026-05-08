@@ -88,10 +88,12 @@ class BloggerProfile(models.Model):
         return ", ".join(russian_list)
 
     @property
-        def price_long_min(self):
-            prices = [self.price_start, self.price_middle, self.price_end]
-            valid_prices = [p for p in prices if p > 0]
-            return min(valid_prices) if valid_prices else 0
+    def price_long_min(self):
+        prices = [self.price_start, self.price_middle, self.price_end]
+        # Фильтруем None и 0
+        valid_prices = [p for p in prices if p and p > 0]
+        return min(valid_prices) if valid_prices else 0
+            
 
     @property
     def cpv_long(self):

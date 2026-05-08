@@ -1028,36 +1028,34 @@ from django.contrib import messages
 def update_profile(request):
     if request.method == 'POST':
         user = request.user
-        
-        # 1. Сохраняем основные поля
-        user.inn = request.POST.get('inn')
-        user.bik = request.POST.get('bik')
-        user.account_number = request.POST.get('account_number')
-        
-        if user.role == 'blogger':
-            user.channel_link = request.POST.get('channel_link')
-            user.channel_description = request.POST.get('channel_description')
-            user.bank_receiver = request.POST.get('bank_receiver')
-        else:
-            user.company_name = request.POST.get('company_name')
-            user.legal_address = request.POST.get('legal_address')
-            user.website = request.POST.get('website')
-            user.ogrn = request.POST.get('ogrn')
-
-        # 2. Магия динамических полей
+        # Собираем словарь из формы
         labels = request.POST.getlist('custom_label[]')
         values = request.POST.getlist('custom_value[]')
-        
-        # Создаем словарь, исключая пустые строки
-        new_custom_data = {}
-        for label, val in zip(labels, values):
-            if label.strip() and val.strip():
-                new_custom_data[label.strip()] = val.strip()
-        
-        user.custom_data = new_custom_data
-        user.save()
-        
-        messages.success(request, "Данные успешно обновлены!")
-        return redirect('core:dashboard') # Убедитесь, что namespace совпадает
-        
-    return redirect('core:dashboard')
+        new_custom_data = {l.strip(): v.strip() for l, v in zip(labels, values) if l.strip() and v.strip()}
+
+        if user.role == 'blogger':
+            # Достаем профиль блогера
+            profile = user.blogger_profile 
+            profile.inn = request.POST.get('inn')
+            profile.bik = request.POST.get('bik')
+            profile.account_number = request.POST.get('account_number')
+            profile.channel_link = request.POST.get('channel_link')
+            profile.channel_description = request.POST.get('channel_description')
+            profile.bank_receiver = request.POST.get('bank_receiver')
+            profile.custom_data = new_custom_data # Сохраняем в профиль!
+            profile.save()
+        else:
+            # Достаем профиль рекламодателя
+            profile = user.advertiser_profile
+            profile.inn = request.POST.get('inn')
+            profile.bik = request.POST.get('bik')
+            profile.account_number = request.POST.get('account_number')
+            profile.company_name = request.POST.get('company_name')
+            profile.legal_address = request.POST.get('legal_address')
+            profile.website = request.POST.get('website')
+            profile.ogrn = request.POST.get('ogrn')
+            profile.custom_data = new_custom_data # Сохраняем в профиль!
+            profile.save()
+
+        messages.success(request, "Профиль успешно обновлен!")
+        return redirect('core:dashboard')

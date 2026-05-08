@@ -71,7 +71,7 @@
         <a href="{% url 'logout' %}" class="logout-btn">Выйти</a>
     </div>
 
-    <form method="POST" action="{% url 'update_profile' %}">
+    <form method="POST" action="{% url 'core:update_profile' %}">
         {% csrf_token %}
 
         {% if user.role == 'blogger' %}

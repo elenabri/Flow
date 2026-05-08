@@ -133,7 +133,6 @@ class AdvertiserProfile(models.Model):
 class ProductAd(models.Model):
     advertiser = models.ForeignKey(AdvertiserProfile, on_delete=models.CASCADE, related_name='ads')
     
-    # Исправили title -> name, так как во views.py мы обращаемся к .name
     name = models.CharField("Название", max_length=200) 
     short_description = models.TextField(verbose_name="Краткое описание", max_length=30, blank=True)
     additional_info = models.TextField(verbose_name="Доп. информация", blank=True)
@@ -143,15 +142,11 @@ class ProductAd(models.Model):
     
     # Изображения
     image = models.ImageField("Файл фото", upload_to='products/%Y/%m/%d/', blank=True, null=True)
-    
-    # Исправили image_url -> avatar_url, чтобы совпадало с логикой views.py
     avatar_url = models.URLField("Ссылка на фото", blank=True, null=True, max_length=500)
     
     # Ссылки
     link_wb = models.URLField("Wildberries", max_length=500, null=True, blank=True)
     link_ozon = models.URLField("Ozon", max_length=500, null=True, blank=True)
-    
-    # Исправили link_site -> link_other, чтобы views.py видел это поле
     link_other = models.URLField("Сайт/Другое", max_length=500, null=True, blank=True)
     
     is_active = models.BooleanField("Опубликовать", default=True)
@@ -163,15 +158,24 @@ class ProductAd(models.Model):
         verbose_name_plural = "Объявления товаров"
         ordering = ['-created_at']
 
+    # ПОЛЕЗНО: Автоматический выбор доступного фото для шаблона
+    @property
+    def get_image_url(self):
+        if self.image:
+            return self.image.url
+        elif self.avatar_url:
+            return self.avatar_url
+        return "/static/img/no-image.png" # Путь к заглушке
+
     def get_short_categories(self):
         if not self.category:
             return "Без категории"
-        # Предполагается, что TOPIC_CHOICES определен выше в файле
         try:
+            # Импортируем внутри, если TOPIC_CHOICES в другом файле
+            from .choices import TOPIC_CHOICES 
             choices_dict = dict(TOPIC_CHOICES)
             cats = [choices_dict.get(c.strip(), c.strip()) for c in self.category.split(',') if c.strip()]
-        except NameError:
-            # Если TOPIC_CHOICES нет, просто возвращаем текст
+        except (NameError, ImportError):
             cats = [c.strip() for c in self.category.split(',') if c.strip()]
             
         if len(cats) > 2:
@@ -179,7 +183,6 @@ class ProductAd(models.Model):
         return ", ".join(cats)
 
     def __str__(self):
-        # Используем .name вместо .title и проверяем наличие company_name
         company = getattr(self.advertiser, 'company_name', 'Рекламодатель')
         return f"{self.name} ({company})"
 # --- ЧАТЫ ---

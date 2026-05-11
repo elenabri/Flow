@@ -138,7 +138,7 @@ class ProductAd(models.Model):
     name = models.CharField("Название", max_length=200) 
     short_description = models.TextField(verbose_name="Краткое описание", max_length=30, blank=True)
     additional_info = models.TextField(verbose_name="Доп. информация", blank=True)
-    barter_terms = models.TextField(verbose_name="Условия бартера", blank=True)
+    is_barter = models.BooleanField(verbose_name="Только бартер", default=True)
     description = models.TextField("Описание и ТЗ")
     category = models.CharField("Категории (через запятую)", max_length=500)
     

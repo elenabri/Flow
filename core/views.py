@@ -1101,6 +1101,7 @@ def manage_products(request):
     return render(request, 'core/my_ads.html', {
         'ads': user_ads,  # Это имя должно совпадать с циклом {% for ad in ads %}
     })
+    
 @login_required
 def my_ads_view(request):
     # Если в модели ProductAd поле называется advertiser (связь с AdvertiserProfile)
@@ -1116,12 +1117,13 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
-@login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from decimal import Decimal, InvalidOperation
+
 @login_required
 def edit_profile(request):
-    """
-    Редактирование профиля блогера и прайс-листа.
-    """
     profile = getattr(request.user, 'blogger_profile', None)
 
     if not profile:
@@ -1130,13 +1132,26 @@ def edit_profile(request):
 
     if request.method == 'POST':
         try:
-            profile.price_start = request.POST.get('price_start') or 0
-            profile.price_middle = request.POST.get('price_middle') or 0
-            profile.price_end = request.POST.get('price_end') or 0
-            profile.price_shorts = request.POST.get('price_shorts') or 0
+            # Функция для безопасной конвертации строк из POST в числа
+            def clean_price(value):
+                if not value:
+                    return Decimal('0.00')
+                # Заменяем запятую на точку на случай ручного ввода и чистим пробелы
+                clean_value = str(value).replace(',', '.').strip()
+                try:
+                    return Decimal(clean_value)
+                except InvalidOperation:
+                    return Decimal('0.00')
+
+            profile.price_start = clean_price(request.POST.get('price_start'))
+            profile.price_middle = clean_price(request.POST.get('price_middle'))
+            profile.price_end = clean_price(request.POST.get('price_end'))
+            profile.price_shorts = clean_price(request.POST.get('price_shorts'))
+            
             profile.save()
             messages.success(request, "Прайс-лист успешно обновлен!")
             return redirect('core:edit_profile') 
+            
         except Exception as e:
             messages.error(request, f"Ошибка при сохранении: {e}")
 

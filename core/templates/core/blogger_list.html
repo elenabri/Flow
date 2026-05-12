@@ -153,11 +153,11 @@
                                     <div class="metric-label">Стоимость ролика от:</div>
                                     <div class="price-text mb-2">{{ blogger.price_middle|default:"—" }} ₽</div>
                                     <div class="cpv-badge d-inline-block">
-                                        Цена за 1 просмотр: <b>{{ blogger.display_cpv_long|default:"—" }} ₽</b>
-                                    </div>
+    Цена за 1 просмотр: <b>{{ blogger.display_cpv_long|default:"0"|floatformat:1 }} ₽</b>
+</div>
                                 </div>
                             {% else %}
-                                <div class="text-muted small mt-2"><i class="bi bi-lock-fill me-1"></i> Цены доступны после входа</div>
+                                <div class="text-muted small mt-2"><i class="bi bi-lock-fill me-1"></i> Цены скрыты</div>
                             {% endif %}
                         </div>
                     </div>
@@ -181,11 +181,11 @@
                                     <div class="metric-label">Стоимость ролика от:</div>
                                     <div class="price-text mb-2" style="color: #db2777;">{{ blogger.price_shorts|default:"—" }} ₽</div>
                                     <div class="cpv-badge d-inline-block">
-                                        Цена за 1 просмотр: <b>{{ blogger.display_cpv_shorts|default:"—" }} ₽</b>
-                                    </div>
+    Цена за 1 просмотр: <b>{{ blogger.display_cpv_shorts|default:"0"|floatformat:1 }} ₽</b>
+</div>
                                 </div>
                             {% else %}
-                                <div class="text-muted small mt-2"><i class="bi bi-lock-fill me-1"></i> Цены доступны после входа</div>
+                                <div class="text-muted small mt-2"><i class="bi bi-lock-fill me-1"></i> Цены скрыты</div>
                             {% endif %}
                         </div>
                     </div>

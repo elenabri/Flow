@@ -29,11 +29,11 @@
     {% if other_user.blogger_profile %}
         <!-- Если собеседник блогер — показываем название канала -->
         <a href="{{ other_user.blogger_profile.channel_link }}" target="_blank">
-            📺 {{ other_user.blogger_profile.channel_name }}
+             {{ other_user.blogger_profile.channel_name }}
         </a>
     {% elif other_user.advertiser_profile %}
         <!-- Если собеседник рекламодатель — показываем название компании -->
-        <span class="text-primary">🏢 {{ other_user.advertiser_profile.company_name }}</span>
+        <span class="text-primary"> {{ other_user.advertiser_profile.company_name }}</span>
     {% else %}
         <!-- Если профиля нет (например, админ), оставляем username -->
         {{ other_user.username }}

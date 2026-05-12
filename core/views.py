@@ -443,24 +443,29 @@ def approve_final_payment(request, contract_id):
 
 # --- 6. ТЕХНИЧЕСКИЕ (AJAX) ---
 
+# --- 6. ТЕХНИЧЕСКИЕ (AJAX) ---
+
 def fetch_youtube_data(request):
-    """
-    API-представление для получения данных канала.
-    """
-    # Пробуем достать ссылку из обоих возможных параметров
+    # 1. Получаем URL или handle из запроса
     channel_url = request.GET.get('handle') or request.GET.get('url')
     
     if not channel_url:
-        return JsonResponse({'error': 'No URL provided'}, status=400)
+        return JsonResponse({'status': 'error', 'message': 'URL не указан'}, status=200)
 
-    # Вызываем вашу функцию обработки
+    # 2. Вызываем функцию получения статистики
     stats = get_youtube_stats(channel_url, YOUTUBE_API_KEY)
     
+    # 3. Проверяем результат и возвращаем ответ с ПРАВИЛЬНЫМИ отступами
     if stats:
-    return JsonResponse(stats, safe=False)
-else:
-    # Было 'error', JS ждет 'message'
-    return JsonResponse({'status': 'error', 'message': 'Канал не найден или ошибка API'}, status=200)
+        # Отступ 4 пробела от 'if'
+        return JsonResponse(stats, safe=False)
+    else:
+        # 'else' стоит на одном уровне с 'if'
+        # Отступ 4 пробела от 'else'
+        return JsonResponse({
+            'status': 'error', 
+            'message': 'Канал не найден или ошибка API'
+        }, status=200)
 
 @csrf_exempt
 def support_ajax(request):

@@ -1,3 +1,5 @@
+from django.db import transaction
+from decimal import Decimal
 import random
 import re
 import requests

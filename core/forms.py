@@ -38,6 +38,11 @@ class RegistrationForm(forms.ModelForm):
     company_name = forms.CharField(required=False, label="Название компании")
     product_title = forms.CharField(required=False, label="Название товара")
     product_link = forms.URLField(required=False, label="Ссылка на продукт")
+    def clean_email(self):
+        email = self.cleaned_data.get('email').lower()
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("Пользователь с такой почтой уже зарегистрирован.")
+        return email
 
     class Meta:
         model = User

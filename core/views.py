@@ -574,7 +574,7 @@ def edit_blogger_profile(request):
         messages.success(request, "Профиль успешно обновлен!")
         return redirect('dashboard')
         
-    return render(request, 'core/edit_blogger_profile.html', {
+    return render(request, 'core/core/edit_profile.html', {
         'profile': profile,
         'TOPIC_CHOICES': TOPIC_CHOICES
     })

@@ -209,10 +209,15 @@ def register(request):
                         'email': user.email, 
                         'password': pwd
                     })
+            else:
+                print(form.errors) 
+                messages.error(request, f"Ошибка в полях: {form.errors}")
+            
 
             except Exception as e:
                 messages.error(request, f"Ошибка при регистрации: {e}")
                 return redirect('core:register')
+                
     else:
         form = RegistrationForm()
         

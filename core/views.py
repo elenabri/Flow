@@ -52,6 +52,7 @@ def parse_duration_to_seconds(duration):
 
 import statistics  # ОБЯЗАТЕЛЬНО добавьте этот импорт в начало файла
 
+# --- ИСПРАВЛЕННАЯ ФУНКЦИЯ СТАТИСТИКИ ---
 def get_youtube_stats(channel_url, api_key):
     if not channel_url or not isinstance(channel_url, str):
         return None
@@ -63,6 +64,7 @@ def get_youtube_stats(channel_url, api_key):
     handle = handle_match.group(1)
     
     try:
+        # 1. Запрос данных канала
         ch_url = f"https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails,brandingSettings&forHandle={handle}&key={api_key}"
         ch_data = requests.get(ch_url, timeout=7).json()
         
@@ -72,6 +74,7 @@ def get_youtube_stats(channel_url, api_key):
         item = ch_data["items"][0]
         uploads_id = item["contentDetails"]["relatedPlaylists"]["uploads"]
         
+        # 2. Запрос последних видео для расчета медианы
         v_url = f"https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId={uploads_id}&maxResults=50&key={api_key}"
         v_data = requests.get(v_url).json()
         v_ids = [v["contentDetails"]["videoId"] for v in v_data.get("items", [])]
@@ -81,30 +84,51 @@ def get_youtube_stats(channel_url, api_key):
             stats_url = f"https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id={','.join(v_ids)}&key={api_key}"
             for v in requests.get(stats_url).json().get("items", []):
                 views = int(v["statistics"].get("viewCount", 0))
-                # Парсим длительность (ваша функция parse_duration_to_seconds)
+                # Используем вашу функцию парсинга длительности
                 if parse_duration_to_seconds(v["contentDetails"]["duration"]) <= 200:
                     shorts_views.append(views)
                 else:
                     long_views.append(views)
 
-        # ВОЗВРАЩАЕМ СЛОВАРЬ С КЛЮЧАМИ КАК В MODELS.PY
+        # РЕЗУЛЬТАТ: Совмещаем ключи для моделей (BloggerProfile) и для JS
         return {
-            'channel_name': item["snippet"]["title"],  # Совпадает с моделью
-            'subscribers_count': int(item["statistics"].get("subscriberCount", 0)), # Совпадает
-            'avatar_url': item["snippet"]["thumbnails"]["high"]["url"], # Совпадает
+            # Для сохранения в БД (модели)
+            'channel_name': item["snippet"]["title"],
+            'subscribers_count': int(item["statistics"].get("subscriberCount", 0)),
+            'avatar_url': item["snippet"]["thumbnails"]["high"]["url"],
             'banner_url': item.get("brandingSettings", {}).get("image", {}).get("bannerExternalUrl"),
-            'median_views': int(statistics.median(long_views)) if long_views else 0, # Long
-            'median_views_shorts': int(statistics.median(shorts_views)) if shorts_views else 0, # Shorts
+            'median_views': int(statistics.median(long_views)) if long_views else 0,
+            'median_views_shorts': int(statistics.median(shorts_views)) if shorts_views else 0,
             
-            # Дубликаты для JavaScript (чтобы не было undefined)
+            # Для JavaScript (чтобы избежать undefined в старых скриптах)
             'name': item["snippet"]["title"],
             'subs': int(item["statistics"].get("subscriberCount", 0)),
             'long_median': int(statistics.median(long_views)) if long_views else 0,
             'shorts_median': int(statistics.median(shorts_views)) if shorts_views else 0,
+            'api_avatar': item["snippet"]["thumbnails"]["high"]["url"],
+            'api_banner': item.get("brandingSettings", {}).get("image", {}).get("bannerExternalUrl"),
         }
     except Exception as e:
         print(f"Ошибка API: {e}")
         return None
+
+# --- ИСПРАВЛЕННЫЙ REDIRECT В РЕДАКТИРОВАНИИ ---
+@login_required
+def edit_blogger_profile(request):
+    profile = get_object_or_404(BloggerProfile, user=request.user)
+    
+    if request.method == 'POST':
+        profile.price_start = request.POST.get('price_start', profile.price_start)
+        profile.categories = ", ".join(request.POST.getlist('topics'))
+        profile.save()
+        messages.success(request, "Профиль успешно обновлен!")
+        return redirect('core:dashboard') # Добавлен namespace 'core:'
+        
+    # Убедитесь, что путь к шаблону верный (без лишнего core/core/)
+    return render(request, 'core/edit_profile.html', {
+        'profile': profile,
+        'TOPIC_CHOICES': TOPIC_CHOICES
+    })
 
 def send_verification_email(user, password): # Добавили password
     token = default_token_generator.make_token(user)

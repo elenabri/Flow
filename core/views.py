@@ -1043,29 +1043,26 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
 @login_required
+@login_required
 def edit_profile(request):
-    # Пытаемся получить профиль блогера. 
-    # Если у вас используется related_name='blogger_profile', то так:
+    """
+    Редактирование профиля блогера и прайс-листа.
+    """
     profile = getattr(request.user, 'blogger_profile', None)
 
-    # Если профиля нет (например, юзер — рекламодатель), выкидываем на главную
     if not profile:
-        messages.error(request, "У вас нет профиля блогера для настройки прайса.")
+        messages.error(request, "У вас нет профиля блогера.")
         return redirect('core:home')
 
     if request.method == 'POST':
         try:
-            # Получаем данные из формы и обновляем модель
             profile.price_start = request.POST.get('price_start') or 0
             profile.price_middle = request.POST.get('price_middle') or 0
             profile.price_end = request.POST.get('price_end') or 0
             profile.price_shorts = request.POST.get('price_shorts') or 0
-            
             profile.save()
             messages.success(request, "Прайс-лист успешно обновлен!")
-            # Можно оставить на этой же странице или редиректнуть в дашборд
             return redirect('core:edit_profile') 
-            
         except Exception as e:
             messages.error(request, f"Ошибка при сохранении: {e}")
 

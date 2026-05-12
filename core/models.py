@@ -87,7 +87,7 @@ class BloggerProfile(models.Model):
         russian_list = [choices_dict.get(c, c) for c in raw_list]
         return ", ".join(russian_list)
 
-@property
+    @property
     def price_long_min(self):
         # Собираем все цены за длинные видео
         prices = [self.price_start, self.price_middle, self.price_end]
@@ -111,7 +111,7 @@ class BloggerProfile(models.Model):
             val = float(self.price_shorts) / self.median_views_shorts
             return round(val, 1)
         return 0
-
+    
     def __str__(self):
         return f"Блогер: {self.channel_name} (@{self.user.username})"
 

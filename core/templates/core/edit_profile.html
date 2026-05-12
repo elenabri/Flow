@@ -196,9 +196,11 @@ function calcAllCPV() {
     };
 
     for (let id in ids) {
-        const [p, v] = ids[id];
-        document.getElementById(id).innerText = v > 0 ? (p / v).toFixed(2) : '0';
-    }
+    let [p, v] = ids[id];
+    // Превращаем в строку и меняем запятую на точку перед парсингом
+    p = parseFloat(p.toString().replace(',', '.')) || 0; 
+    document.getElementById(id).innerText = v > 0 ? (p / v).toFixed(2) : '0';
+}
 }
 window.onload = calcAllCPV;
 </script>

@@ -100,9 +100,13 @@ def get_youtube_stats(channel_url, api_key):
             'median_views': int(statistics.median(long_views)) if long_views else 0,
             'median_views_shorts': int(statistics.median(shorts_views)) if shorts_views else 0,
             
-            # Для JavaScript (чтобы избежать undefined в старых скриптах)
+            # --- ВОТ ЭТИ КЛЮЧИ НУЖНЫ ДЛЯ ВАШЕГО JS В register.html ---
+            'status': 'success', # Чтобы сработало условие if (data.status === 'success')
+            'title': item["snippet"]["title"], # Вы искали data.title
+            'subs': int(item["statistics"].get("subscriberCount", 0)), # Вы искали data.subs
+            
+            # Остальные вспомогательные ключи
             'name': item["snippet"]["title"],
-            'subs': int(item["statistics"].get("subscriberCount", 0)),
             'long_median': int(statistics.median(long_views)) if long_views else 0,
             'shorts_median': int(statistics.median(shorts_views)) if shorts_views else 0,
             'api_avatar': item["snippet"]["thumbnails"]["high"]["url"],
@@ -453,9 +457,10 @@ def fetch_youtube_data(request):
     stats = get_youtube_stats(channel_url, YOUTUBE_API_KEY)
     
     if stats:
-        return JsonResponse(stats, safe=False)
-    else:
-        return JsonResponse({'error': 'Channel not found or API error'}, status=404)
+    return JsonResponse(stats, safe=False)
+else:
+    # Было 'error', JS ждет 'message'
+    return JsonResponse({'status': 'error', 'message': 'Канал не найден или ошибка API'}, status=200)
 
 @csrf_exempt
 def support_ajax(request):

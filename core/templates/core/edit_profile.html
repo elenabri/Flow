@@ -190,19 +190,20 @@ function calcAllCPV() {
     const ml = parseFloat(document.getElementById('ml').value) || 0;
     const ms = parseFloat(document.getElementById('ms').value) || 0;
     
-    const ids = {
-        'cpv_start': [document.getElementById('p_start').value, ml],
-        'cpv_mid': [document.getElementById('p_mid').value, ml],
-        'cpv_end': [document.getElementById('p_end').value, ml],
-        'cpv_shorts_val': [document.getElementById('p_shorts').value, ms]
-    };
+    const fields = [
+        { priceId: 'p_start', displayId: 'cpv_start', views: ml },
+        { priceId: 'p_mid', displayId: 'cpv_mid', views: ml },
+        { priceId: 'p_end', displayId: 'cpv_end', views: ml },
+        { priceId: 'p_shorts', displayId: 'cpv_shorts_val', views: ms }
+    ];
 
-    for (let id in ids) {
-    let [p, v] = ids[id];
-    // Превращаем в строку и меняем запятую на точку перед парсингом
-    p = parseFloat(p.toString().replace(',', '.')) || 0; 
-    document.getElementById(id).innerText = v > 0 ? (p / v).toFixed(2) : '0';
-}
+    fields.forEach(field => {
+        let p = document.getElementById(field.priceId).value;
+        // Заменяем запятую на точку, если она вдруг просочилась строкой
+        let price = parseFloat(p.toString().replace(',', '.')) || 0;
+        let result = field.views > 0 ? (price / field.views).toFixed(2) : '0';
+        document.getElementById(field.displayId).innerText = result;
+    });
 }
 window.onload = calcAllCPV;
 </script>

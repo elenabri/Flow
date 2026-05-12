@@ -50,40 +50,61 @@ def parse_duration_to_seconds(duration):
     d, h, m, s = [int(x) if x else 0 for x in match.groups()]
     return d * 86400 + h * 3600 + m * 60 + s
 
+import statistics  # ОБЯЗАТЕЛЬНО добавьте этот импорт в начало файла
+
 def get_youtube_stats(channel_url, api_key):
     if not channel_url or not isinstance(channel_url, str):
         return None
+    
     handle_match = re.search(r'@([\w\.-]+)', channel_url)
-    if not handle_match: return None
+    if not handle_match: 
+        return None
+    
     handle = handle_match.group(1)
+    
     try:
         ch_url = f"https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails,brandingSettings&forHandle={handle}&key={api_key}"
         ch_data = requests.get(ch_url, timeout=7).json()
-        if not ch_data.get("items"): return None
+        
+        if not ch_data.get("items"): 
+            return None
+            
         item = ch_data["items"][0]
         uploads_id = item["contentDetails"]["relatedPlaylists"]["uploads"]
+        
         v_url = f"https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId={uploads_id}&maxResults=50&key={api_key}"
-        v_ids = [v["contentDetails"]["videoId"] for v in requests.get(v_url).json().get("items", [])]
+        v_data = requests.get(v_url).json()
+        v_ids = [v["contentDetails"]["videoId"] for v in v_data.get("items", [])]
         
         long_views, shorts_views = [], []
         if v_ids:
             stats_url = f"https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id={','.join(v_ids)}&key={api_key}"
             for v in requests.get(stats_url).json().get("items", []):
                 views = int(v["statistics"].get("viewCount", 0))
+                # Парсим длительность (ваша функция parse_duration_to_seconds)
                 if parse_duration_to_seconds(v["contentDetails"]["duration"]) <= 200:
                     shorts_views.append(views)
                 else:
                     long_views.append(views)
 
+        # ВОЗВРАЩАЕМ СЛОВАРЬ С КЛЮЧАМИ КАК В MODELS.PY
         return {
-            'name': item["snippet"]["title"], 
+            'channel_name': item["snippet"]["title"],  # Совпадает с моделью
+            'subscribers_count': int(item["statistics"].get("subscriberCount", 0)), # Совпадает
+            'avatar_url': item["snippet"]["thumbnails"]["high"]["url"], # Совпадает
+            'banner_url': item.get("brandingSettings", {}).get("image", {}).get("bannerExternalUrl"),
+            'median_views': int(statistics.median(long_views)) if long_views else 0, # Long
+            'median_views_shorts': int(statistics.median(shorts_views)) if shorts_views else 0, # Shorts
+            
+            # Дубликаты для JavaScript (чтобы не было undefined)
+            'name': item["snippet"]["title"],
             'subs': int(item["statistics"].get("subscriberCount", 0)),
-            'avatar': item["snippet"]["thumbnails"]["high"]["url"],
-            'banner': item.get("brandingSettings", {}).get("image", {}).get("bannerExternalUrl"),
             'long_median': int(statistics.median(long_views)) if long_views else 0,
             'shorts_median': int(statistics.median(shorts_views)) if shorts_views else 0,
         }
-    except: return None
+    except Exception as e:
+        print(f"Ошибка API: {e}")
+        return None
 
 def send_verification_email(user, password): # Добавили password
     token = default_token_generator.make_token(user)

@@ -165,79 +165,85 @@
 </head>
 <body>
 
-    <!-- Навигация -->
-    <nav class="navbar navbar-expand-lg sticky-top">
-        <div class="container-fluid px-lg-5">
-            <a class="navbar-brand" href="{% url 'core:dashboard' %}">
-                <div class="logo-wrapper">
-                    <div class="logo-icon"><i class="fas fa-play"></i></div>
-                    <div class="logo-text">Tube<span>Flow</span></div>
-                </div>
-            </a>
 
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+<!-- Навигация -->
+<nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container-fluid px-lg-5">
+        <a class="navbar-brand" href="{% url 'core:dashboard' %}">
+            <div class="logo-wrapper">
+                <div class="logo-icon"><i class="fas fa-play"></i></div>
+                <div class="logo-text">Tube<span>Flow</span></div>
+            </div>
+        </a>
 
-            <div class="collapse navbar-collapse" id="mainNav">
+        <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNav">
+            {# Выносим with, чтобы он охватывал все меню, включая правую часть #}
+            {% with url_name=request.resolver_match.url_name %}
                 <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
                     {% if user.is_authenticated %}
                         
-                        {# Используем request.resolver_match.url_name для точного определения страницы #}
-                        {% with url_name=request.resolver_match.url_name %}
-                        
-                            {% if user.role == 'advertiser' %}
-                                <li class="nav-item">
-                                    <a href="{% url 'core:blogger_list' %}" class="nav-link {% if url_name == 'blogger_list' %}active{% endif %}">Блогеры</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'core:ad_list' %}" class="nav-link {% if url_name == 'ad_list' %}active{% endif %}">Все объявления</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'core:my_ads' %}" class="nav-link {% if url_name == 'my_ads' %}active{% endif %}">Мои объявления</a>
-                                </li>
-                            {% elif user.role == 'blogger' %}
-                                <li class="nav-item">
-                                    <a href="{% url 'core:ad_list' %}" class="nav-link {% if url_name == 'ad_list' %}active{% endif %}">Объявления на рекламу</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'core:blogger_list' %}" class="nav-link {% if url_name == 'blogger_list' %}active{% endif %}">Блогеры</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'core:edit_profile' %}" class="nav-link {% if url_name == 'edit_profile' %}active{% endif %}">Мои цены</a>
-                                </li>
-                            {% endif %}
+                        {% if user.role == 'advertiser' %}
+                            <li class="nav-item">
+                                <a href="{% url 'core:blogger_list' %}" class="nav-link {% if url_name == 'blogger_list' %}active{% endif %}">Блогеры</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{% url 'core:ad_list' %}" class="nav-link {% if url_name == 'ad_list' %}active{% endif %}">Все объявления</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{% url 'core:my_ads' %}" class="nav-link {% if url_name == 'my_ads' %}active{% endif %}">Мои объявления</a>
+                            </li>
+                        {% elif user.role == 'blogger' %}
+                            <li class="nav-item">
+                                <a href="{% url 'core:ad_list' %}" class="nav-link {% if url_name == 'ad_list' %}active{% endif %}">Объявления на рекламу</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{% url 'core:blogger_list' %}" class="nav-link {% if url_name == 'blogger_list' %}active{% endif %}">Блогеры</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{% url 'core:edit_profile' %}" class="nav-link {% if url_name == 'edit_profile' %}active{% endif %}">Мои цены</a>
+                            </li>
+                        {% endif %}
 
-                            <li class="nav-item">
-                                <a href="{% url 'core:integration_list' %}" class="nav-link {% if 'integration' in url_name %}active{% endif %}">Моя реклама</a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'core:chat_list' %}" class="nav-link {% if 'chat' in url_name %}active{% endif %}">
-                                    Сообщения
-                                    {% if unread_messages_count > 0 %}
-                                        <span class="badge rounded-pill badge-msg">{{ unread_messages_count }}</span>
-                                    {% endif %}
-                                </a>
-                            </li>
-                        {% endwith %}
+                        <li class="nav-item">
+                            <a href="{% url 'core:integration_list' %}" class="nav-link {% if 'integration' in url_name %}active{% endif %}">Моя реклама</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'core:chat_list' %}" class="nav-link {% if 'chat' in url_name %}active{% endif %}">
+                                Сообщения
+                                {% if unread_messages_count > 0 %}
+                                    <span class="badge rounded-pill badge-msg">{{ unread_messages_count }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
                     {% else %}
-                        <li class="nav-item"><a href="{% url 'core:marketplace' %}" class="nav-link">Маркетплейс</a></li>
+                        <li class="nav-item">
+                            <a href="{% url 'core:marketplace' %}" class="nav-link {% if url_name == 'marketplace' %}active{% endif %}">Маркетплейс</a>
+                        </li>
                     {% endif %}
                 </ul>
 
                 <div class="d-flex align-items-center gap-2">
                     {% if user.is_authenticated %}
-                        <a href="{% url 'core:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        {# Теперь "Кабинет" использует ту же логику url_name и находится внутри блока with #}
+                        <a href="{% url 'core:dashboard' %}" class="nav-link {% if url_name == 'dashboard' %}active{% endif %}">
                             Кабинет
                         </a>
-
+                        {# Рекомендую добавить ссылку на выход для удобства #}
+                        <a href="{% url 'logout' %}" class="nav-link ms-2 text-danger" title="Выйти">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </a>
                     {% else %}
                         <a href="{% url 'login' %}" class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm">Войти</a>
                     {% endif %}
                 </div>
-            </div>
+            {% endwith %}
         </div>
-    </nav>
+    </div>
+</nav>
 
     <!-- Баннер Telegram 
     {% if user.is_authenticated and not user.tg_chat_id %}

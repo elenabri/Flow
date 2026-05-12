@@ -126,7 +126,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'len.bri14@gmail.com'
 EMAIL_HOST_PASSWORD = 'yvyojptzikbylojr' # Рекомендую заменить на переменную окружения
-DEFAULT_FROM_EMAIL = 'Vkusnevich <len.bri14@gmail.com>'
+DEFAULT_FROM_EMAIL = 'TubeFlow <len.bri14@gmail.com>'
 
 # --- TELEGRAM ---
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', "8275098246:AAG0GwVR8FNSS7DhnmhCseZZwzXvO1h-n7k")

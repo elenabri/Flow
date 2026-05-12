@@ -215,8 +215,7 @@ def register(request):
             
 
             except Exception as e:
-                messages.error(request, f"Ошибка при регистрации: {e}")
-                return redirect('core:register')
+                print(f"Письмо не ушло, но пользователь создан: {e}")
                 
     else:
         form = RegistrationForm()

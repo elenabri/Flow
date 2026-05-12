@@ -191,14 +191,14 @@
                                     <a href="{% url 'core:blogger_list' %}" class="nav-link {% if url_name == 'blogger_list' %}active{% endif %}">Блогеры</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="{% url 'core:ad_list' %}" class="nav-link {% if url_name == 'ad_list' %}active{% endif %}">Объявления</a>
+                                    <a href="{% url 'core:ad_list' %}" class="nav-link {% if url_name == 'ad_list' %}active{% endif %}">Все объявления</a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="{% url 'core:my_ads' %}" class="nav-link {% if url_name == 'my_ads' %}active{% endif %}">Мои объявления</a>
                                 </li>
                             {% elif user.role == 'blogger' %}
                                 <li class="nav-item">
-                                    <a href="{% url 'core:ad_list' %}" class="nav-link {% if url_name == 'ad_list' %}active{% endif %}">На рекламу</a>
+                                    <a href="{% url 'core:ad_list' %}" class="nav-link {% if url_name == 'ad_list' %}active{% endif %}">Объявления на рекламу</a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="{% url 'core:blogger_list' %}" class="nav-link {% if url_name == 'blogger_list' %}active{% endif %}">Блогеры</a>

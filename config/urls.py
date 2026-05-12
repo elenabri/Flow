@@ -39,6 +39,7 @@ core_patterns = ([
     path('ajax/check-email/', views.check_email, name='check_email'),
     path('support-ajax/', views.support_ajax, name='support_ajax'),
     path('activate/<uidb64>/<token>/', views.activate, name='activate'),
+    path('registration-success/', views.registration_success, name='registration_success'),
     path('login-router/', views.login_router, name='login_router'),
     path('api/connect-telegram/', views.connect_telegram_api, name='connect_telegram_api'),
     path('bulk-message-setup/', views.bulk_message_setup, name='bulk_message_setup'),

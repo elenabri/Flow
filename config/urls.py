@@ -22,7 +22,7 @@ core_patterns = ([
     # Блогеры
     path('bloggers/', views.blogger_list, name='blogger_list'), # Теперь ведет на правильный view
     path('blogger/<int:blogger_id>/', views.blogger_detail, name='blogger_detail'),
-    path('blogger/profile/edit/', views.edit_blogger_profile, name='edit_profile'), 
+    path('blogger/profile/edit/', views.edit_profile, name='edit_profile'), 
     
     # Взаимодействие и Интеграции
     path('integration/', views.integration, name='integration_list'), 

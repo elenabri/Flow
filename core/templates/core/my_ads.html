@@ -1,0 +1,127 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5" style="font-family: 'Manrope', sans-serif;">
+    
+    <!-- Шапка личного кабинета -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h2 style="font-weight: 800; color: #1c1c1e;">Мои предложения</h2>
+            <p style="color: #8e8e93;">Управление вашими товарами в маркетплейсе</p>
+        </div>
+        <button onclick="toggleAddForm()" class="btn" style="background: #1c1c1e; color: #fff; border-radius: 12px; padding: 12px 24px; font-weight: 700;">
+            + Добавить товар
+        </button>
+    </div>
+
+    <!-- Форма добавления (скрыта по умолчанию) -->
+    <div id="add-product-form" class="content-card d-none" 
+         style="background: #fff; border: 1px solid #efeff4; border-radius: 24px; padding: 40px; margin-bottom: 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.05);">
+        
+        <h3 style="margin-bottom: 30px; font-weight: 800;">Новое предложение</h3>
+        
+        <form method="post" enctype="multipart/form-data" style="display: grid; gap: 20px;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_product">
+            
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Название товара</label>
+                    <input type="text" name="name" class="form-control" placeholder="Напр: Паштет из индейки" required style="border-radius: 10px; padding: 12px;">
+                </div>
+                <div class="col-md-6">
+                    <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Краткое описание (30 симв.)</label>
+                    <input type="text" name="short_description" maxlength="30" class="form-control" placeholder="Напр: Нежный вкус, без сои" style="border-radius: 10px; padding: 12px;">
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Wildberries URL</label>
+                    <input type="url" name="link_wb" class="form-control" style="border-radius: 10px; padding: 12px;">
+                </div>
+                <div class="col-md-4">
+                    <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Ozon URL</label>
+                    <input type="url" name="link_ozon" class="form-control" style="border-radius: 10px; padding: 12px;">
+                </div>
+                <div class="col-md-4">
+                    <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Бюджет (₽)</label>
+                    <input type="number" name="budget" class="form-control" placeholder="5000" style="border-radius: 10px; padding: 12px;">
+                </div>
+            </div>
+
+            <div>
+                <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Полное ТЗ для блогера</label>
+                <textarea name="description" rows="4" class="form-control" placeholder="Подробные условия сотрудничества..." style="border-radius: 10px; padding: 12px;"></textarea>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Загрузить фото</label>
+                    <input type="file" name="product_image" class="form-control" accept="image/*">
+                </div>
+                <div class="col-md-6">
+                    <label style="font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase;">Или ссылка на фото</label>
+                    <input type="url" name="avatar_url" class="form-control" style="border-radius: 10px; padding: 12px;">
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-3">
+                <button type="submit" class="btn" style="background: #1c1c1e; color: #fff; padding: 14px 30px; border-radius: 12px; font-weight: 700;">Опубликовать</button>
+                <button type="button" onclick="toggleAddForm()" class="btn btn-light" style="border-radius: 12px; padding: 14px 30px;">Отмена</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Список товаров только этого рекламодателя -->
+    <div class="row">
+        {% for ad in ads %}
+        <div class="col-md-4 mb-4">
+            <div class="card border-0" style="border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); overflow: hidden;">
+                <div style="position: relative; height: 200px;">
+                    <img src="{{ ad.image.url|default:ad.avatar_url }}" class="w-100 h-100" style="object-fit: cover;">
+                    <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 5px;">
+                        <!-- Кнопка редактирования -->
+                        <a href="{% url 'core:edit_product' ad.id %}" class="btn btn-sm bg-white" style="border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                            <i class="bi bi-pencil-square"></i>
+                        </a>
+                        <!-- Кнопка удаления -->
+                        <form method="post" onsubmit="return confirm('Удалить этот товар?');" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete_product">
+                            <input type="hidden" name="product_id" value="{{ ad.id }}">
+                            <button type="submit" class="btn btn-sm btn-danger" style="border-radius: 8px;">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-1">{{ ad.name }}</h5>
+                    <p style="font-size: 0.85rem; color: #8e8e93;">{{ ad.short_description|truncatechars:30 }}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span style="font-size: 14px; font-weight: 700;">{{ ad.budget|default:"0" }} ₽</span>
+                        <span class="badge" style="background: #e8f5e9; color: #2e7d32;">Активно</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <p class="text-muted">У вас пока нет добавленных товаров.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function toggleAddForm() {
+        const form = document.getElementById('add-product-form');
+        form.classList.toggle('d-none');
+        if (!form.classList.contains('d-none')) {
+            form.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+</script>
+{% endblock %}

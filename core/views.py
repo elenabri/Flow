@@ -18,6 +18,14 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.template.loader import render_to_string
 from django.views.decorators.csrf import csrf_exempt
+import json
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+# И ваш импорт моделей:
+from .models import User, Chat, Message
 
 # Твои локальные файлы
 from .forms import RegistrationForm, EmailLoginForm
@@ -26,6 +34,10 @@ from .models import (
     Message, AdContract, SupportTicket
 )
 from .constants import TOPIC_CHOICES, SUB_TOPICS_MAP
+from django.shortcuts import render, get_object_or_404, redirect  # Добавлен redirect
+from django.contrib.auth.decorators import login_required
+from .utils import get_main_menu_keyboard, get_chats_inline # Проверьте имя здесь!
+
 
 User = get_user_model()
 YOUTUBE_API_KEY = 'AIzaSyBIQSgM6nAcLnt5En1E59Ee65jL-NHTJDs'
@@ -187,18 +199,20 @@ def activate(request, uidb64, token):
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
-    except: user = None
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
 
     if user and default_token_generator.check_token(user, token):
         user.is_active = True
         user.save()
         
-        # АВТОВХОД: после клика по ссылке он уже внутри системы
-        login(request, user) 
-        
-        messages.success(request, "Аккаунт успешно активирован!")
-        return redirect('core:dashboard') # Или ваш login_router
+        # Автоматический вход в систему
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            
+        # СРАЗУ перенаправляем на маркетплейс
+        return redirect('core:marketplace') 
     
+    # Если токен невалидный, оставляем страницу с ошибкой
     return render(request, 'core/activation_invalid.html')
 
 def user_login(request):
@@ -211,88 +225,7 @@ def user_login(request):
                 return redirect('core:marketplace')
     return render(request, 'registration/login.html', {'form': EmailLoginForm()})
 
-# --- 3. МАРКЕТПЛЕЙС И ДЕТАЛИ ---
 
-from django.shortcuts import render
-from django.db.models import Q
-from .models import BloggerProfile, ProductAd  # Исправленные имена моделей
-from .constants import TOPIC_CHOICES
-
-def marketplace(request):
-    # 1. Получаем базовые параметры
-    active_tab = request.GET.get('tab', 'ads')
-    query = request.GET.get('q', '')
-    selected_cats = request.GET.getlist('cat')
-    
-    # 2. Инициализируем QuerySets
-    bloggers = BloggerProfile.objects.all()
-    ads = ProductAd.objects.filter(is_active=True)
-
-    # 3. Поиск по тексту
-    if query:
-        ads = ads.filter(
-            Q(name__icontains=query) | 
-            Q(description__icontains=query) | 
-            Q(advertiser__company_name__icontains=query)
-        )
-        bloggers = bloggers.filter(
-            Q(channel_name__icontains=query) | 
-            Q(categories__icontains=query)
-        )
-
-    # 4. Фильтр по категориям
-    if selected_cats:
-        ad_cat_queries = Q()
-        blog_cat_queries = Q()
-        for cat in selected_cats:
-            ad_cat_queries |= Q(category__icontains=cat)
-            blog_cat_queries |= Q(categories__icontains=cat)
-        ads = ads.filter(ad_cat_queries)
-        bloggers = bloggers.filter(blog_cat_queries)
-
-    # 5. Специфические фильтры
-    if active_tab == 'bloggers':
-        # Подписчики
-        subs_min = request.GET.get('subs_min')
-        subs_max = request.GET.get('subs_max')
-        if subs_min:
-            bloggers = bloggers.filter(subscribers_count__gte=subs_min)
-        if subs_max:
-            bloggers = bloggers.filter(subscribers_count__lte=subs_max)
-
-        # Цена
-        price_min = request.GET.get('price_min')
-        price_max = request.GET.get('price_max')
-        if price_min:
-            bloggers = bloggers.filter(price_start__gte=price_min)
-        if price_max:
-            bloggers = bloggers.filter(price_start__lte=price_max)
-
-        # Сортировка
-        sort_blog = request.GET.get('sort_blog', '-subscribers_count')
-        # Если сортировка по CPV, используем property или аннотацию (здесь простая по подпискам)
-        if sort_blog in ['-subscribers_count', 'subscribers_count', '-median_views']:
-            bloggers = bloggers.order_by(sort_blog)
-
-    else:  # Вкладка товаров (ads)
-        budget_min = request.GET.get('budget_min')
-        budget_max = request.GET.get('budget_max')
-        if budget_min:
-            ads = ads.filter(budget__gte=budget_min)
-        if budget_max:
-            ads = ads.filter(budget__lte=budget_max)
-        
-        ads = ads.order_by('-created_at')
-
-    context = {
-        'active_tab': active_tab,
-        'query': query,
-        'selected_cats': selected_cats,
-        'bloggers': bloggers,
-        'ads': ads,
-        'TOPIC_CHOICES': TOPIC_CHOICES,
-    }
-    return render(request, 'core/marketplace.html', context)
 from django.db.models import Count
 
 @login_required
@@ -327,8 +260,16 @@ def chat_detail(request, user_id):
                 chat=chat,
                 text=txt
             )
+            if other_user.tg_chat_id:
+                title = f"✉️ Новое сообщение от {request.user.username}"
+                send_sync_message(
+                    chat_id=other_user.tg_chat_id, 
+                    title=title, 
+                    text=txt
+                )
             # Если это обычный POST (не AJAX), можно редиректить на тот же URL
             return redirect('core:chat_detail', user_id=user_id)
+    
 
     # 5. Сообщения для отображения
     msgs = chat.messages.all().order_by('created_at')
@@ -343,25 +284,28 @@ def chat_detail(request, user_id):
 
 from core.models import Chat, Message
 
+
 @login_required
 def chat_list(request):
-    # Получаем все чаты, где текущий пользователь является участником
     user_chats = Chat.objects.filter(participants=request.user).order_by('-created_at')
     
-    # Если тебе всё же нужен список последних сообщений для отображения:
-    msgs = Message.objects.filter(chat__participants=request.user).order_by('-created_at')
-    
+    chats_data = {}
+    for chat in user_chats:
+        # Находим, кто наш собеседник
+        opponent = chat.participants.exclude(id=request.user.id).first()
+        if opponent:
+            # Берем последнее сообщение в этом чате
+            last_msg = chat.messages.order_by('-created_at').first()
+            chats_data[opponent] = last_msg
+
     return render(request, 'core/chat_list.html', {
-        'chats': user_chats,
-        'messages': msgs
+        'chats': chats_data,  # Теперь это словарь, и .items в шаблоне заработает!
     })
 
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .models import Chat, Message
 
-
-@login_required
 @login_required
 def bulk_message_setup(request):
     if request.method == 'POST':
@@ -464,57 +408,116 @@ def home(request): return render(request, 'core/index.html')
 # --- 7. ПАНЕЛИ УПРАВЛЕНИЯ (DASHBOARDS) ---
 
 
+import json
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import ProductAd, Message, AdContract
+
+import json
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from .models import AdContract, Message, ProductAd
+
 @login_required
 def dashboard(request):
     user = request.user
     
+    # 1. ОБРАБОТКА POST-ЗАПРОСОВ (СОХРАНЕНИЕ)
     if request.method == 'POST':
+        # --- ЛОГИКА БЛОГЕРА ---
         if hasattr(user, 'blogger_profile'):
-            # Обновление прайса для блогера
             profile = user.blogger_profile
-            # Используем .get(..., 0) и приводим к числу, чтобы избежать ошибок в базе
-            profile.price_start = request.POST.get('price_start', 0)
-            profile.price_middle = request.POST.get('price_middle', 0)
-            profile.price_end = request.POST.get('price_end', 0) # Исправили с .end на .price_end
-            profile.price_shorts = request.POST.get('price_shorts', 0)
-            profile.save()
-            messages.success(request, "Прайс-лист успешно обновлен")
-        
+            try:
+                # Цены (защита от пустых строк и букв)
+                profile.price_start = request.POST.get('price_start') or 0
+                profile.price_middle = request.POST.get('price_middle') or 0
+                profile.price_end = request.POST.get('price_end') or 0
+                profile.price_shorts = request.POST.get('price_shorts') or 0
+                
+                # Статистика (обязательно приведение к int)
+                profile.median_views = int(request.POST.get('median_views') or 0)
+                profile.median_views_shorts = int(request.POST.get('median_views_shorts') or 0)
+                
+                # Реквизиты
+                profile.bank_receiver = request.POST.get('bank_receiver')
+                profile.inn = request.POST.get('inn')
+                profile.bik = request.POST.get('bik')
+                profile.account_number = request.POST.get('account_number')
+                
+                # Динамические поля
+                custom_json = request.POST.get('custom_data_json')
+                if custom_json:
+                    profile.custom_data = json.loads(custom_json)
+                
+                profile.save()
+                messages.success(request, "Профиль блогера успешно обновлен!")
+            except ValueError:
+                messages.error(request, "Ошибка: в полях цен или просмотров должны быть только числа.")
+            except Exception as e:
+                messages.error(request, f"Ошибка при сохранении: {e}")
+
+        # --- ЛОГИКА РЕКЛАМОДАТЕЛЯ ---
         elif hasattr(user, 'advertiser_profile'):
-            # Добавление товара для Вкусневич (исправляем TypeError)
-            ProductAd.objects.create(
-                advertiser=user.advertiser_profile,
-                name=request.POST.get('name'),           # Новое название поля в модели
-                category=request.POST.get('category'),   # Категории
-                description=request.POST.get('description'),
-                link_wb=request.POST.get('link_wb'),     # Новые поля ссылок
-                link_ozon=request.POST.get('link_ozon'),
-                link_other=request.POST.get('link_other'),
-                image=request.FILES.get('product_image'), # Обработка файла
-                avatar_url=request.POST.get('avatar_url') # Ссылка на фото
-            )
-            messages.success(request, "Товар успешно добавлен в маркетплейс")
+            profile = user.advertiser_profile
             
+            # А. Обновление реквизитов компании
+            if 'update_company' in request.POST:
+                profile.company_name = request.POST.get('company_name', profile.company_name)
+                profile.inn = request.POST.get('inn')
+                profile.bik = request.POST.get('bik')
+                profile.account_number = request.POST.get('account_number')
+                profile.ogrn = request.POST.get('ogrn')
+                profile.legal_address = request.POST.get('legal_address')
+                profile.save()
+                messages.success(request, "Данные компании сохранены")
+
+            # Б. Создание нового товара
+            elif 'add_product' in request.POST:
+                ProductAd.objects.create(
+                    advertiser=profile,
+                    name=request.POST.get('name'), 
+                    short_description=request.POST.get('short_description', '')[:30],
+                    description=request.POST.get('description'),
+                    additional_info=request.POST.get('additional_info'),
+                    barter_terms=request.POST.get('barter_terms'),
+                    category=request.POST.get('category'),
+                    image=request.FILES.get('product_image'),
+                    avatar_url=request.POST.get('avatar_url'),
+                    link_wb=request.POST.get('link_wb'),
+                    link_ozon=request.POST.get('link_ozon'),
+                    link_other=request.POST.get('link_other') 
+                )
+                messages.success(request, "Товар успешно добавлен в маркетплейс")
+        
+        # После POST всегда делаем редирект, чтобы избежать повторной отправки формы при обновлении страницы
         return redirect('core:dashboard')
 
-    # Сбор данных для отображения (GET)
-    context = {}
+    # 2. ПОДГОТОВКА ДАННЫХ ДЛЯ ОТОБРАЖЕНИЯ (GET)
+    context = {'user': user}
     
     if hasattr(user, 'blogger_profile'):
         context['profile'] = user.blogger_profile
-        context['recent_messages'] = Message.objects.filter(chat__participants=user).exclude(sender=user).order_by('-created_at')[:5]
-        context['active_contracts'] = AdContract.objects.filter(blogger=user).exclude(status='completed')
-        return render(request, 'core/dashboard.html', context)
-    
+        # Используем select_related для оптимизации запросов к БД
+        context['active_contracts'] = AdContract.objects.filter(blogger=user)\
+            .exclude(status='completed').select_related('advertiser')
+        
+        # Последние 5 входящих сообщений
+        context['recent_messages'] = Message.objects.filter(chat__participants=user)\
+            .exclude(sender=user).select_related('sender').order_by('-created_at')[:5]
+        
     elif hasattr(user, 'advertiser_profile'):
         context['profile'] = user.advertiser_profile
-        # Используем 'products', так как в шаблоне прописано {% for product in products %}
+        # Список товаров рекламодателя
         context['products'] = ProductAd.objects.filter(advertiser=user.advertiser_profile).order_by('-created_at')
-        context['active_contracts'] = AdContract.objects.filter(advertiser=user).exclude(status='completed')
-        return render(request, 'core/dashboard.html', context)
-    
-    # Если у пользователя нет профиля (редкий случай), просто рендерим пустой шаблон или редирект
+        # Контракты
+        context['active_contracts'] = AdContract.objects.filter(advertiser=user)\
+            .exclude(status='completed').select_related('blogger')
+
     return render(request, 'core/dashboard.html', context)
+    
     
     
 
@@ -709,7 +712,8 @@ def verify_email(request, username):
         user = User.objects.get(username=username) # Проверь, ищет ли он по тому полю!
         user.is_active = True
         user.save()
-        return HttpResponse(f"УРА! Пользователь {username} найден и активирован. Теперь попробуй войти.")
+        login(request, user)
+        return redirect('core:marketplace') 
     except User.DoesNotExist:
         return HttpResponse(f"ОШИБКА: В базе нет пользователя с username = {username}")
 
@@ -739,6 +743,18 @@ def send_tg_feedback(tg_id, text):
     except Exception as e:
         print(f"Ошибка отправки в TG: {e}")
 
+
+
+import json
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+from .models import User, Chat, Message
+from .utils import get_main_menu_keyboard, get_chats_inline
+import telebot
+
+bot = telebot.TeleBot(settings.TELEGRAM_BOT_TOKEN)
+
 @csrf_exempt
 def telegram_webhook(request):
     if request.method != 'POST':
@@ -749,6 +765,38 @@ def telegram_webhook(request):
     except json.JSONDecodeError:
         return HttpResponse(status=400)
 
+    # --- 1. ОБРАБОТКА НАЖАТИЙ НА КНОПКИ (CallbackQuery) ---
+    if 'callback_query' in data:
+        call = data['callback_query']
+        tg_id = call['from']['id']
+        chat_id = call['data'].replace("select_chat_", "")
+        
+        try:
+            sender = User.objects.get(tg_chat_id=tg_id)
+            target_chat = Chat.objects.get(id=chat_id)
+            
+            # Устанавливаем активный чат для пользователя
+            sender.current_tg_chat = target_chat
+            sender.save()
+            
+            # Помечаем сообщения как прочитанные (кроме своих)
+            target_chat.messages.filter(is_read=False).exclude(sender=sender).update(is_read=True)
+            
+            opponent = target_chat.get_opponent_name(sender)
+            bot.answer_callback_query(call['id'], text=f"Выбран чат: {opponent}")
+            bot.send_message(
+                tg_id, 
+                f"✅ Вы переключились на диалог с *{opponent}*.\nТеперь пишите сообщение — оно отправится собеседнику.", 
+                parse_mode="Markdown",
+                reply_markup=get_main_menu_keyboard() # Убедимся, что меню на месте
+            )
+        except Exception as e:
+            print(f"Ошибка Callback: {e}")
+        
+        return HttpResponse(status=200)
+
+    # --- 2. ОБРАБОТКА СООБЩЕНИЙ (Message) ---
+# --- 2. ОБРАБОТКА СООБЩЕНИЙ (Message) ---
     if 'message' not in data:
         return HttpResponse(status=200)
 
@@ -756,104 +804,66 @@ def telegram_webhook(request):
     tg_id = message['from']['id']
     text = message.get('text', '')
 
-    # --- 1. Поиск пользователя по tg_id ---
+    # 1. Сначала обрабатываем /start (для всех)
+    if text.startswith('/start'):
+        # Логика приветствия и привязки
+        bot.send_message(
+            tg_id, 
+            "Добро пожаловать в Flow! 🚀\nИспользуйте меню ниже для навигации.", 
+            reply_markup=get_main_menu_keyboard()
+        )
+        return HttpResponse(status=200)
+
+    # 2. Ищем пользователя для остальных действий
     try:
         sender = User.objects.get(tg_chat_id=tg_id)
     except User.DoesNotExist:
-        # Если юзера нет, проверяем команду привязки /start ID
-        if text.startswith('/start'):
-            parts = text.split()
-            if len(parts) > 1:
-                try:
-                    user = User.objects.get(id=parts[1])
-                    user.tg_chat_id = tg_id
-                    user.save()
-                    send_tg_feedback(tg_id, "✅ Аккаунт привязан! Теперь вы можете получать сообщения.")
-                except (User.DoesNotExist, ValueError):
-                    send_tg_feedback(tg_id, "❌ Ошибка: пользователь не найден.")
-        else:
-            send_tg_feedback(tg_id, "Зарегистрируйтесь на сайте и привяжите Telegram через /start [ваш_id]")
+        bot.send_message(tg_id, "⚠️ Ваш аккаунт не привязан. Пожалуйста, авторизуйтесь через сайт.")
         return HttpResponse(status=200)
 
-    # --- 2. Обработка команд переключения чата (/chat_42) ---
-    if text:
-        chat = sender.current_tg_chat
-        if not chat:
-            chat = Chat.objects.filter(participants=sender).order_by('-created_at').first()
-            if chat:
-                sender.current_tg_chat = chat
-                sender.save()
+    # 3. Дальше кнопки меню (Главная, Диалоги) и пересылка...
 
-        if chat:
-            # Создаем сообщение в БД
-            new_msg = Message.objects.create(
-                chat=chat, sender=sender, text=text, is_from_tg=True
-            )
-            
-            # Находим, кому отправить уведомление на сайте (WebSocket)
-            other_user = chat.participants.exclude(id=sender.id).first()
-            if other_user:
-                # Логика WebSocket (как у тебя была)
-                try:
-                    channel_layer = get_channel_layer()
-                    group_name = f'chat_{min(sender.id, other_user.id)}_{max(sender.id, other_user.id)}'
-                    async_to_sync(channel_layer.group_send)(
-                        group_name,
-                        {
-                            'type': 'chat_message',
-                            'message': text,
-                            'sender_id': sender.id,
-                            'is_from_tg': True
-                        }
-                    )
-                except: pass 
-        else:
-            send_tg_feedback(tg_id, "ℹ️ У вас нет активных диалогов. Напишите кому-нибудь на сайте Vkusnevich!")
-
-    return HttpResponse(status=200)
-
-    # --- 3. Пересылка обычного сообщения ---
-    if text:
-        chat = sender.current_tg_chat
+    # РЕАКЦИЯ НА КНОПКИ МЕНЮ
+    # РЕАКЦИЯ НА КНОПКИ МЕНЮ
+    if text == "🏠 Главная":
+        unread_count = Message.objects.filter(chat__participants=sender, is_read=False).exclude(sender=sender).count()
+        # ИСКУССТВЕННОЕ ИСПРАВЛЕНИЕ: имя функции должно совпадать с импортом
+        markup = get_chats_inline(sender, only_unread=True)
         
-        # Если чат не выбран, пытаемся взять последний активный
-        if not chat:
-            chat = Chat.objects.filter(participants=sender).order_by('-created_at').first()
-            if chat:
-                sender.current_tg_chat = chat
-                sender.save()
-
-        if chat:
-            # Сохраняем в БД
-            new_msg = Message.objects.create(
-                chat=chat,
-                sender=sender,
-                text=text,
-                is_from_tg=True
-            )
-
-            # Отправляем на сайт через WebSocket
-            try:
-                channel_layer = get_channel_layer()
-                other_user = chat.participants.exclude(id=sender.id).first()
-                # Генерируем имя группы (должно совпадать с логикой в consumers.py)
-                ids = sorted([sender.id, other_user.id])
-                room_group_name = f'chat_{ids[0]}_{ids[1]}'
-
-                async_to_sync(channel_layer.group_send)(
-                    room_group_name,
-                    {
-                        'type': 'chat_message',
-                        'message': text,
-                        'sender_id': sender.id,
-                        'sender_name': sender.username,
-                        'is_from_tg': True
-                    }
-                )
-            except Exception as e:
-                print(f"Ошибка WebSocket: {e}")
+        msg = f"🏠 *Главная страница*\n\n"
+        if unread_count > 0:
+            msg += f"🔔 У вас {unread_count} новых сообщений в чатах ниже:"
         else:
-            send_tg_feedback(tg_id, "❓ У вас нет активных чатов. Начните диалог на сайте.")
+            msg += "Новых сообщений нет."
+            
+        bot.send_message(tg_id, msg, parse_mode="Markdown", reply_markup=markup)
+        return HttpResponse(status=200)
+
+    if text == "📂 Мои диалоги":
+        # ИСКУССТВЕННОЕ ИСПРАВЛЕНИЕ: имя функции должно совпадать с импортом
+        markup = get_chats_inline(sender)
+        bot.send_message(tg_id, "Выберите диалог из списка:", reply_markup=markup)
+        return HttpResponse(status=200)
+
+    # ПЕРЕСЫЛКА СООБЩЕНИЯ (если чат выбран)
+    if text and not text.startswith('/'):
+        if sender.current_tg_chat:
+            chat = sender.current_tg_chat
+            
+            # Сохраняем в БД
+            Message.objects.create(chat=chat, sender=sender, text=text, is_from_tg=True)
+            
+            # Пересылаем админам/в топик
+            if chat.telegram_topic_id:
+                bot.send_message(
+                    settings.TELEGRAM_ADMIN_GROUP_ID, 
+                    text, 
+                    message_thread_id=chat.telegram_topic_id
+                )
+            # (Опционально) Отправка через WebSocket на сайт
+            # ... код с channel_layer ...
+        else:
+            bot.send_message(tg_id, "❌ У вас не выбран активный чат. Выберите его в '📂 Мои диалоги'.")
 
     return HttpResponse(status=200)
 
@@ -886,10 +896,7 @@ def chat_room_by_id(request, chat_id):
         return redirect('core:chat_detail', user_id=other_user.id)
     
     return redirect('core:chat_list')
-    
-    return render(request, 'core/product_detail.html', {
-        'product': product,
-    })
+
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -915,3 +922,106 @@ def connect_telegram_api(request):
         except User.DoesNotExist:
             return JsonResponse({"status": "error", "message": "User not found"}, status=404)
     return JsonResponse({"status": "error"}, status=400)
+
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+
+@login_required
+def update_profile(request):
+    if request.method == 'POST':
+        user = request.user
+        # Собираем словарь из формы
+        labels = request.POST.getlist('custom_label[]')
+        values = request.POST.getlist('custom_value[]')
+        new_custom_data = {l.strip(): v.strip() for l, v in zip(labels, values) if l.strip() and v.strip()}
+
+        if user.role == 'blogger':
+            # Достаем профиль блогера
+            profile = user.blogger_profile 
+            profile.inn = request.POST.get('inn')
+            profile.bik = request.POST.get('bik')
+            profile.account_number = request.POST.get('account_number')
+            profile.channel_link = request.POST.get('channel_link')
+            profile.channel_description = request.POST.get('channel_description')
+            profile.bank_receiver = request.POST.get('bank_receiver')
+            profile.custom_data = new_custom_data # Сохраняем в профиль!
+            profile.save()
+        else:
+            # Достаем профиль рекламодателя
+            profile = user.advertiser_profile
+            profile.inn = request.POST.get('inn')
+            profile.bik = request.POST.get('bik')
+            profile.account_number = request.POST.get('account_number')
+            profile.company_name = request.POST.get('company_name')
+            profile.legal_address = request.POST.get('legal_address')
+            profile.website = request.POST.get('website')
+            profile.ogrn = request.POST.get('ogrn')
+            profile.custom_data = new_custom_data # Сохраняем в профиль!
+            profile.save()
+
+        messages.success(request, "Профиль успешно обновлен!")
+        return redirect('core:dashboard')
+from django.shortcuts import render
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+def blogger_list(request):
+    from .models import BloggerProfile
+    
+    # Получаем все профили блогеров
+    # Мы используем select_related, чтобы Django не делал 100 запросов к базе
+    bloggers = BloggerProfile.objects.select_related('user').all()
+    
+    return render(request, 'core/blogger_list.html', {
+        'bloggers': bloggers
+    })
+
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
+from .models import BloggerProfile, ProductAd  # Используем ПРАВИЛЬНЫЕ имена моделей
+
+User = get_user_model()
+
+def blogger_list(request):
+    """
+    Список блогеров для маркетплейса.
+    """
+    # select_related('user') подтягивает данные из таблицы User за один запрос
+    bloggers = BloggerProfile.objects.select_related('user').all()
+    
+    return render(request, 'core/blogger_list.html', {
+        'bloggers': bloggers
+    })
+
+def marketplace(request):
+    """
+    Общий маркетплейс объявлений (Ad List).
+    """
+    # ИСПРАВЛЕНО: используем ProductAd вместо Product
+    ads = ProductAd.objects.filter(is_active=True).order_by('-created_at') 
+    
+    return render(request, 'core/ad_list.html', {
+        'ads': ads
+    })
+
+@login_required
+def manage_products(request):
+    """
+    Личный кабинет рекламодателя (My Ads).
+    Показывает только те объявления, которые создал текущий пользователь.
+    """
+    # ИСПРАВЛЕНО: 
+    # 1. Используем ProductAd
+    # 2. Фильтруем через профиль рекламодателя (advertiser)
+    if hasattr(request.user, 'advertiser_profile'):
+        my_ads = ProductAd.objects.filter(advertiser=request.user.advertiser_profile).order_by('-created_at')
+    else:
+        my_ads = []
+
+    return render(request, 'core/my_ads.html', {
+        'my_ads': my_ads
+    })

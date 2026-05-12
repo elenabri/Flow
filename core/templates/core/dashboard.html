@@ -1,356 +1,305 @@
-{% extends "core/base.html" %}
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Личный кабинет | TubeFlow{% endblock %}
+
+{% block extra_css %}
+    <style>
+        /* Локальные улучшения для карточек кабинета */
+        .dashboard-header {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--mp-border);
+            padding-bottom: 1.5rem;
+        }
+
+        .section-card {
+            background: #ffffff;
+            border: 1px solid var(--mp-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .section-card:hover {
+            box-shadow: 0 8px 24px rgba(148, 163, 184, 0.08);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--mp-text-main);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-label-custom {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--mp-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .form-control-custom {
+            border: 1px solid var(--mp-border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 15px;
+            color: var(--mp-text-main);
+            background-color: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        .form-control-custom:focus {
+            border-color: var(--mp-accent);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            outline: none;
+        }
+
+        /* Динамические поля */
+        .custom-field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 40px;
+            gap: 16px;
+            background: var(--mp-bg);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            align-items: end;
+        }
+
+        .btn-add-field {
+            background: rgba(59, 130, 246, 0.05);
+            color: var(--mp-accent);
+            border: 1px dashed var(--mp-accent);
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .btn-remove {
+            color: #ef4444;
+            background: none;
+            border: none;
+            font-size: 20px;
+            padding-bottom: 8px;
+        }
+
+        .sticky-save-bar {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--mp-border);
+            padding: 15px 0;
+            position: sticky;
+            bottom: 0;
+            margin: 0 -15px;
+            z-index: 100;
+        }
+        .btn-logout {
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid var(--mp-border);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-logout:hover {
+    background: #fee2e2;
+    color: #ef4444;
+    border-color: #fecaca;
+}
+    </style>
+{% endblock %}
 
 {% block content %}
-<style>
-    :root {
-        --primary: #2563eb;
-        --success: #10b981;
-        --danger: #ef4444;
-        --border-color: #e2e8f0;
-        --bg-readonly: #f1f5f9;
-        --text-main: #1e293b;
-        --text-muted: #64748b;
-    }
-
-    .dashboard-wrapper {
-        max-width: 1000px;
-        margin: 40px auto;
-        padding: 0 20px;
-        font-family: 'Inter', -apple-system, sans-serif;
-        color: var(--text-main);
-    }
-
-    /* Шапка кабинета */
-    .dashboard-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-bottom: 30px;
-    }
-
-    .dashboard-header h1 {
-        font-size: 28px;
-        font-weight: 800;
-        margin: 0;
-    }
-
-    .role-badge {
-        font-size: 12px;
-        padding: 4px 12px;
-        border-radius: 20px;
-        background: var(--bg-readonly);
-        color: var(--text-muted);
-        font-weight: 600;
-    }
-
-    /* Карточки и секции */
-    .content-card {
-        background: white;
-        border-radius: 20px;
-        border: 1px solid var(--border-color);
-        padding: 30px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-        margin-bottom: 30px;
-    }
-
-    .section-title {
-        font-size: 11px;
-        font-weight: 800;
-        text-transform: uppercase;
-        color: #94a3b8;
-        margin: 25px 0 15px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .section-title::after { content: ""; height: 1px; background: #f1f5f9; flex: 1; }
-
-    /* Сетка */
-    .grid-layout {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 20px;
-    }
-
-    /* Поля ввода */
-    .field-group { display: flex; flex-direction: column; gap: 8px; }
-    
-    label { font-size: 13px; font-weight: 600; color: #475569; }
-
-    input, textarea {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid var(--border-color);
-        border-radius: 10px;
-        font-size: 15px;
-        transition: all 0.2s;
-    }
-
-    input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-    
-    input[readonly] { background: var(--bg-readonly); color: var(--text-muted); cursor: not-allowed; }
-
-    /* Кнопки */
-    .btn {
-        padding: 12px 24px;
-        border-radius: 12px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
-
-    .btn-success { background: var(--success); color: white; width: 100%; margin-top: 10px; }
-
-    /* Специфические стили для прайса */
-    .price-item { padding: 15px; border-radius: 14px; border: 1px solid var(--border-color); background: #fff; }
-    .price-item.special { background: #fffaf5; border-color: #fed7aa; }
-    .cpv-text { margin-top: 10px; font-size: 12px; font-weight: 700; color: var(--success); }
-
-    /* Стили для товаров рекламодателя */
-    .product-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 20px;
-    }
-
-    .product-card {
-        background: #f8fafc;
-        border-radius: 16px;
-        padding: 20px;
-        border: 1px solid var(--border-color);
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-
-    .hidden { display: none; }
-</style>
-
-<div class="dashboard-wrapper">
-    
-    <header class="dashboard-header">
-        <div>
-            <span class="role-badge">{{ user.get_role_display }}</span>
-            <h1>Личный кабинет</h1>
-        </div>
-        {% if user.role == 'advertiser' %}
-        <button class="btn btn-primary" onclick="document.getElementById('add-product-form').classList.toggle('hidden')">
-            + Добавить товар
-        </button>
-        {% endif %}
-    </header>
-
-    {% if user.role == 'blogger' %}
-    <form method="post" class="content-card">
-        {% csrf_token %}
-        <h3 style="margin-top: 0;">Настройка прайс-листа</h3>
+<div class="row justify-content-center">
+    <div class="col-lg-8">
         
-        <div class="section-title">Канал и статистика</div>
-        <div class="grid-layout">
-            <div class="field-group">
-                <label>Название канала</label>
-                <input type="text" value="{{ profile.channel_name }}" readonly>
-            </div>
-            <div class="field-group">
-                <label>Медиана Long (просмотры)</label>
-                <input type="number" id="ml" value="{{ profile.median_views }}" readonly>
-            </div>
-            <div class="field-group">
-                <label>Медиана Shorts</label>
-                <input type="number" id="ms" value="{{ profile.median_views_shorts }}" readonly>
+        <!-- Заголовок -->
+        <div class="dashboard-header d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-1 fw-bold">
+                    {% if user.role == 'blogger' %}Кабинет автора{% else %}Профиль бренда{% endif %}
+                </h1>
+                <p class="text-muted small mb-0">Управление данными и платежными реквизитами</p>
             </div>
         </div>
-
-        <div class="section-title">Стоимость интеграций</div>
-        <div class="grid-layout">
-            <div class="price-item">
-                <label>Преролл(Начало)</label>
-                <input type="number" id="p_start" name="price_start" value="{{ profile.price_start|default:0 }}" oninput="calcAllCPV()">
-                <div class="cpv-text">CPV: <span id="cpv_start">0</span> ₽</div>
-            </div>
-            <div class="price-item">
-                <label>Мидролл(Середина)</label>
-                <input type="number" id="p_mid" name="price_middle" value="{{ profile.price_middle|default:0 }}" oninput="calcAllCPV()">
-                <div class="cpv-text">CPV: <span id="cpv_mid">0</span> ₽</div>
-            </div>
-            <div class="price-item">
-                <label>Постролл(Конец)</label>
-                <input type="number" id="p_mid" name="price_middle" value="{{ profile.price_middle|default:0 }}" oninput="calcAllCPV()">
-                <div class="cpv-text">CPV: <span id="cpv_mid">0</span> ₽</div>
-            </div>
-            <div class="price-item special">
-                <label style="color: #c2410c;">YouTube Shorts</label>
-                <input type="number" id="p_shorts" name="price_shorts" value="{{ profile.price_shorts|default:0 }}" oninput="calcAllCPV()">
-                <div class="cpv-text" style="color: #f97316;">CPV: <span id="cpv_shorts_val">0</span> ₽</div>
-            </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 30px; justify-content: center;">
-            Сохранить изменения
-        </button>
-    </form>
-
-    {% elif user.role == 'advertiser' %}
-    
-    <div id="add-product-form" class="content-card hidden" style="border: 2px solid var(--primary); animation: slideDown 0.3s ease-out;">
-        <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 24px;">📦</span> Новый товар для рекламы
-        </h3>
-        <form method="post" enctype="multipart/form-data" style="display: grid; gap: 20px;">
+<!-- Заголовок -->
+<div class="dashboard-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="h3 mb-1 fw-bold">
+            {% if user.role == 'blogger' %}Кабинет автора{% else %}Профиль бренда{% endif %}
+        </h1>
+        <p class="text-muted small mb-0">Управление данными и платежными реквизитами</p>
+    </div>
+    <!-- Кнопка Выхода -->
+    <a href="{% url 'account_logout' %}" class="btn-logout d-flex align-items-center gap-2">
+        <i class="bi bi-box-arrow-right"></i>
+        Выйти
+    </a>
+</div>
+        <form method="POST" action="{% url 'core:update_profile' %}">
             {% csrf_token %}
-            <input type="hidden" name="action" value="add_product">
-            
-            <div class="grid-layout">
-                <div class="field-group">
-                    <label>Название товара</label>
-                    <input type="text" name="name" placeholder="Напр: Паштет Вкусневич из индейки" required>
+
+            {% if user.role == 'blogger' %}
+                <!-- СЕКЦИЯ БЛОГЕРА -->
+                <div class="section-card">
+                    <div class="section-title">
+                        <i class="bi bi-youtube text-danger"></i> Основные данные
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label-custom">Ссылка на YouTube канал</label>
+                            <input type="url" name="channel_link" class="form-control-custom w-100" 
+                                   value="{{ user.blogger_profile.channel_link }}" placeholder="https://youtube.com/@...">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label-custom">Описание контента</label>
+                            <textarea name="channel_description" class="form-control-custom w-100" rows="3" 
+                                      placeholder="О чем ваш канал?">{{ user.blogger_profile.channel_description }}</textarea>
+                        </div>
+                    </div>
                 </div>
-                <div class="field-group">
-                    <label>Категории (через запятую)</label>
-                    <input type="text" name="category" placeholder="Продукты, Консервы, ЗОЖ">
+
+                <div class="section-card">
+                    <div class="section-title">
+                        <i class="bi bi-credit-card text-primary"></i> Реквизиты для выплат
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label-custom">ФИО получателя</label>
+                            <input type="text" name="bank_receiver" class="form-control-custom w-100" value="{{ user.blogger_profile.bank_receiver }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">ИНН</label>
+                            <input type="text" name="inn" class="form-control-custom w-100" value="{{ user.blogger_profile.inn }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">БИК Банка</label>
+                            <input type="text" name="bik" class="form-control-custom w-100" value="{{ user.blogger_profile.bik }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">Расчетный счет</label>
+                            <input type="text" name="account_number" class="form-control-custom w-100" value="{{ user.blogger_profile.account_number }}">
+                        </div>
+                    </div>
                 </div>
+
+            {% else %}
+                <!-- СЕКЦИЯ РЕКЛАМОДАТЕЛЯ -->
+                <div class="section-card">
+                    <div class="section-title">
+                        <i class="bi bi-building text-primary"></i> Данные организации
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label-custom">Компания / ООО</label>
+                            <input type="text" name="company_name" class="form-control-custom w-100" value="{{ user.advertiser_profile.company_name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">Сайт</label>
+                            <input type="url" name="website" class="form-control-custom w-100" value="{{ user.advertiser_profile.website }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label-custom">Юридический адрес</label>
+                            <input type="text" name="legal_address" class="form-control-custom w-100" value="{{ user.advertiser_profile.legal_address }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">
+                        <i class="bi bi-file-earmark-text text-primary"></i> Реквизиты
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label-custom">ИНН</label>
+                            <input type="text" name="inn" class="form-control-custom w-100" value="{{ user.advertiser_profile.inn }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">ОГРН</label>
+                            <input type="text" name="ogrn" class="form-control-custom w-100" value="{{ user.advertiser_profile.ogrn }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">БИК Банка</label>
+                            <input type="text" name="bik" class="form-control-custom w-100" value="{{ user.advertiser_profile.bik }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">Счет</label>
+                            <input type="text" name="account_number" class="form-control-custom w-100" value="{{ user.advertiser_profile.account_number }}">
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- ДОП ПОЛЯ -->
+            <div class="section-card">
+                <div class="section-title d-flex justify-content-between">
+                    <span><i class="bi bi-plus-circle text-primary"></i> Дополнительно</span>
+                </div>
+                
+                <div id="custom-fields-container">
+                    {% with profile=user.blogger_profile|default:user.advertiser_profile %}
+                        {% for key, value in profile.custom_data.items %}
+                        <div class="custom-field-row">
+                            <div>
+                                <label class="form-label-custom">Название</label>
+                                <input type="text" name="custom_label[]" value="{{ key }}" class="form-control-custom w-100" required>
+                            </div>
+                            <div>
+                                <label class="form-label-custom">Значение</label>
+                                <input type="text" name="custom_value[]" value="{{ value }}" class="form-control-custom w-100" required>
+                            </div>
+                            <button type="button" class="btn-remove" onclick="this.parentElement.remove()">×</button>
+                        </div>
+                        {% endfor %}
+                    {% endwith %}
+                </div>
+                
+                <button type="button" class="btn-add-field" onclick="addCustomField()">
+                    <i class="bi bi-plus-lg"></i> Добавить новое поле
+                </button>
             </div>
 
-            <div class="grid-layout" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
-                <div class="field-group">
-                    <label>Wildberries URL</label>
-                    <input type="url" name="link_wb" placeholder="https://...">
-                </div>
-                <div class="field-group">
-                    <label>Ozon URL</label>
-                    <input type="url" name="link_ozon" placeholder="https://...">
-                </div>
-                <div class="field-group">
-                    <label>Сайт / Другое</label>
-                    <input type="url" name="link_other" placeholder="https://...">
+            <!-- ПАНЕЛЬ СОХРАНЕНИЯ -->
+            <div class="sticky-save-bar">
+                <div class="container d-flex gap-3 justify-content-center">
+                    <button type="submit" class="btn btn-primary px-5 rounded-pill shadow-sm">
+                        Сохранить изменения
+                    </button>
                 </div>
             </div>
-
-            <div class="grid-layout">
-                <div class="field-group">
-                    <label>Загрузить фото (файл)</label>
-                    <input type="file" name="product_image" accept="image/*" style="padding: 8px;">
-                </div>
-                <div class="field-group">
-                    <label>Или прямая ссылка на фото</label>
-                    <input type="url" name="avatar_url" placeholder="https://image-host.com/photo.jpg">
-                </div>
-            </div>
-
-            <div class="field-group">
-                <label>Описание и ТЗ для блогера</label>
-                <textarea name="description" rows="4" placeholder="Опишите, что важно показать в кадре и о чем рассказать..."></textarea>
-            </div>
-
-            <button type="submit" class="btn btn-success" style="justify-content: center; padding: 16px; font-size: 16px;">
-                🚀 Опубликовать в маркетплейс
-            </button>
         </form>
     </div>
-
-    <div class="section-title">Ваши активные предложения</div>
-    <div class="product-grid">
-        {% for product in products %}
-        <div class="product-card" style="transition: transform 0.2s; hover: transform: translateY(-5px);">
-            <div>
-                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                    <div style="width: 70px; height: 70px; background: #f1f5f9; border-radius: 12px; overflow: hidden; flex-shrink: 0; border: 1px solid var(--border-color);">
-                        {% if product.image %}
-                            <img src="{{ product.image.url }}" style="width: 100%; height: 100%; object-fit: cover;">
-                        {% elif product.avatar_url %}
-                            <img src="{{ product.avatar_url }}" style="width: 100%; height: 100%; object-fit: cover;">
-                        {% else %}
-                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #cbd5e1; font-size: 24px;">🥫</div>
-                        {% endif %}
-                    </div>
-                    <div style="overflow: hidden;">
-                        <h4 style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ product.name }}</h4>
-                        <span style="font-size: 11px; color: var(--text-muted); background: #f1f5f9; padding: 2px 8px; border-radius: 10px;">
-                            {{ product.category|default:"Без категории" }}
-                        </span>
-                    </div>
-                </div>
-
-                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px;">
-                    {% if product.link_wb %}
-                        <a href="{{ product.link_wb }}" target="_blank" style="font-size: 10px; padding: 4px 8px; border-radius: 6px; background: #f5d0fe; color: #701a75; text-decoration: none; font-weight: 700;">WB</a>
-                    {% endif %}
-                    {% if product.link_ozon %}
-                        <a href="{{ product.link_ozon }}" target="_blank" style="font-size: 10px; padding: 4px 8px; border-radius: 6px; background: #dbeafe; color: #1e40af; text-decoration: none; font-weight: 700;">OZON</a>
-                    {% endif %}
-                    {% if product.link_other %}
-                        <a href="{{ product.link_other }}" target="_blank" style="font-size: 10px; padding: 4px 8px; border-radius: 6px; background: #f1f5f9; color: #475569; text-decoration: none; font-weight: 700;">LINK</a>
-                    {% endif %}
-                </div>
-
-                <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
-                    {{ product.description }}
-                </p>
-            </div>
-
-            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 10px; color: #cbd5e1;">ID: #{{ product.id }}</span>
-                <div style="display: flex; gap: 15px; align-items: center;">
-                    <a href="{% url 'core:edit_product' product.pk %}" style="font-size: 13px; color: var(--primary); text-decoration: none; font-weight: 700;">
-                        ✏️ Изменить
-                    </a>
-                    <form action="{% url 'core:delete_product' product.pk %}" method="post" onsubmit="return confirm('Удалить товар «{{ product.name }}»?')">
-                        {% csrf_token %}
-                        <button type="submit" style="background: none; border: none; color: var(--danger); font-size: 13px; cursor: pointer; font-weight: 700; padding: 0;">
-                            Удалить
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-        {% empty %}
-        <div style="grid-column: 1/-1; text-align: center; padding: 50px; background: white; border-radius: 24px; border: 2px dashed #e2e8f0;">
-            <div style="font-size: 40px; margin-bottom: 10px;">📦</div>
-            <p style="color: #94a3b8; font-weight: 500;">У вас пока нет активных товаров.<br>Нажмите «Добавить товар», чтобы начать.</p>
-        </div>
-        {% endfor %}
-    </div>
-
-    <style>
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
-
-    {% endif %}
-
 </div>
 
 <script>
-function calcAllCPV() {
-    const ml = parseFloat(document.getElementById('ml')?.value) || 0;
-    const ms = parseFloat(document.getElementById('ms')?.value) || 0;
-    
-    const fields = [
-        { priceId: 'p_start', displayId: 'cpv_start', views: ml },
-        { priceId: 'p_mid', displayId: 'cpv_mid', views: ml },
-        { priceId: 'p_end', displayId: 'cpv_end', views: ml },
-        { priceId: 'p_shorts', displayId: 'cpv_shorts_val', views: ms }
-    ];
-
-    fields.forEach(item => {
-        const pInput = document.getElementById(item.priceId);
-        const display = document.getElementById(item.displayId);
-        if (pInput && display) {
-            const p = parseFloat(pInput.value) || 0;
-            display.innerText = item.views > 0 ? (p / item.views).toFixed(2) : '0';
-        }
-    });
-}
-window.onload = calcAllCPV;
+    function addCustomField() {
+        const container = document.getElementById('custom-fields-container');
+        const row = document.createElement('div');
+        row.className = 'custom-field-row';
+        row.innerHTML = `
+            <div>
+                <label class="form-label-custom">Название</label>
+                <input type="text" name="custom_label[]" placeholder="Напр: Telegram" class="form-control-custom w-100" required>
+            </div>
+            <div>
+                <label class="form-label-custom">Значение</label>
+                <input type="text" name="custom_value[]" placeholder="@username" class="form-control-custom w-100" required>
+            </div>
+            <button type="button" class="btn-remove" onclick="this.parentElement.remove()">×</button>
+        `;
+        container.appendChild(row);
+    }
 </script>
 {% endblock %}

@@ -6,54 +6,59 @@ from django.conf.urls.static import static
 from core import views  
 from core.views import telegram_webhook
 
-
 # Группируем все маршруты основного приложения с именем 'core'
 core_patterns = ([
     path('', views.home, name='home'),
     path('register/', views.register, name='register'),
     path('dashboard/', views.dashboard, name='dashboard'),
-    path('marketplace/', views.marketplace, name='marketplace'),
     
-    # API и AJAX
+    # Объявления (Маркетплейс)
+    path('marketplace/', views.marketplace, name='ad_list'), 
+    path('my-ads/', views.manage_products, name='my_ads'), 
+    path('product/<int:pk>/', views.product_detail, name='product_detail'),
+    path('my-products/edit/<int:pk>/', views.edit_product, name='edit_product'),
+    path('my-products/delete/<int:pk>/', views.delete_product, name='delete_product'),
+    
+    # Блогеры
+    path('bloggers/', views.blogger_list, name='blogger_list'), # Теперь ведет на правильный view
+    path('blogger/<int:blogger_id>/', views.blogger_detail, name='blogger_detail'),
+    path('blogger/profile/edit/', views.edit_blogger_profile, name='edit_profile'), 
+    
+    # Взаимодействие и Интеграции
+    path('integration/', views.integration, name='integration_list'), 
+    path('seller/<int:pk>/', views.seller_profile, name='seller_profile'),
+    path('send_response/<int:ad_id>/', views.send_response, name='send_response'),
+    
+    # Чаты
+    path('chats/', views.chat_list, name='chat_list'),
+    path('chat/<int:user_id>/', views.chat_detail, name='chat_detail'),
+    path('chats/room/<int:chat_id>/', views.chat_room_by_id, name='chat_room_by_id'),
+
+    # API и технические пути
     path('api/fetch-youtube/', views.fetch_youtube_data, name='fetch_youtube'),
     path('ajax/check-email/', views.check_email, name='check_email'),
     path('support-ajax/', views.support_ajax, name='support_ajax'),
     path('activate/<uidb64>/<token>/', views.activate, name='activate'),
-
-    # Чаты и взаимодействие
-    path('chats/', views.chat_list, name='chat_list'),
-    path('chat/<int:user_id>/', views.chat_detail, name='chat_detail'),
-    path('send_response/<int:ad_id>/', views.send_response, name='send_response'),
-    path('bulk-message-setup/', views.bulk_message_setup, name='bulk_message_setup'),
-    
-    # Кабинеты и профили
-    path('my-products/', views.manage_products, name='manage_products'),
-    path('my-products/delete/<int:pk>/', views.delete_product, name='delete_product'),
-    path('blogger/profile/', views.edit_blogger_profile, name='edit_blogger_profile'),
-    path('product/<int:pk>/', views.product_detail, name='product_detail'),
-    path('seller/<int:pk>/', views.seller_profile, name='seller_profile'),
-    path('integration/', views.integration, name='integration'),
-    path('my-products/edit/<int:pk>/', views.edit_product, name='edit_product'),
-    path('blogger/<int:blogger_id>/', views.blogger_detail, name='blogger_detail'),
-    # Роутер
     path('login-router/', views.login_router, name='login_router'),
-    path('chats/room/<int:chat_id>/', views.chat_room_by_id, name='chat_room_by_id'),
     path('api/connect-telegram/', views.connect_telegram_api, name='connect_telegram_api'),
+    path('bulk-message-setup/', views.bulk_message_setup, name='bulk_message_setup'),
+    path('update-profile/', views.update_profile, name='update_profile'),
     
+    # Мы убрали дубликаты marketplace, которые были в конце списка
 ], 'core')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('test-path/', views.home), # ДОБАВЬ ЭТУ СТРОКУ ДЛЯ ПРОВЕРКИ
+    path('test-path/', views.home), 
     path('verify-email/<path:username>/', views.verify_email, name='verify_email'),
-    # Подключаем наши основные пути через include с namespace
-    path('', include(core_patterns)),
     
+    # Основные пути приложения
+    path('', include(core_patterns)),
 
-    # Встроенная авторизация (login/logout)
+    # Встроенная авторизация
     path('accounts/', include('django.contrib.auth.urls')),
 
-    # Сброс пароля (auth_views)
+    # Сброс пароля
     path('password-reset/', auth_views.PasswordResetView.as_view(
         template_name='registration/password_reset_form.html',
         email_template_name='registration/password_reset_email.html',
@@ -71,13 +76,11 @@ urlpatterns = [
     path('password-reset-complete/', auth_views.PasswordResetCompleteView.as_view(
         template_name='registration/password_reset_complete.html'
     ), name='password_reset_complete'),
+    
     path('tg-webhook-8275098246/', telegram_webhook),
-
 ]
-# Раздаем МЕДИА всегда (и в DEBUG, и в PROD на Render)
-# Это позволит Django отдавать картинки тушенки и судака, пока ты не подключишь облако
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-# Раздаем СТАТИКУ (только для локальной разработки, на Render это делает WhiteNoise)
+# Медиа и статика
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

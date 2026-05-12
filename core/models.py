@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from .constants import TOPIC_CHOICES
+from django.db.models import JSONField
 
 # --- ПОЛЬЗОВАТЕЛЬ ---
 
@@ -38,6 +39,7 @@ class BloggerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='blogger_profile')
     channel_name = models.CharField("Название канала", max_length=255)
     channel_link = models.URLField("Ссылка на канал")
+    channel_description = models.TextField("Описание", blank=True)
     subscribers_count = models.PositiveIntegerField(default=0, verbose_name="Подписчиков")
     avatar_url = models.URLField(max_length=500, null=True, blank=True)
     banner_url = models.URLField(max_length=500, null=True, blank=True, verbose_name="Баннер канала")
@@ -53,7 +55,16 @@ class BloggerProfile(models.Model):
     price_shorts = models.DecimalField("Цена за Shorts", max_digits=10, decimal_places=2, default=0)
     
     categories = models.CharField("Тематики", max_length=500) 
-    description = models.TextField("Описание канала", blank=True)
+    
+
+    # Реквизиты для выплат
+    bank_receiver = models.CharField("ФИО получателя", max_length=255, blank=True)
+    inn = models.CharField("ИНН", max_length=12, blank=True)
+    bik = models.CharField("БИК", max_length=9, blank=True)
+    account_number = models.CharField("Расчетный счет", max_length=20, blank=True)
+    
+    # Сюда будут сохраняться динамические поля из JS
+    custom_data = JSONField("Доп. поля", default=dict, blank=True)
 
     # Логика сокращения категорий (для карточки)
     def get_short_categories(self):
@@ -78,22 +89,29 @@ class BloggerProfile(models.Model):
 
     @property
     def price_long_min(self):
+        # Собираем все цены за длинные видео
         prices = [self.price_start, self.price_middle, self.price_end]
-        valid_prices = [p for p in prices if p > 0]
+        # Оставляем только те, что больше нуля
+        valid_prices = [p for p in prices if p and p > 0]
         return min(valid_prices) if valid_prices else 0
 
     @property
-    def cpv_long(self):
+    def display_cpv_long(self):
+        """Цена за 1 просмотр (Long) с точностью 1 знак"""
         if self.median_views > 0 and self.price_long_min > 0:
-            return round(float(self.price_long_min) / self.median_views, 2)
+            # Считаем: минимальная цена / медианные просмотры
+            val = float(self.price_long_min) / self.median_views
+            return round(val, 1)
         return 0
 
     @property
-    def cpv_shorts(self):
+    def display_cpv_shorts(self):
+        """Цена за 1 просмотр (Shorts) с точностью 1 знак"""
         if self.median_views_shorts > 0 and self.price_shorts > 0:
-            return round(float(self.price_shorts) / self.median_views_shorts, 2)
+            val = float(self.price_shorts) / self.median_views_shorts
+            return round(val, 1)
         return 0
-
+    
     def __str__(self):
         return f"Блогер: {self.channel_name} (@{self.user.username})"
 
@@ -102,6 +120,17 @@ class BloggerProfile(models.Model):
 class AdvertiserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='advertiser_profile')
     company_name = models.CharField("Название компании", max_length=255)
+    legal_address = models.CharField("Юр. адрес", max_length=500, blank=True)
+    website = models.URLField("Сайт", blank=True)
+    
+    # Реквизиты
+    inn = models.CharField("ИНН", max_length=12, blank=True)
+    bik = models.CharField("БИК", max_length=9, blank=True)
+    account_number = models.CharField("Расчетный счет", max_length=20, blank=True)
+    ogrn = models.CharField("ОГРН", max_length=15, blank=True)
+    
+    # Сюда будут сохраняться динамические поля из JS
+    custom_data = JSONField("Доп. поля", default=dict, blank=True)
 
     def __str__(self):
         return self.company_name
@@ -111,26 +140,22 @@ class AdvertiserProfile(models.Model):
 class ProductAd(models.Model):
     advertiser = models.ForeignKey(AdvertiserProfile, on_delete=models.CASCADE, related_name='ads')
     
-    # Исправили title -> name, так как во views.py мы обращаемся к .name
     name = models.CharField("Название", max_length=200) 
-    
+    short_description = models.TextField(verbose_name="Краткое описание", max_length=30, blank=True)
+    additional_info = models.TextField(verbose_name="Доп. информация", blank=True)
+    is_barter = models.BooleanField(verbose_name="Только бартер", default=True)
     description = models.TextField("Описание и ТЗ")
     category = models.CharField("Категории (через запятую)", max_length=500)
     
     # Изображения
     image = models.ImageField("Файл фото", upload_to='products/%Y/%m/%d/', blank=True, null=True)
-    
-    # Исправили image_url -> avatar_url, чтобы совпадало с логикой views.py
     avatar_url = models.URLField("Ссылка на фото", blank=True, null=True, max_length=500)
     
     # Ссылки
     link_wb = models.URLField("Wildberries", max_length=500, null=True, blank=True)
     link_ozon = models.URLField("Ozon", max_length=500, null=True, blank=True)
-    
-    # Исправили link_site -> link_other, чтобы views.py видел это поле
     link_other = models.URLField("Сайт/Другое", max_length=500, null=True, blank=True)
     
-    budget = models.DecimalField("Бюджет/Цена", max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField("Опубликовать", default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -140,15 +165,24 @@ class ProductAd(models.Model):
         verbose_name_plural = "Объявления товаров"
         ordering = ['-created_at']
 
+    # ПОЛЕЗНО: Автоматический выбор доступного фото для шаблона
+    @property
+    def get_image_url(self):
+        if self.image:
+            return self.image.url
+        elif self.avatar_url:
+            return self.avatar_url
+        return "/static/img/no-image.png" # Путь к заглушке
+
     def get_short_categories(self):
         if not self.category:
             return "Без категории"
-        # Предполагается, что TOPIC_CHOICES определен выше в файле
         try:
+            # Импортируем внутри, если TOPIC_CHOICES в другом файле
+            from .choices import TOPIC_CHOICES 
             choices_dict = dict(TOPIC_CHOICES)
             cats = [choices_dict.get(c.strip(), c.strip()) for c in self.category.split(',') if c.strip()]
-        except NameError:
-            # Если TOPIC_CHOICES нет, просто возвращаем текст
+        except (NameError, ImportError):
             cats = [c.strip() for c in self.category.split(',') if c.strip()]
             
         if len(cats) > 2:
@@ -156,7 +190,6 @@ class ProductAd(models.Model):
         return ", ".join(cats)
 
     def __str__(self):
-        # Используем .name вместо .title и проверяем наличие company_name
         company = getattr(self.advertiser, 'company_name', 'Рекламодатель')
         return f"{self.name} ({company})"
 # --- ЧАТЫ ---

@@ -18,3 +18,7 @@ daphne
 channels
 channels-redis
 aiohttp
+pyTelegramBotAPI
+cloudinary
+django-cloudinary-storage
+Pillow

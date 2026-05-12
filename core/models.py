@@ -87,24 +87,29 @@ class BloggerProfile(models.Model):
         russian_list = [choices_dict.get(c, c) for c in raw_list]
         return ", ".join(russian_list)
 
-    @property
+@property
     def price_long_min(self):
+        # Собираем все цены за длинные видео
         prices = [self.price_start, self.price_middle, self.price_end]
-        # Фильтруем None и 0
+        # Оставляем только те, что больше нуля
         valid_prices = [p for p in prices if p and p > 0]
         return min(valid_prices) if valid_prices else 0
-            
 
     @property
-    def cpv_long(self):
+    def display_cpv_long(self):
+        """Цена за 1 просмотр (Long) с точностью 1 знак"""
         if self.median_views > 0 and self.price_long_min > 0:
-            return round(float(self.price_long_min) / self.median_views, 2)
+            # Считаем: минимальная цена / медианные просмотры
+            val = float(self.price_long_min) / self.median_views
+            return round(val, 1)
         return 0
 
     @property
-    def cpv_shorts(self):
+    def display_cpv_shorts(self):
+        """Цена за 1 просмотр (Shorts) с точностью 1 знак"""
         if self.median_views_shorts > 0 and self.price_shorts > 0:
-            return round(float(self.price_shorts) / self.median_views_shorts, 2)
+            val = float(self.price_shorts) / self.median_views_shorts
+            return round(val, 1)
         return 0
 
     def __str__(self):

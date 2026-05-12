@@ -51,6 +51,8 @@ def parse_duration_to_seconds(duration):
     return d * 86400 + h * 3600 + m * 60 + s
 
 def get_youtube_stats(channel_url, api_key):
+    if not channel_url or not isinstance(channel_url, str):
+        return None
     handle_match = re.search(r'@([\w\.-]+)', channel_url)
     if not handle_match: return None
     handle = handle_match.group(1)
@@ -393,7 +395,9 @@ def approve_final_payment(request, contract_id):
 # --- 6. ТЕХНИЧЕСКИЕ (AJAX) ---
 
 def fetch_youtube_data(request):
-    return JsonResponse(get_youtube_stats(request.GET.get('url'), YOUTUBE_API_KEY) or {'error': '404'}, safe=False)
+    handle = request.GET.get('handle') or request.GET.get('url')
+    stats = get_youtube_stats(handle, YOUTUBE_API_KEY)
+    return JsonResponse(stats or {'error': '404'}, safe=False)
 
 @csrf_exempt
 def support_ajax(request):

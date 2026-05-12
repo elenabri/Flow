@@ -164,24 +164,23 @@ def register(request):
     if request.method == 'POST':
         form = RegistrationForm(request.POST, request.FILES)
         if form.is_valid():
+            user_created = False
+            email = form.cleaned_data.get('email')
+            role = form.cleaned_data.get('role')
+            # Генерируем пароль заранее, чтобы он был доступен вне блока try
+            pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+
             try:
-                # Начинаем атомарную транзакцию
                 with transaction.atomic():
                     user = form.save(commit=False)
-                    email = form.cleaned_data.get('email')
-                    role = form.cleaned_data.get('role')
-                    
                     user.email = email
                     user.username = email
                     user.role = role
-                    
-                    # Генерация и установка пароля
-                    pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
                     user.set_password(pwd)
-                    user.is_active = False  # Ждем активации по почте
+                    user.is_active = False  
                     user.save()
 
-                    # Создание профиля в зависимости от роли
+                    # Создание профиля
                     if role == 'blogger':
                         BloggerProfile.objects.create(
                             user=user,
@@ -195,43 +194,39 @@ def register(request):
                             avatar_url=request.POST.get('api_avatar'),
                             banner_url=request.POST.get('api_banner'),
                         )
-                    
                     elif role == 'advertiser':
                         adv = AdvertiserProfile.objects.create(
                             user=user, 
                             company_name=request.POST.get('company_name') or "Новый бренд"
                         )
-                        
                         product_title = request.POST.get('title')
                         if product_title:
                             ProductAd.objects.create(
                                 advertiser=adv, 
                                 name=product_title,
-                                description=request.POST.get('description', ''),
                                 category=", ".join(request.POST.getlist('topics')),
                                 image=request.FILES.get('product_image'),
-                                link_wb=request.POST.get('link_wb'),
-                                link_ozon=request.POST.get('link_ozon'),
                                 is_active=True
                             )
+                    user_created = True
 
-                    # ВНУТРЕННИЙ TRY для почты, чтобы не ломать транзакцию
+                # ПОСЛЕ транзакции отправляем почту
+                if user_created:
                     try:
                         send_verification_email(user, pwd)
                     except Exception as email_err:
-                        # Если почта упала, просто логируем, но НЕ прерываем процесс
-                        print(f"Критическая ошибка почты: {email_err}")
+                        print(f"Ошибка почты (не критично): {email_err}")
 
-                # Если мы дошли сюда, транзакция успешно завершена (commit)
-                return render(request, 'core/success.html', {
-                    'email': email, 
-                    'password': pwd
-                })
+                    # СТРОГО здесь возвращаем шаблон успеха
+                    return render(request, 'core/success.html', {
+                        'email': email, 
+                        'password': pwd
+                    })
 
             except Exception as e:
-                # Сюда попадем, если упала база данных или логика профилей
-                print(f"Ошибка регистрации (БД): {e}")
-                messages.error(request, f"Ошибка при создании профиля: {e}")
+                print(f"Критическая ошибка БД: {e}")
+                messages.error(request, f"Ошибка при регистрации: {e}")
+                # Если упало — возвращаемся на форму
                 return render(request, 'core/register.html', {
                     'form': form, 
                     'TOPIC_CHOICES': TOPIC_CHOICES

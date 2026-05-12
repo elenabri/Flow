@@ -1122,37 +1122,44 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from decimal import Decimal, InvalidOperation
 
+from decimal import Decimal, InvalidOperation
+from django.contrib import messages
+
 @login_required
 def edit_profile(request):
+    # Безопасно получаем профиль
     profile = getattr(request.user, 'blogger_profile', None)
 
     if not profile:
         messages.error(request, "У вас нет профиля блогера.")
-        return redirect('core:home')
+        return redirect('core:dashboard') # Или home, смотря куда логичнее
 
     if request.method == 'POST':
         try:
-            # Функция для безопасной конвертации строк из POST в числа
             def clean_price(value):
                 if not value:
                     return Decimal('0.00')
-                # Заменяем запятую на точку на случай ручного ввода и чистим пробелы
+                # Чистим строку от лишних символов (пробелы, запятые)
                 clean_value = str(value).replace(',', '.').strip()
                 try:
                     return Decimal(clean_value)
-                except InvalidOperation:
+                except (InvalidOperation, ValueError):
                     return Decimal('0.00')
 
+            # Обновляем поля
             profile.price_start = clean_price(request.POST.get('price_start'))
             profile.price_middle = clean_price(request.POST.get('price_middle'))
             profile.price_end = clean_price(request.POST.get('price_end'))
             profile.price_shorts = clean_price(request.POST.get('price_shorts'))
             
+            # Сохраняем изменения
             profile.save()
+            
             messages.success(request, "Прайс-лист успешно обновлен!")
+            # ВАЖНО: убедитесь, что имя 'edit_profile' совпадает с вашим urls.py
             return redirect('core:edit_profile') 
             
         except Exception as e:
-            messages.error(request, f"Ошибка при сохранении: {e}")
+            messages.error(request, f"Произошла непредвиденная ошибка: {e}")
 
     return render(request, 'core/edit_profile.html', {'profile': profile})

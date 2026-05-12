@@ -65,7 +65,7 @@
         .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .price-item label { font-size: 12px; color: var(--text-label); display: block; margin-bottom: 4px; }
 
-        /* Категории (фиксированный размер) */
+        /* Категории */
         .category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .cat-item { display: flex; }
         .cat-item input { display: none; }
@@ -86,19 +86,13 @@
 
         .file-zone { border: 2px dashed var(--border); border-radius: 14px; padding: 25px; text-align: center; cursor: pointer; font-size: 14px; color: var(--text-label); }
         .btn-submit { width: 100%; margin-top: 30px; padding: 18px; background: var(--text-dark); color: white; border: none; border-radius: 16px; font-weight: 700; cursor: pointer; font-size: 16px; }
-        textarea { 
-    resize: none; 
-    min-height: 120px; 
-    font-family: inherit; 
-}
-.btn-submit:disabled {
-    background: var(--border);
-    cursor: not-allowed;
-}
+        
+        textarea { resize: none; min-height: 120px; font-family: inherit; }
+        .btn-submit:disabled { background: var(--border); cursor: not-allowed; }
+        
         #api-status { display: none; margin-top: 20px; padding: 15px; border-radius: 12px; font-size: 14px; }
 
         @media (min-width: 600px) { .category-grid { grid-template-columns: 1fr 1fr 1fr; } }
-        
     </style>
 </head>
 <body>
@@ -116,8 +110,12 @@
 
         <form method="post" id="reg-form" enctype="multipart/form-data">
             {% csrf_token %}
+            <!-- Скрытые поля для данных из API -->
             <input type="hidden" name="api_channel_name" id="id_api_name">
             <input type="hidden" name="api_subs" id="id_api_subs">
+            <input type="hidden" name="api_long_median" id="id_api_long_median">
+            <input type="hidden" name="api_shorts_median" id="id_api_shorts_median">
+            <input type="hidden" name="api_avatar" id="id_api_avatar">
             <input type="hidden" name="sub_topics" id="id_sub_topics_json">
 
             <div class="role-selection">
@@ -148,7 +146,7 @@
 
                     <label class="section-label">Стоимость вашей рекламы</label>
                     <div class="info-bubble">
-                        <b>Зачем указывать стоимость?</b> Это позволит брендам сразу видеть ваши условия. Указанные суммы являются ориентировочными, вы всегда сможете скорректировать цену в сделке.
+                        <b>Зачем указывать стоимость?</b> Это позволит брендам сразу видеть ваши условия. Указанные суммы являются ориентировочными.
                     </div>
 
                     <div class="price-container">
@@ -156,21 +154,21 @@
                         <div class="price-grid">
                             <div class="price-item" style="grid-column: span 2;">
                                 <label>Начало ролика</label>
-                                <input type="number" name="price_start" class="p-input" placeholder="₽" required>
+                                <input type="number" name="price_start" class="p-input" placeholder="₽">
                             </div>
                             <div class="price-item" style="grid-column: span 2;">
                                 <label>Середина ролика</label>
-                                <input type="number" name="price_middle" class="p-input" placeholder="₽" required>
+                                <input type="number" name="price_middle" class="p-input" placeholder="₽">
                             </div>
                             <div class="price-item" style="grid-column: span 2;">
                                 <label>Конец ролика</label>
-                                <input type="number" name="price_end" class="p-input" placeholder="₽" required>
+                                <input type="number" name="price_end" class="p-input" placeholder="₽">
                             </div>
                         </div>
 
                         <div class="price-group-title">Короткая версия ролика (Shorts)</div>
                         <div class="price-item">
-                            <input type="number" name="price_shorts" class="p-input" placeholder="₽" required>
+                            <input type="number" name="price_shorts" class="p-input" placeholder="₽">
                         </div>
                     </div>
                 </div>
@@ -180,11 +178,15 @@
                     <label class="section-label">О бренде и продукте</label>
                     <div class="form-group">
                         <label>Бренд</label>
-                        <input type="text" name="company_name" placeholder="Напр: Вкусневич" required>
+                        <input type="text" name="company_name" placeholder="Напр: Вкусневич">
                     </div>
                     <div class="form-group">
                         <label>Продукт</label>
-                        <input type="text" name="title" placeholder="Напр: Паштет из утки" required>
+                        <input type="text" name="product_title" placeholder="Напр: Паштет из утки">
+                    </div>
+                    <div class="form-group">
+                        <label>Ссылка на продукт</label>
+                        <input type="url" name="product_link" placeholder="https://...">
                     </div>
                     <div class="form-group">
                         <label>Краткое описание (УТП)</label>
@@ -195,7 +197,7 @@
                         <label>Фото продукта</label>
                         <div class="file-zone" onclick="document.getElementById('id_product_image').click()">
                             <span id="file-name">Нажмите для загрузки</span>
-                            <input type="file" name="product_image" id="id_product_image" style="display:none;">
+                            <input type="file" name="product_image" id="id_product_image" style="display:none;" onchange="document.getElementById('file-name').innerText = this.files[0].name">
                         </div>
                     </div>
                     <div class="form-group">
@@ -203,19 +205,19 @@
                         <textarea name="description" placeholder="О чем должен рассказать блогер?"></textarea>
                     </div>
                     <div class="form-group" style="margin-top: 10px;">
-    <label class="barter-label" style="display: flex; align-items: center; cursor: pointer; background: #f5f5f7; padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border);">
-        <input type="checkbox" name="is_barter" id="barter-check" style="width: 20px; height: 20px; margin-right: 12px; accent-color: var(--primary);">
-        <span style="font-size: 15px; font-weight: 600;">Только бартер</span>
-    </label>
-</div>
+                        <label class="barter-label" style="display: flex; align-items: center; cursor: pointer; background: #f5f5f7; padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border);">
+                            <input type="checkbox" name="is_barter" id="barter-check" style="width: 20px; height: 20px; margin-right: 12px; accent-color: var(--primary);" onchange="toggleBarterInfo(this.checked)">
+                            <span style="font-size: 15px; font-weight: 600;">Только бартер</span>
+                        </label>
+                    </div>
 
-<div id="barter-info" class="info-bubble" style="display: none; background: #eef7ff; border: 1px solid #cce5ff; margin-top: -10px;">
-    <strong>Что это значит?</strong> Рекламная кампания будет проводиться без денежной оплаты. Вы предоставляете блогеру свой товар или услугу бесплатно, а он, в свою очередь, выпускает рекламный ролик.
-</div>
+                    <div id="barter-info" class="info-bubble" style="display: none; background: #eef7ff; border: 1px solid #cce5ff; margin-top: -10px;">
+                        <strong>Что это значит?</strong> Рекламная кампания будет проводиться без денежной оплаты. Вы предоставляете блогеру товар, а он выпускает ролик.
+                    </div>
                 </div>
 
                 <!-- КАТЕГОРИИ -->
-                <label class="section-label">Категории контента <span style="text-transform: none; font-weight: 400; font-size: 11px;">(можно выбрать несколько)</span></label>
+                <label class="section-label">Категории контента <span style="text-transform: none; font-weight: 400; font-size: 11px;">(можно несколько)</span></label>
                 <div class="category-grid">
                     {% for value, text in form.topics.field.choices %}
                         <label class="cat-item">
@@ -237,12 +239,11 @@
 </div>
 
 <script>
-    // 1. Карта соответствия (Ключи должны совпадать с choices в Django!)
+    // 1. Карта подкатегорий
     const subTopicsMap = {
         'tech': ['Обзоры смартфонов', 'Гаджеты', 'Нейросети', 'Программирование'],
         'beauty': ['Макияж', 'Уход за кожей', 'Прически', 'Парфюм'],
         'food': ['Рецепты', 'Обзоры ресторанов', 'Стрит-фуд', 'Веганство'],
-        // Добавьте сюда остальные категории из вашего списка
     };
 
     let selectedSubTopics = new Set();
@@ -255,15 +256,20 @@
         count.style.color = remaining <= 5 ? 'var(--error)' : 'var(--text-label)';
     }
 
+    function toggleBarterInfo(checked) {
+        document.getElementById('barter-info').style.display = checked ? 'block' : 'none';
+    }
+
     function toggleRole(v) {
-        document.getElementById('blogger-fields').style.display = v === 'blogger' ? 'block' : 'none';
-        document.getElementById('advertiser-fields').style.display = v === 'advertiser' ? 'block' : 'none';
+        const isBlogger = (v === 'blogger');
+        document.getElementById('blogger-fields').style.display = isBlogger ? 'block' : 'none';
+        document.getElementById('advertiser-fields').style.display = isBlogger ? 'none' : 'block';
         
-        // Переключаем обязательность полей в зависимости от роли
-        document.querySelectorAll('#advertiser-fields input, #advertiser-fields textarea').forEach(el => {
-            if (el.type !== 'checkbox') el.required = (v === 'advertiser');
+        // Настройка обязательности полей
+        document.querySelectorAll('#blogger-fields input').forEach(el => el.required = isBlogger);
+        document.querySelectorAll('#advertiser-fields input:not([type="checkbox"]), #advertiser-fields textarea').forEach(el => {
+            el.required = !isBlogger;
         });
-        document.querySelectorAll('#blogger-fields input').forEach(el => el.required = (v === 'blogger'));
     }
 
     function renderSubTopics() {
@@ -274,6 +280,7 @@
         subGrid.innerHTML = '';
         if (checked.length === 0) { 
             subArea.style.display = 'none'; 
+            selectedSubTopics.clear();
             document.getElementById('id_sub_topics_json').value = "";
             return; 
         }
@@ -304,61 +311,52 @@
         const submitBtn = document.getElementById('submit-handler');
         const apiStatus = document.getElementById('api-status');
 
-        // Валидация видимых требуемых полей
+        // Валидация
         let isValid = true;
-        const currentFields = role === 'blogger' ? '#blogger-fields' : '#advertiser-fields';
-        const fieldsToVerify = document.querySelectorAll(`${currentFields} input[required], #hidden-content > .form-group input[required]`);
+        const visibleRequired = document.querySelectorAll(`input[required]:not([style*="display:none"]), textarea[required]:not([style*="display:none"])`);
         
-        fieldsToVerify.forEach(f => {
+        visibleRequired.forEach(f => {
             if (!f.value.trim()) { f.classList.add('invalid'); isValid = false; }
             else { f.classList.remove('invalid'); }
         });
 
-        if (!isValid) { alert("Пожалуйста, заполните все обязательные поля"); return; }
+        if (!isValid) { alert("Заполните обязательные поля"); return; }
 
         if (role === 'blogger') {
             const channelLink = document.querySelector('input[name="channel_link"]').value;
             submitBtn.disabled = true;
             apiStatus.style.display = 'block';
+            apiStatus.style.background = '#f5f5f7';
             apiStatus.innerHTML = "⏳ Синхронизация с YouTube API...";
 
             try {
-    const response = await fetch(`/api/fetch-youtube/?handle=${encodeURIComponent(channelLink)}`);
-    const data = await response.json();
+                const response = await fetch(`/api/fetch-youtube/?handle=${encodeURIComponent(channelLink)}`);
+                const data = await response.json();
 
-    // Проверяем статус (обычно API возвращает успех, если данные есть)
-    if (data.channel_name || data.title || data.name) {
-        // Пробуем все возможные варианты ключей, которые может прислать сервер
-        const channelName = data.channel_name || data.title || data.name;
-        const subsCount = data.subscribers_count || data.subs || 0;
-
-        document.getElementById('id_api_name').value = channelName;
-        document.getElementById('id_api_subs').value = subsCount;
-        
-        apiStatus.style.background = '#e8f3ff';
-        apiStatus.innerHTML = `✅ Канал найден: <b>${channelName}</b>`;
-        
-        // Даем пользователю увидеть успех перед отправкой формы
-        setTimeout(() => form.submit(), 1500);
-    } else {
-        // Если сервер прислал ошибку
-        apiStatus.style.background = '#fff8f8';
-        // Используем data.error или data.message или стандартный текст
-        const errorMsg = data.error || data.message || "Канал не найден или скрыт";
-        apiStatus.innerHTML = `❌ Ошибка: ${errorMsg}`;
-        submitBtn.disabled = false;
-    }
-} catch (e) {
-    apiStatus.style.background = '#fff8f8';
-    apiStatus.innerHTML = "❌ Ошибка связи с сервером";
-    submitBtn.disabled = false;
-}
+                if (data.channel_name || data.title) {
+                    document.getElementById('id_api_name').value = data.channel_name || data.title;
+                    document.getElementById('id_api_subs').value = data.subscribers_count || 0;
+                    document.getElementById('id_api_long_median').value = data.median_views || 0;
+                    document.getElementById('id_api_shorts_median').value = data.median_views_shorts || 0;
+                    document.getElementById('id_api_avatar').value = data.avatar_url || '';
+                    
+                    apiStatus.style.background = '#e8f3ff';
+                    apiStatus.innerHTML = `✅ Канал найден: <b>${data.channel_name || data.title}</b>`;
+                    setTimeout(() => form.submit(), 1200);
+                } else {
+                    throw new Error(data.error || "Канал не найден");
+                }
+            } catch (e) {
+                apiStatus.style.background = '#fff8f8';
+                apiStatus.innerHTML = `❌ ${e.message}`;
+                submitBtn.disabled = false;
+            }
         } else {
             form.submit();
         }
     });
 
-    // Инициализация при загрузке
+    // Инициализация
     toggleRole('blogger');
 </script>
 </body>

@@ -149,26 +149,39 @@ from .models import User, BloggerProfile, AdvertiserProfile, ProductAd
 from .constants import TOPIC_CHOICES, SUB_TOPICS_MAP # Убедись, что импорты верны
 from .utils import send_verification_email # Твоя функция отправки почты
 
+# --- 2. АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ ---
+import random
+import string
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.db import transaction  # Убедитесь, что этот импорт есть
+from .forms import RegistrationForm
+from .models import User, BloggerProfile, AdvertiserProfile, ProductAd
+from .constants import TOPIC_CHOICES
+from .utils import send_verification_email
+
 def register(request):
     if request.method == 'POST':
-        form = RegistrationForm(request.POST, request.FILES) # Добавьте FILES для фото товара
+        form = RegistrationForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                with transaction.atomic(): # Если что-то упадет, откатит всё
+                # Начинаем атомарную транзакцию
+                with transaction.atomic():
                     user = form.save(commit=False)
                     email = form.cleaned_data.get('email')
-                    user.email = email
-                    user.username = email  
+                    role = form.cleaned_data.get('role')
                     
+                    user.email = email
+                    user.username = email
+                    user.role = role
+                    
+                    # Генерация и установка пароля
                     pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
                     user.set_password(pwd)
-                    user.is_active = False 
+                    user.is_active = False  # Ждем активации по почте
                     user.save()
 
-                    role = form.cleaned_data.get('role')
-                    user.role = role # Убедитесь, что роль сохраняется в User
-                    user.save()
-                    
+                    # Создание профиля в зависимости от роли
                     if role == 'blogger':
                         BloggerProfile.objects.create(
                             user=user,
@@ -178,7 +191,7 @@ def register(request):
                             median_views=int(request.POST.get('api_long_median') or 0),
                             median_views_shorts=int(request.POST.get('api_shorts_median') or 0),
                             categories=", ".join(request.POST.getlist('topics')),
-                            price_start=request.POST.get('price_start') or 0,
+                            price_start=int(request.POST.get('price_start') or 0),
                             avatar_url=request.POST.get('api_avatar'),
                             banner_url=request.POST.get('api_banner'),
                         )
@@ -202,21 +215,27 @@ def register(request):
                                 is_active=True
                             )
 
-                    # Письмо отправляем ПОСЛЕ сохранения всего в базе
-                    send_verification_email(user, pwd)
-                    
-                    return render(request, 'core/success.html', {
-                        'email': user.email, 
-                        'password': pwd
-                    })
-            else:
-                print(form.errors) 
-                messages.error(request, f"Ошибка в полях: {form.errors}")
-            
+                    # ВНУТРЕННИЙ TRY для почты, чтобы не ломать транзакцию
+                    try:
+                        send_verification_email(user, pwd)
+                    except Exception as email_err:
+                        # Если почта упала, просто логируем, но НЕ прерываем процесс
+                        print(f"Критическая ошибка почты: {email_err}")
+
+                # Если мы дошли сюда, транзакция успешно завершена (commit)
+                return render(request, 'core/success.html', {
+                    'email': email, 
+                    'password': pwd
+                })
 
             except Exception as e:
-                print(f"Письмо не ушло, но пользователь создан: {e}")
-                
+                # Сюда попадем, если упала база данных или логика профилей
+                print(f"Ошибка регистрации (БД): {e}")
+                messages.error(request, f"Ошибка при создании профиля: {e}")
+                return render(request, 'core/register.html', {
+                    'form': form, 
+                    'TOPIC_CHOICES': TOPIC_CHOICES
+                })
     else:
         form = RegistrationForm()
         

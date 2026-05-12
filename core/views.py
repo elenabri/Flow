@@ -1025,7 +1025,6 @@ def manage_products(request):
     # 3. Передаем в шаблон именно под именем 'ads'
     return render(request, 'core/my_ads.html', {
         'ads': user_ads,  # Это имя должно совпадать с циклом {% for ad in ads %}
-    })my_ads': my_ads
     })
 @login_required
 def my_ads_view(request):

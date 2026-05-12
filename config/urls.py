@@ -51,6 +51,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('test-path/', views.home), 
     path('verify-email/<path:username>/', views.verify_email, name='verify_email'),
+    path('profile/edit/', views.edit_profile, name='edit_profile'),
     
     # Основные пути приложения
     path('', include(core_patterns)),

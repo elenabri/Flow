@@ -1025,3 +1025,14 @@ def manage_products(request):
     return render(request, 'core/my_ads.html', {
         'my_ads': my_ads
     })
+@login_required
+def my_ads_view(request):
+    # Если в модели ProductAd поле называется advertiser (связь с AdvertiserProfile)
+    if hasattr(request.user, 'advertiser_profile'):
+        user_ads = ProductAd.objects.filter(advertiser=request.user.advertiser_profile)
+    else:
+        user_ads = ProductAd.objects.none()
+    
+    return render(request, 'core/my_ads.html', {
+        'ads': user_ads,  # Важно: имя должно быть 'ads' для вашего шаблона!
+    })

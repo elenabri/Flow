@@ -170,18 +170,19 @@
         <div class="cpv-text">CPV: <span id="cpv_end">0</span> ₽</div>
     </div>
     </div>
- <div class="section-title">Шортс(Shorts)</div>
-        <div class="grid-layout">
-    <div class="price-item">
-        <label style="color: #c2410c;">YouTube Shorts</label>
-        <input type="number" step="0.01" id="p_shorts" name="price_shorts" 
-               value="{{ profile.price_shorts|unlocalize }}" oninput="calcAllCPV()">
-        <div class="cpv-text">CPV: <span id="cpv_shorts_val">0</span> ₽</div>
-    </div>
-</div>
-</div>
-        <button type="submit" class="save-btn">Обновить прайс-лист</button>
-    </form>
+<div class="section-title">Шортс(Shorts)</div>
+    <div class="grid-layout">
+        <div class="price-item">
+            <label style="color: #c2410c;">YouTube Shorts</label>
+            <input type="number" step="0.01" id="p_shorts" name="price_shorts" 
+                   value="{{ profile.price_shorts|unlocalize }}" oninput="calcAllCPV()">
+            <div class="cpv-text">CPV: <span id="cpv_shorts_val">0</span> ₽</div>
+        </div>
+    </div> <!-- Закрываем grid-layout -->
+    <!-- УДАЛЕН лишний </div> здесь -->
+
+    <button type="submit" class="save-btn">Обновить прайс-лист</button>
+</form>
 </div>
 
 <script>

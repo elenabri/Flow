@@ -1009,21 +1009,23 @@ def marketplace(request):
     })
 
 @login_required
+
 def manage_products(request):
     """
     Личный кабинет рекламодателя (My Ads).
-    Показывает только те объявления, которые создал текущий пользователь.
     """
-    # ИСПРАВЛЕНО: 
-    # 1. Используем ProductAd
-    # 2. Фильтруем через профиль рекламодателя (advertiser)
+    # 1. Проверяем, есть ли у пользователя профиль рекламодателя
     if hasattr(request.user, 'advertiser_profile'):
-        my_ads = ProductAd.objects.filter(advertiser=request.user.advertiser_profile).order_by('-created_at')
+        # 2. Фильтруем объявления по профилю
+        # Убедитесь, что поле в модели ProductAd называется 'advertiser'
+        user_ads = ProductAd.objects.filter(advertiser=request.user.advertiser_profile).order_by('-created_at')
     else:
-        my_ads = []
+        user_ads = ProductAd.objects.none()
 
+    # 3. Передаем в шаблон именно под именем 'ads'
     return render(request, 'core/my_ads.html', {
-        'my_ads': my_ads
+        'ads': user_ads,  # Это имя должно совпадать с циклом {% for ad in ads %}
+    })my_ads': my_ads
     })
 @login_required
 def my_ads_view(request):

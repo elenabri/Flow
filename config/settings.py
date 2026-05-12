@@ -134,7 +134,7 @@ TELEGRAM_ADMIN_GROUP_ID = os.getenv('TELEGRAM_ADMIN_GROUP_ID')
 
 # --- ПРОЧИЕ НАСТРОЙКИ ---
 LOGIN_REDIRECT_URL = 'core:login_router'
-LOGOUT_REDIRECT_URL = 'login'
+LOGOUT_REDIRECT_URL = 'core:login_router'
 SITE_DOMAIN = 'tubeflow-mvfo.onrender.com'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

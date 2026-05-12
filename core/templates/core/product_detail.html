@@ -23,8 +23,6 @@
 
     .badge-barter { background: #f2f2f7; color: #1c1c1e; padding: 6px 14px; border-radius: 10px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; }
     
-    .price-tag { font-size: 28px; font-weight: 800; color: #1c1c1e; margin: 15px 0; }
-
     /* Стили для раскрывающегося ТЗ */
     .tz-block { background: #f9f9fb; border-radius: 16px; padding: 20px; border: 1px solid #efeff4; margin-top: 20px; }
     .tz-content { 
@@ -51,7 +49,6 @@
 
     @media (max-width: 768px) {
         .main-card { padding: 20px; gap: 20px; }
-        .price-tag { font-size: 24px; }
     }
 </style>
 
@@ -77,17 +74,13 @@
                 <span style="color: #8e8e93; font-size: 13px; font-weight: 600;">{{ ad.get_category_display }}</span>
             </div>
             
+            <!-- Название товара -->
             <h1 style="font-weight: 800; font-size: 32px; color: #1c1c1e; margin-bottom: 5px;">{{ ad.title }}</h1>
             
             <!-- Краткое описание -->
             <p style="color: #8e8e93; font-size: 16px; margin-bottom: 20px;">
                 {{ ad.short_description|default:"Качественный продукт для вашей аудитории" }}
             </p>
-
-            <div class="price-tag">
-                {% if ad.budget %} {{ ad.budget }} ₽ {% else %} Без оплаты {% endif %}
-                <span style="font-size: 14px; color: #8e8e93; font-weight: 400; margin-left: 5px;">бюджет кампании</span>
-            </div>
 
             <!-- Ссылки -->
             <div style="display: flex; gap: 10px; margin-bottom: 30px;">

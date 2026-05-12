@@ -323,25 +323,36 @@
             apiStatus.innerHTML = "⏳ Синхронизация с YouTube API...";
 
             try {
-                // Прямой вызов вашего Django View
-                const response = await fetch(`/api/fetch-youtube/?handle=${encodeURIComponent(channelLink)}`);
-                const data = await response.json();
+    const response = await fetch(`/api/fetch-youtube/?handle=${encodeURIComponent(channelLink)}`);
+    const data = await response.json();
 
-                if (data.status === 'success') {
-                    document.getElementById('id_api_name').value = data.title;
-                    document.getElementById('id_api_subs').value = data.subs;
-                    apiStatus.style.background = '#e8f3ff';
-                    apiStatus.innerHTML = `✅ Канал найден: <b>${data.title}</b>`;
-                    setTimeout(() => form.submit(), 1000);
-                } else {
-                    apiStatus.style.background = '#fff8f8';
-                    apiStatus.innerHTML = `❌ Ошибка: ${data.message}`;
-                    submitBtn.disabled = false;
-                }
-            } catch (e) {
-                apiStatus.innerHTML = "❌ Ошибка связи с сервером";
-                submitBtn.disabled = false;
-            }
+    // Проверяем статус (обычно API возвращает успех, если данные есть)
+    if (data.channel_name || data.title || data.name) {
+        // Пробуем все возможные варианты ключей, которые может прислать сервер
+        const channelName = data.channel_name || data.title || data.name;
+        const subsCount = data.subscribers_count || data.subs || 0;
+
+        document.getElementById('id_api_name').value = channelName;
+        document.getElementById('id_api_subs').value = subsCount;
+        
+        apiStatus.style.background = '#e8f3ff';
+        apiStatus.innerHTML = `✅ Канал найден: <b>${channelName}</b>`;
+        
+        // Даем пользователю увидеть успех перед отправкой формы
+        setTimeout(() => form.submit(), 1500);
+    } else {
+        // Если сервер прислал ошибку
+        apiStatus.style.background = '#fff8f8';
+        // Используем data.error или data.message или стандартный текст
+        const errorMsg = data.error || data.message || "Канал не найден или скрыт";
+        apiStatus.innerHTML = `❌ Ошибка: ${errorMsg}`;
+        submitBtn.disabled = false;
+    }
+} catch (e) {
+    apiStatus.style.background = '#fff8f8';
+    apiStatus.innerHTML = "❌ Ошибка связи с сервером";
+    submitBtn.disabled = false;
+}
         } else {
             form.submit();
         }

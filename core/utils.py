@@ -4,10 +4,20 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
 
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+
 def send_verification_email(user, password):
     domain = getattr(settings, 'SITE_DOMAIN', '127.0.0.1:8000')
     protocol = 'https' if not settings.DEBUG else 'http'
-    activation_link = f"{protocol}://{domain}/verify-email/{user.username}/"
+    
+    # Генерируем безопасные параметры
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    
+    # Ссылка должна соответствовать функции activate
+    activation_link = f"{protocol}://{domain}/activate/{uid}/{token}/"
 
     context = {
         'user': user,

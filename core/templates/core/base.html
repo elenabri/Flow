@@ -205,9 +205,12 @@
                             Кабинет
                         </a>
                         {# Рекомендую добавить ссылку на выход для удобства #}
-                        <a href="{% url 'logout' %}" class="nav-link ms-2 text-danger" title="Выйти">
-                            <i class="bi bi-box-arrow-right"></i>
-                        </a>
+                        <form action="{% url 'logout' %}" method="post" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="nav-link ms-2 text-danger border-0 bg-transparent" title="Выйти">
+            <i class="bi bi-box-arrow-right"></i>
+        </button>
+    </form>
                     {% else %}
                         <a href="{% url 'login' %}" class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm">Войти</a>
                     {% endif %}

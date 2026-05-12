@@ -1,6 +1,15 @@
 {% extends "core/base.html" %}
 
-{% block title %}Чат с {{ other_user.username }}{% endblock %}
+{% block title %}
+    Чат с 
+    {% if other_user.blogger_profile %}
+        {{ other_user.blogger_profile.channel_name }}
+    {% elif other_user.advertiser_profile %}
+        {{ other_user.advertiser_profile.company_name }}
+    {% else %}
+        {{ other_user.username }}
+    {% endif %}
+{% endblock %}
 
 {% block content %}
 {% csrf_token %}
@@ -17,12 +26,19 @@
                 <img src="{{ other_user.profile.avatar.url|default:'/static/img/default-avatar.png' }}" class="chat-avatar">
                 <div class="header-info">
                     <div class="user-name">
-                        {% if other_user.blogger_profile %}
-                            <a href="{{ other_user.blogger_profile.channel_url }}" target="_blank">📺 {{ other_user.username }}</a>
-                        {% else %}
-                            {{ other_user.username }}
-                        {% endif %}
-                    </div>
+    {% if other_user.blogger_profile %}
+        <!-- Если собеседник блогер — показываем название канала -->
+        <a href="{{ other_user.blogger_profile.channel_link }}" target="_blank">
+            📺 {{ other_user.blogger_profile.channel_name }}
+        </a>
+    {% elif other_user.advertiser_profile %}
+        <!-- Если собеседник рекламодатель — показываем название компании -->
+        <span class="text-primary">🏢 {{ other_user.advertiser_profile.company_name }}</span>
+    {% else %}
+        <!-- Если профиля нет (например, админ), оставляем username -->
+        {{ other_user.username }}
+    {% endif %}
+</div>
                     <div class="status-text">в сети</div>
                 </div>
             </div>

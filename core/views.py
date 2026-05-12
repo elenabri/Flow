@@ -246,18 +246,13 @@ def activate(request, uidb64, token):
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         user = None
 
-    if user and default_token_generator.check_token(user, token):
+    if user is not None and default_token_generator.check_token(user, token):
         user.is_active = True
         user.save()
-        
-        # Автоматический вход в систему
-        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-            
-        # СРАЗУ перенаправляем на маркетплейс
-        return redirect('core:dashboard') 
-    
-    # Если токен невалидный, оставляем страницу с ошибкой
-    return render(request, 'core/activation_invalid.html')
+        return redirect('core:registration_success') # Обязательно с core:
+    else:
+        return render(request, 'core/activation_invalid.html')
+
 
 def user_login(request):
     if request.method == 'POST':
@@ -279,7 +274,8 @@ def user_login(request):
             
     return render(request, 'registration/login.html')
 
-
+def registration_success(request):
+    return render(request, 'core/success.html') # Новая страница "Успешно активировано"
 from django.db.models import Count
 
 @login_required

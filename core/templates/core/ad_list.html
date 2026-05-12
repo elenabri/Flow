@@ -102,7 +102,7 @@
 
                     <!-- Кнопки действий -->
                     <div class="d-flex flex-column gap-2">
-                        {% if ad.link_wb %}
+                       <-- {% if ad.link_wb %}
                             <a href="{{ ad.link_wb }}" target="_blank" class="btn btn-sm btn-wb" style="border-radius: 12px; padding: 12px; font-weight: 600;">
                                 <i class="bi bi-bag-check-fill me-1"></i> Wildberries
                             </a>
@@ -110,7 +110,7 @@
                             <a href="{{ ad.link_ozon }}" target="_blank" class="btn btn-sm btn-ozon" style="border-radius: 12px; padding: 12px; font-weight: 600;">
                                 <i class="bi bi-bag-check-fill me-1"></i> Ozon
                             </a>
-                        {% endif %}
+                        {% endif %}-->
 
                         <!-- Переход на страницу продукта -->
                         <a href="{% url 'core:product_detail' ad.id %}" class="btn btn-sm d-flex align-items-center justify-content-center gap-2" 

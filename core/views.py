@@ -730,7 +730,7 @@ def verify_email(request, username):
         user.is_active = True
         user.save()
         login(request, user)
-        return redirect('core:marketplace') 
+        return redirect('core:dashboard') 
     except User.DoesNotExist:
         return HttpResponse(f"ОШИБКА: В базе нет пользователя с username = {username}")
 

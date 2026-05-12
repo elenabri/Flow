@@ -8,7 +8,7 @@ from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 
-def send_verification_email(user, password):
+def send_verification_email(user, password, request=None):
     domain = getattr(settings, 'SITE_DOMAIN', '127.0.0.1:8000')
     protocol = 'https' if not settings.DEBUG else 'http'
     

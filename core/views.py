@@ -1,12 +1,12 @@
-from django.db import transaction
-from decimal import Decimal
-import random
 import re
 import requests
 import statistics
 import json
 import string
-import random, string, json
+import random
+from decimal import Decimal
+
+from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, get_user_model
 from django.contrib.auth.decorators import login_required
@@ -14,35 +14,22 @@ from django.contrib.auth.tokens import default_token_generator
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
-from django.http import JsonResponse
-from django.db.models import Q, F, ExpressionWrapper, FloatField, Case, When, Value
+from django.http import JsonResponse, HttpResponse
+from django.db.models import Q, F
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.template.loader import render_to_string
 from django.views.decorators.csrf import csrf_exempt
-import json
-from django.conf import settings
-from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
-# И ваш импорт моделей:
-from .models import User, Chat, Message
 
-# Твои локальные файлы
+# Ваши модели и формы
+from .models import User, Chat, Message, BloggerProfile, AdvertiserProfile, ProductAd, AdContract, SupportTicket
 from .forms import RegistrationForm, EmailLoginForm
-from .models import (
-    BloggerProfile, AdvertiserProfile, ProductAd, 
-    Message, AdContract, SupportTicket
-)
-from .constants import TOPIC_CHOICES, SUB_TOPICS_MAP
-from django.shortcuts import render, get_object_or_404, redirect  # Добавлен redirect
-from django.contrib.auth.decorators import login_required
-from .utils import get_main_menu_keyboard, get_chats_inline # Проверьте имя здесь!
-
+from .constants import TOPIC_CHOICES
+from .utils import send_verification_email # Убедитесь, что она импортируется корректно
 
 User = get_user_model()
-YOUTUBE_API_KEY = 'AIzaSyBIQSgM6nAcLnt5En1E59Ee65jL-NHTJDs'
+# Рекомендуется вынести в settings.py
+YOUTUBE_API_KEY = getattr(settings, 'YOUTUBE_API_KEY', 'AIzaSy...') 
 
 # --- 1. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 
@@ -52,9 +39,6 @@ def parse_duration_to_seconds(duration):
     d, h, m, s = [int(x) if x else 0 for x in match.groups()]
     return d * 86400 + h * 3600 + m * 60 + s
 
-import statistics  # ОБЯЗАТЕЛЬНО добавьте этот импорт в начало файла
-
-# --- ИСПРАВЛЕННАЯ ФУНКЦИЯ СТАТИСТИКИ ---
 def get_youtube_stats(channel_url, api_key):
     if not channel_url or not isinstance(channel_url, str):
         return None
@@ -66,7 +50,6 @@ def get_youtube_stats(channel_url, api_key):
     handle = handle_match.group(1)
     
     try:
-        # 1. Запрос данных канала
         ch_url = f"https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails,brandingSettings&forHandle={handle}&key={api_key}"
         ch_data = requests.get(ch_url, timeout=7).json()
         
@@ -76,7 +59,6 @@ def get_youtube_stats(channel_url, api_key):
         item = ch_data["items"][0]
         uploads_id = item["contentDetails"]["relatedPlaylists"]["uploads"]
         
-        # 2. Запрос последних видео для расчета медианы
         v_url = f"https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId={uploads_id}&maxResults=50&key={api_key}"
         v_data = requests.get(v_url).json()
         v_ids = [v["contentDetails"]["videoId"] for v in v_data.get("items", [])]
@@ -86,101 +68,50 @@ def get_youtube_stats(channel_url, api_key):
             stats_url = f"https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id={','.join(v_ids)}&key={api_key}"
             for v in requests.get(stats_url).json().get("items", []):
                 views = int(v["statistics"].get("viewCount", 0))
-                # Используем вашу функцию парсинга длительности
                 if parse_duration_to_seconds(v["contentDetails"]["duration"]) <= 200:
                     shorts_views.append(views)
                 else:
                     long_views.append(views)
 
-        # РЕЗУЛЬТАТ: Совмещаем ключи для моделей (BloggerProfile) и для JS
         return {
-            # Для сохранения в БД (модели)
+            'status': 'success',
             'channel_name': item["snippet"]["title"],
+            'title': item["snippet"]["title"],
             'subscribers_count': int(item["statistics"].get("subscriberCount", 0)),
+            'subs': int(item["statistics"].get("subscriberCount", 0)),
             'avatar_url': item["snippet"]["thumbnails"]["high"]["url"],
-            'banner_url': item.get("brandingSettings", {}).get("image", {}).get("bannerExternalUrl"),
-            'median_views': int(statistics.median(long_views)) if long_views else 0,
-            'median_views_shorts': int(statistics.median(shorts_views)) if shorts_views else 0,
-            
-            # --- ВОТ ЭТИ КЛЮЧИ НУЖНЫ ДЛЯ ВАШЕГО JS В register.html ---
-            'status': 'success', # Чтобы сработало условие if (data.status === 'success')
-            'title': item["snippet"]["title"], # Вы искали data.title
-            'subs': int(item["statistics"].get("subscriberCount", 0)), # Вы искали data.subs
-            
-            # Остальные вспомогательные ключи
-            'name': item["snippet"]["title"],
-            'long_median': int(statistics.median(long_views)) if long_views else 0,
-            'shorts_median': int(statistics.median(shorts_views)) if shorts_views else 0,
             'api_avatar': item["snippet"]["thumbnails"]["high"]["url"],
-            'api_banner': item.get("brandingSettings", {}).get("image", {}).get("bannerExternalUrl"),
+            'median_views': int(statistics.median(long_views)) if long_views else 0,
+            'api_long_median': int(statistics.median(long_views)) if long_views else 0,
+            'median_views_shorts': int(statistics.median(shorts_views)) if shorts_views else 0,
+            'api_shorts_median': int(statistics.median(shorts_views)) if shorts_views else 0,
         }
     except Exception as e:
         print(f"Ошибка API: {e}")
         return None
 
-# --- ИСПРАВЛЕННЫЙ REDIRECT В РЕДАКТИРОВАНИИ ---
-@login_required
-def edit_blogger_profile(request):
-    profile = get_object_or_404(BloggerProfile, user=request.user)
-    
-    if request.method == 'POST':
-        profile.price_start = request.POST.get('price_start', profile.price_start)
-        profile.categories = ", ".join(request.POST.getlist('topics'))
-        profile.save()
-        messages.success(request, "Профиль успешно обновлен!")
-        return redirect('core:dashboard') # Добавлен namespace 'core:'
-        
-    # Убедитесь, что путь к шаблону верный (без лишнего core/core/)
-    return render(request, 'core/edit_profile.html', {
-        'profile': profile,
-        'TOPIC_CHOICES': TOPIC_CHOICES
-    })
-
-
-
 # --- 2. АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ ---
-import random
-import string
-import json
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .forms import RegistrationForm
-from .models import User, BloggerProfile, AdvertiserProfile, ProductAd
-from .constants import TOPIC_CHOICES, SUB_TOPICS_MAP # Убедись, что импорты верны
-from .utils import send_verification_email # Твоя функция отправки почты
-
-# --- 2. АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ ---
-import random
-import string
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.db import transaction  # Убедитесь, что этот импорт есть
-from .forms import RegistrationForm
-from .models import User, BloggerProfile, AdvertiserProfile, ProductAd
-from .constants import TOPIC_CHOICES
-from .utils import send_verification_email
 
 def register(request):
     if request.method == 'POST':
         form = RegistrationForm(request.POST, request.FILES)
         if form.is_valid():
-            user_created = False
-            email = form.cleaned_data.get('email')
-            role = form.cleaned_data.get('role')
-            # Генерируем пароль заранее, чтобы он был доступен вне блока try
-            pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
-
             try:
                 with transaction.atomic():
                     user = form.save(commit=False)
+                    email = form.cleaned_data.get('email')
                     user.email = email
-                    user.username = email
-                    user.role = role
+                    user.username = email  
+                    
+                    # Генерируем временный пароль
+                    pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
                     user.set_password(pwd)
-                    user.is_active = False  
+                    user.is_active = False 
+                    
+                    role = form.cleaned_data.get('role')
+                    user.role = role 
                     user.save()
-
-                    # Создание профиля
+                    
                     if role == 'blogger':
                         BloggerProfile.objects.create(
                             user=user,
@@ -190,47 +121,38 @@ def register(request):
                             median_views=int(request.POST.get('api_long_median') or 0),
                             median_views_shorts=int(request.POST.get('api_shorts_median') or 0),
                             categories=", ".join(request.POST.getlist('topics')),
-                            price_start=int(request.POST.get('price_start') or 0),
+                            price_start=request.POST.get('price_start') or 0,
                             avatar_url=request.POST.get('api_avatar'),
-                            banner_url=request.POST.get('api_banner'),
                         )
+                    
                     elif role == 'advertiser':
                         adv = AdvertiserProfile.objects.create(
                             user=user, 
                             company_name=request.POST.get('company_name') or "Новый бренд"
                         )
+                        
                         product_title = request.POST.get('title')
                         if product_title:
                             ProductAd.objects.create(
                                 advertiser=adv, 
                                 name=product_title,
+                                description=request.POST.get('description', ''),
                                 category=", ".join(request.POST.getlist('topics')),
                                 image=request.FILES.get('product_image'),
+                                link_wb=request.POST.get('link_wb'),
+                                link_ozon=request.POST.get('link_ozon'),
                                 is_active=True
                             )
-                    user_created = True
 
-                # ПОСЛЕ транзакции отправляем почту
-                if user_created:
-                    try:
-                        send_verification_email(user, pwd)
-                    except Exception as email_err:
-                        print(f"Ошибка почты (не критично): {email_err}")
-
-                    # СТРОГО здесь возвращаем шаблон успеха
-                    return render(request, 'core/success.html', {
-                        'email': email, 
-                        'password': pwd
-                    })
+                    # Отправляем письмо (важно передать пароль, так как он захеширован в базе)
+                    send_verification_email(user, pwd, request)
+                    
+                    # Переход на страницу "Успех, проверьте почту"
+                    return redirect('core:registration_success')
 
             except Exception as e:
-                print(f"Критическая ошибка БД: {e}")
                 messages.error(request, f"Ошибка при регистрации: {e}")
-                # Если упало — возвращаемся на форму
-                return render(request, 'core/register.html', {
-                    'form': form, 
-                    'TOPIC_CHOICES': TOPIC_CHOICES
-                })
+                return redirect('core:register')
     else:
         form = RegistrationForm()
         
@@ -246,12 +168,19 @@ def activate(request, uidb64, token):
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         user = None
 
-    if user is not None and default_token_generator.check_token(user, token):
+    if user and default_token_generator.check_token(user, token):
         user.is_active = True
         user.save()
-        return redirect('core:registration_success') # Обязательно с core:
-    else:
-        return render(request, 'core/activation_invalid.html')
+        
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        messages.success(request, "Email подтвержден!")
+        return redirect('core:dashboard') 
+    
+    return render(request, 'core/activation_invalid.html')
+
+def registration_success(request):
+    """View для страницы success.html"""
+    return render(request, 'core/success.html')
 
 
 def user_login(request):
@@ -274,9 +203,7 @@ def user_login(request):
             
     return render(request, 'registration/login.html')
 
-def registration_success(request):
-    return render(request, 'core/success.html') # Новая страница "Успешно активировано"
-from django.db.models import Count
+
 
 @login_required
 def chat_detail(request, user_id):

@@ -173,7 +173,7 @@
                     <h5 class="fw-bold mb-1" style="color: #1d1d1f;">{{ ad.name }}</h5>
                     <p style="font-size: 14px; color: #86868b; margin-bottom: 20px;">{{ ad.short_description|truncatechars:30 }}</p>
                     <div class="d-flex justify-content-between align-items-center">
-                        <span style="font-size: 16px; font-weight: 700;">{{ ad.budget|default:"0" }} ₽</span>
+                        
                         {% if ad.is_barter %}
                         <span class="badge" style="background: #e3f2fd; color: #0071e3; border-radius: 6px; padding: 6px 10px;">Бартер</span>
                         {% endif %}

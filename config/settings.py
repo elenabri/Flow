@@ -144,3 +144,16 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.onrender.com"
 ]
 WHITENOISE_ROOT = BASE_DIR / 'staticfiles'
+
+# Указываем Django, что Render передает HTTPS через этот заголовок
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Доверяем вашему домену
+CSRF_TRUSTED_ORIGINS = [
+    "https://tubeflow-mvfo.onrender.com",
+    "https://*.onrender.com"
+]
+
+# Для дополнительной надежности при работе с сессиями
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True

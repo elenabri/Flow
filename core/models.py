@@ -293,7 +293,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 class AdIntegration(models.Model):
-    user = models.ForeignKey('User', on_shared_samples=models.CASCADE)
+    user = models.ForeignKey('User', on_delete=models.CASCADE)
     youtube_url = models.URLField(verbose_name="Ссылка на ролик")
     product_name = models.CharField(max_length=255, blank=True, verbose_name="Товар")
     brand = models.CharField(max_length=255, blank=True, verbose_name="Бренд")

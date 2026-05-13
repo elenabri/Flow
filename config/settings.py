@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'cloudinary',
+    'django_filters',
     'core',
 ]
 
@@ -86,6 +87,7 @@ LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
 USE_TZ = True
+USE_L10N = True
 
 # --- СТАТИКА ---
 STATIC_URL = '/static/'
@@ -126,7 +128,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'len.bri14@gmail.com'
 EMAIL_HOST_PASSWORD = 'yvyojptzikbylojr' # Рекомендую заменить на переменную окружения
-DEFAULT_FROM_EMAIL = 'Vkusnevich <len.bri14@gmail.com>'
+DEFAULT_FROM_EMAIL = 'TubeFlow <len.bri14@gmail.com>'
 
 # --- TELEGRAM ---
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', "8275098246:AAG0GwVR8FNSS7DhnmhCseZZwzXvO1h-n7k")
@@ -134,7 +136,7 @@ TELEGRAM_ADMIN_GROUP_ID = os.getenv('TELEGRAM_ADMIN_GROUP_ID')
 
 # --- ПРОЧИЕ НАСТРОЙКИ ---
 LOGIN_REDIRECT_URL = 'core:login_router'
-LOGOUT_REDIRECT_URL = 'login'
+LOGOUT_REDIRECT_URL = 'core:login_router'
 SITE_DOMAIN = 'tubeflow-mvfo.onrender.com'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -143,3 +145,16 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.onrender.com"
 ]
 WHITENOISE_ROOT = BASE_DIR / 'staticfiles'
+
+# Указываем Django, что Render передает HTTPS через этот заголовок
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Доверяем вашему домену
+CSRF_TRUSTED_ORIGINS = [
+    "https://tubeflow-mvfo.onrender.com",
+    "https://*.onrender.com"
+]
+
+# Для дополнительной надежности при работе с сессиями
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True

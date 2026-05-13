@@ -10,234 +10,212 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="[https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css](https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css)">
 
-    <style>
-        :root {
-            --mp-bg: #f8fafc;
-            --mp-nav-bg: #ffffff;
-            --mp-text-main: #1e293b;
-            --mp-text-muted: #64748b;
-            --mp-accent: #3b82f6;
-            --mp-border: #e2e8f0;
-            --mp-danger: #ef4444;
-            --tg-color: #0088cc;
-        }
+<style>
+    :root {
+        --mp-bg: #f8fafc;
+        --mp-nav-bg: #ffffff;
+        --mp-text-main: #1e293b;
+        --mp-text-muted: #64748b;
+        --mp-accent: #3b82f6;
+        --mp-border: #e2e8f0;
+        --mp-danger: #ef4444;
+        --tg-color: #0088cc;
+    }
 
-        body {
-            margin: 0;
-            font-family: 'Inter', sans-serif;
-            background-color: var(--mp-bg);
-            color: var(--mp-text-main);
-            overflow-x: hidden;
-        }
+    body {
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+        background-color: var(--mp-bg);
+        color: var(--mp-text-main);
+        overflow-x: hidden;
+    }
 
-        /* --- LOGO STYLE --- */
-        .logo-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-        }
-        .logo-icon {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
-        }
-        .logo-icon i { color: white; font-size: 14px; }
-        .logo-text {
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--mp-text-main);
-            letter-spacing: -0.5px;
-        }
-        .logo-text span { color: var(--mp-accent); }
+    /* --- LOGO STYLE --- */
+    .logo-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+    }
+    .logo-icon {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+    }
+    .logo-icon i { color: white; font-size: 14px; }
+    .logo-text {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--mp-text-main);
+        letter-spacing: -0.5px;
+    }
+    .logo-text span { color: var(--mp-accent); }
 
-        /* --- NAVIGATION --- */
-        .navbar {
-            background: var(--mp-nav-bg);
-            border-bottom: 1px solid var(--mp-border);
-            padding: 0.6rem 0;
+    /* --- NAVIGATION --- */
+    .navbar {
+        background: var(--mp-nav-bg);
+        border-bottom: 1px solid var(--mp-border);
+        padding: 0.6rem 0;
+    }
+    .nav-link {
+        color: var(--mp-text-muted) !important;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 0.6rem 1rem !important;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .nav-link:hover {
+        color: var(--mp-accent) !important;
+    }
+
+    .nav-link.active {
+        color: var(--mp-accent) !important;
+        font-weight: 700;
+    }
+
+    /* Десктопная линия под активным пунктом */
+    @media (min-width: 992px) {
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 1rem;
+            right: 1rem;
+            height: 2px;
+            background: var(--mp-accent);
+            border-radius: 2px;
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        .nav-link.active::after {
+            transform: scaleX(1);
+        }
+    }
+
+    /* Мобильный вид (iPhone / Android) */
+    @media (max-width: 991px) {
+        .navbar-collapse {
+            background: white;
+            margin-top: 10px;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
         }
         .nav-link {
-            color: var(--mp-text-muted) !important;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 0.6rem 1rem !important;
-            transition: all 0.3s ease;
-            position: relative;
+            border-bottom: 1px solid #f8fafc;
+            padding: 12px 0 !important;
         }
-
-        /* Эффект при наведении */
-        .nav-link:hover {
-            color: var(--mp-accent) !important;
-        }
-
-        /* Стиль для активной страницы */
         .nav-link.active {
+            background: none !important; /* Убираем овал */
             color: var(--mp-accent) !important;
-            font-weight: 700;
+            padding-left: 0 !important;
         }
+    }
 
-        /* Подчеркивание только для десктопа, чтобы не портить мобильное меню */
-        @media (min-width: 992px) {
-            .nav-link::after {
-                content: '';
-                position: absolute;
-                bottom: -2px; /* Прижимаем к нижней границе навбара */
-                left: 1rem;
-                right: 1rem;
-                height: 2px;
-                background: var(--mp-accent);
-                border-radius: 2px;
-                transform: scaleX(0); /* Скрыто по умолчанию */
-                transition: transform 0.3s ease;
-            }
+    /* --- Утилиты и бейджи --- */
+    .badge-msg {
+        background-color: var(--mp-danger);
+        font-size: 10px;
+        padding: 3px 6px;
+    }
 
-            .nav-link.active::after {
-                transform: scaleX(1); /* Плавное появление линии */
-            }
-        }
-
-        /* Мобильный вид: выделяем цветом фона или жирным шрифтом */
-        @media (max-width: 991px) {
-            .nav-link.active {
-                background: rgba(59, 130, 246, 0.05);
-                border-radius: 8px;
-                padding-left: 15px !important;
-            }
-        }
-
-        .badge-msg {
-            background-color: var(--mp-danger);
-            font-size: 10px;
-            padding: 3px 6px;
-        }
-
-        /* --- TELEGRAM BANNER --- */
-        .tg-connect-banner {
-            background: linear-gradient(90deg, #0088cc, #24a1de);
-            color: white;
-            padding: 10px 0;
-            font-size: 13px;
-            text-align: center;
-        }
-        .btn-tg-link {
-            background: white;
-            color: var(--tg-color);
-            padding: 4px 12px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 11px;
-            display: inline-block;
-            margin-left: 10px;
-            transition: 0.2s;
-        }
-        .btn-tg-link:hover { background: #f1f5f9; transform: scale(1.05); }
-
-        /* --- UTILS --- */
-        .main-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 30px 15px;
-        }
-
-        @media (max-width: 991px) {
-            .navbar-collapse {
-                background: white;
-                margin-top: 10px;
-                padding: 15px;
-                border-radius: 12px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            }
-            .nav-link {
-                border-bottom: 1px solid #f8fafc;
-                padding: 12px 0 !important;
-            }
-        }
-    </style>
+    .main-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 30px 15px;
+    }
+</style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
 
-    <!-- Навигация -->
-    <nav class="navbar navbar-expand-lg sticky-top">
-        <div class="container-fluid px-lg-5">
-            <a class="navbar-brand" href="{% url 'core:dashboard' %}">
-                <div class="logo-wrapper">
-                    <div class="logo-icon"><i class="fas fa-play"></i></div>
-                    <div class="logo-text">Tube<span>Flow</span></div>
-                </div>
-            </a>
 
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+<!-- Навигация -->
+<nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container-fluid px-lg-5">
+        <a class="navbar-brand" href="{% url 'core:dashboard' %}">
+            <div class="logo-wrapper">
+                <div class="logo-icon"><i class="fas fa-play"></i></div>
+                <div class="logo-text">Tube<span>Flow</span></div>
+            </div>
+        </a>
 
-            <div class="collapse navbar-collapse" id="mainNav">
+        <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNav">
+            {# Выносим with, чтобы он охватывал все меню, включая правую часть #}
+            {% with url_name=request.resolver_match.url_name %}
                 <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
                     {% if user.is_authenticated %}
                         
-                        {# Используем request.resolver_match.url_name для точного определения страницы #}
-                        {% with url_name=request.resolver_match.url_name %}
-                        
-                            {% if user.role == 'advertiser' %}
-                                <li class="nav-item">
-                                    <a href="{% url 'core:blogger_list' %}" class="nav-link {% if url_name == 'blogger_list' %}active{% endif %}">Блогеры</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'core:ad_list' %}" class="nav-link {% if url_name == 'ad_list' %}active{% endif %}">Объявления</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'core:my_ads' %}" class="nav-link {% if url_name == 'my_ads' %}active{% endif %}">Мои объявления</a>
-                                </li>
-                            {% elif user.role == 'blogger' %}
-                                <li class="nav-item">
-                                    <a href="{% url 'core:ad_list' %}" class="nav-link {% if url_name == 'ad_list' %}active{% endif %}">На рекламу</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'core:blogger_list' %}" class="nav-link {% if url_name == 'blogger_list' %}active{% endif %}">Блогеры</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'core:edit_profile' %}" class="nav-link {% if url_name == 'edit_profile' %}active{% endif %}">Мои цены</a>
-                                </li>
-                            {% endif %}
+                        {% if user.role == 'advertiser' %}
+                            <li class="nav-item">
+                                <a href="{% url 'core:blogger_list' %}" class="nav-link {% if url_name == 'blogger_list' %}active{% endif %}">Блогеры</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{% url 'core:ad_list' %}" class="nav-link {% if url_name == 'ad_list' %}active{% endif %}">Все объявления</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{% url 'core:my_ads' %}" class="nav-link {% if url_name == 'my_ads' %}active{% endif %}">Мои объявления</a>
+                            </li>
+                        {% elif user.role == 'blogger' %}
+                            <li class="nav-item">
+                                <a href="{% url 'core:ad_list' %}" class="nav-link {% if url_name == 'ad_list' %}active{% endif %}">Объявления на рекламу</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{% url 'core:blogger_list' %}" class="nav-link {% if url_name == 'blogger_list' %}active{% endif %}">Блогеры</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{% url 'core:edit_profile' %}" class="nav-link {% if url_name == 'edit_profile' %}active{% endif %}">Мои цены</a>
+                            </li>
+                        {% endif %}
 
-                            <li class="nav-item">
-                                <a href="{% url 'core:integration_list' %}" class="nav-link {% if 'integration' in url_name %}active{% endif %}">Моя реклама</a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'core:chat_list' %}" class="nav-link {% if 'chat' in url_name %}active{% endif %}">
-                                    Сообщения
-                                    {% if unread_messages_count > 0 %}
-                                        <span class="badge rounded-pill badge-msg">{{ unread_messages_count }}</span>
-                                    {% endif %}
-                                </a>
-                            </li>
-                        {% endwith %}
-                    {% else %}
-                        <li class="nav-item"><a href="{% url 'core:marketplace' %}" class="nav-link">Маркетплейс</a></li>
+                        <li class="nav-item">
+                            <a href="{% url 'core:integration_list' %}" class="nav-link {% if 'integration' in url_name %}active{% endif %}">Моя реклама</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'core:chat_list' %}" class="nav-link {% if 'chat' in url_name %}active{% endif %}">
+                                Сообщения
+                                {% if unread_messages_count > 0 %}
+                                    <span class="badge rounded-pill badge-msg">{{ unread_messages_count }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
                     {% endif %}
                 </ul>
 
                 <div class="d-flex align-items-center gap-2">
                     {% if user.is_authenticated %}
-                        <a href="{% url 'core:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        {# Теперь "Кабинет" использует ту же логику url_name и находится внутри блока with #}
+                        <a href="{% url 'core:dashboard' %}" class="nav-link {% if url_name == 'dashboard' %}active{% endif %}">
                             Кабинет
                         </a>
-
+                        {# Рекомендую добавить ссылку на выход для удобства #}
+                        <form action="{% url 'logout' %}" method="post" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="nav-link ms-2 text-danger border-0 bg-transparent" title="Выйти">
+            <i class="bi bi-box-arrow-right"></i>
+        </button>
+    </form>
                     {% else %}
                         <a href="{% url 'login' %}" class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm">Войти</a>
                     {% endif %}
                 </div>
-            </div>
+            {% endwith %}
         </div>
-    </nav>
+    </div>
+</nav>
 
     <!-- Баннер Telegram 
     {% if user.is_authenticated and not user.tg_chat_id %}

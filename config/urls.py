@@ -22,10 +22,14 @@ core_patterns = ([
     # Блогеры
     path('bloggers/', views.blogger_list, name='blogger_list'), # Теперь ведет на правильный view
     path('blogger/<int:blogger_id>/', views.blogger_detail, name='blogger_detail'),
-    path('blogger/profile/edit/', views.edit_blogger_profile, name='edit_profile'), 
+    path('blogger/profile/edit/', views.edit_profile, name='edit_profile'), 
     
     # Взаимодействие и Интеграции
-    path('integration/', views.integration, name='integration_list'), 
+    path('integration/', views.integration_list, name='integration_list'),
+    path('integration/add/', views.add_integration, name='add_integration'), # Этого имени не хватает!
+    path('integration/delete/<int:item_id>/', views.delete_integration, name='delete_integration'),
+    path('integration/update/<int:item_id>/', views.update_integration_views, name='update_views'),
+    
     path('seller/<int:pk>/', views.seller_profile, name='seller_profile'),
     path('send_response/<int:ad_id>/', views.send_response, name='send_response'),
     
@@ -39,6 +43,7 @@ core_patterns = ([
     path('ajax/check-email/', views.check_email, name='check_email'),
     path('support-ajax/', views.support_ajax, name='support_ajax'),
     path('activate/<uidb64>/<token>/', views.activate, name='activate'),
+    path('registration-success/', views.registration_success, name='registration_success'),
     path('login-router/', views.login_router, name='login_router'),
     path('api/connect-telegram/', views.connect_telegram_api, name='connect_telegram_api'),
     path('bulk-message-setup/', views.bulk_message_setup, name='bulk_message_setup'),
@@ -51,6 +56,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('test-path/', views.home), 
     path('verify-email/<path:username>/', views.verify_email, name='verify_email'),
+    path('profile/edit/', views.edit_profile, name='edit_profile'),
     
     # Основные пути приложения
     path('', include(core_patterns)),

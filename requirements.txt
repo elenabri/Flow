@@ -22,3 +22,5 @@ pyTelegramBotAPI
 cloudinary
 django-cloudinary-storage
 Pillow
+django-filter==24.3
+google-api-python-client==2.128.0

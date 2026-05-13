@@ -286,3 +286,44 @@ class SupportTicket(models.Model):
 
     def __str__(self):
         return f"От {self.email} - {self.created_at.strftime('%d.%m %H:%M')}"
+
+
+from django.db import models
+from django.utils import timezone
+from datetime import timedelta
+
+class AdIntegration(models.Model):
+    user = models.ForeignKey('User', on_delete=models.CASCADE)
+    youtube_url = models.URLField(verbose_name="Ссылка на ролик")
+    timestamp = models.IntegerField(default=0)
+    product_name = models.CharField(max_length=255, blank=True, verbose_name="Товар")
+    brand = models.CharField(max_length=255, blank=True, verbose_name="Бренд")
+    cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Стоимость")
+    
+    # Данные из API
+    channel_name = models.CharField(max_length=255, blank=True)
+    publish_date = models.DateTimeField(null=True, blank=True)
+    views = models.PositiveIntegerField(default=0)
+    last_updated = models.DateTimeField(null=True, blank=True)
+
+
+    @property
+    def cpv(self):
+        if self.cost and self.views and self.views > 0:
+            return round(self.cost / self.views, 2)
+        return 0
+
+    def can_update_views(self):
+        if not self.last_updated:
+            return True
+        return timezone.now() > self.last_updated + timedelta(days=7)
+
+    @property
+    def formatted_timestamp(self):
+        if self.timestamp:
+            mins = self.timestamp // 60
+            secs = self.timestamp % 60
+            return f"{mins}:{secs:02d}" # :02d добавит ноль, если секунд меньше 10 (например, 5:03)
+        return "0:00"
+
+

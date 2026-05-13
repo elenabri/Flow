@@ -4,10 +4,20 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
 
-def send_verification_email(user, password):
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+
+def send_verification_email(user, password, request=None):
     domain = getattr(settings, 'SITE_DOMAIN', '127.0.0.1:8000')
     protocol = 'https' if not settings.DEBUG else 'http'
-    activation_link = f"{protocol}://{domain}/verify-email/{user.username}/"
+    
+    # Генерируем безопасные параметры
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    
+    # Ссылка должна соответствовать функции activate
+    activation_link = f"{protocol}://{domain}/activate/{uid}/{token}/"
 
     context = {
         'user': user,
@@ -98,3 +108,26 @@ def send_telegram_notification(receiver_user, message_text, sender_name, chat_id
         bot.send_message(receiver_user.tg_chat_id, text, parse_mode="HTML")
     except Exception as e:
         print(f"Ошибка отправки: {e}")
+
+# core/utils.py
+import re
+from googleapiclient.discovery import build
+
+def get_youtube_views(video_url, api_key):
+    # Извлекаем ID видео из ссылки с помощью регулярного выражения
+    video_id_match = re.search(r"v=([^&]+)", video_url) or re.search(r"be/([^?]+)", video_url)
+    if not video_id_match:
+        return None
+    
+    video_id = video_id_match.group(1)
+    
+    youtube = build('youtube', 'v3', developerKey=api_key)
+    request = youtube.videos().list(
+        part="statistics",
+        id=video_id
+    )
+    response = request.execute()
+
+    if response['items']:
+        return int(response['items'][0]['statistics']['viewCount'])
+    return 0

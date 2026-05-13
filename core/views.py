@@ -188,7 +188,7 @@ def activate(request, uidb64, token):
         messages.success(request, "Email подтвержден!")
         return redirect('core:dashboard') 
     
-    return render(request, 'core/activation_invalid.html')
+    return render(request, 'core/registration/activation_invalid.html')
 
 def registration_success(request):
     """View для страницы success.html"""

@@ -108,3 +108,26 @@ def send_telegram_notification(receiver_user, message_text, sender_name, chat_id
         bot.send_message(receiver_user.tg_chat_id, text, parse_mode="HTML")
     except Exception as e:
         print(f"Ошибка отправки: {e}")
+
+# core/utils.py
+import re
+from googleapiclient.discovery import build
+
+def get_youtube_views(video_url, api_key):
+    # Извлекаем ID видео из ссылки с помощью регулярного выражения
+    video_id_match = re.search(r"v=([^&]+)", video_url) or re.search(r"be/([^?]+)", video_url)
+    if not video_id_match:
+        return None
+    
+    video_id = video_id_match.group(1)
+    
+    youtube = build('youtube', 'v3', developerKey=api_key)
+    request = youtube.videos().list(
+        part="statistics",
+        id=video_id
+    )
+    response = request.execute()
+
+    if response['items']:
+        return int(response['items'][0]['statistics']['viewCount'])
+    return 0

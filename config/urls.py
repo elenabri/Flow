@@ -25,7 +25,7 @@ core_patterns = ([
     path('blogger/profile/edit/', views.edit_profile, name='edit_profile'), 
     
     # Взаимодействие и Интеграции
-    path('integration/', views.integration_list, name='integration'),
+    path('integration/', views.integration_list, name='integration_list'),
     path('integration/add/', views.add_integration, name='add_integration'), # Этого имени не хватает!
     path('integration/delete/<int:item_id>/', views.delete_integration, name='delete_integration'),
     path('integration/update/<int:item_id>/', views.update_integration_views, name='update_views'),

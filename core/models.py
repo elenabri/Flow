@@ -16,16 +16,18 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
 
     # Поле для привязки Telegram (чтобы знать, кому слать уведомления)
-    # Обычно его называют tg_chat_id, чтобы не путать с объектом чата
-    tg_chat_id = models.BigIntegerField(null=True, blank=True)
 
-    # Объект чата, который сейчас "открыт" у пользователя
-    current_tg_chat = models.ForeignKey(
-        'Chat', 
-        null=True, 
+
+    telegram_handle = models.CharField(
+        "Ник в Telegram", 
+        max_length=100, 
         blank=True, 
-        on_delete=models.SET_NULL,
-        related_name='active_in_users'
+        null=True,
+        help_text="Ник пользователя без символа @"
+    )
+
+    # Оставляем ваш существующий tg_chat_id для уведомлений бота
+    tg_chat_id = models.BigIntegerField(null=True, blank=True)
     )
 
     def __str__(self):

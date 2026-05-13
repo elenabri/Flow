@@ -1141,7 +1141,7 @@ def update_integration_views(request, item_id):
             integration.last_updated = timezone.now()
             integration.save()
             
-    return redirect('core:integrations_list')
+    return redirect('core:integration_list')
 
 from django.utils import timezone
 
@@ -1156,7 +1156,7 @@ def add_integration(request):
             cost=request.POST.get('cost') or 0,
             publish_date=timezone.now() # или другое поле
         )
-    return redirect('core:integrations_list') # Возвращаемся на список
+    return redirect('core:integration_list') # Возвращаемся на список
 
 # core/views.py
 
@@ -1164,4 +1164,4 @@ def delete_integration(request, item_id):
     integration = get_object_or_404(AdIntegration, pk=item_id, user=request.user)
     if request.method == 'POST':
         integration.delete()
-    return redirect('core:integrations_list')
+    return redirect('core:integration_list')

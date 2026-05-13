@@ -129,9 +129,16 @@
                         </td>
                         <td>{{ item.publish_date|date:"d.m.Y"|default:"Ожидается" }}</td>
                         <td>
-                            <a href="{{ item.youtube_url }}" target="_blank" class="text-primary text-decoration-none">
-                                <i class="bi bi-youtube"></i> Перейти
-                            </a>
+                            <div class="d-flex flex-column">
+                                <a href="{{ item.youtube_url }}{% if item.timestamp > 0 %}&t={{ item.timestamp }}{% endif %}" target="_blank" class="text-primary text-decoration-none fw-bold">
+                                    <i class="bi bi-youtube"></i> Перейти
+                                </a>
+                                {% if item.timestamp > 0 %}
+                                <small class="text-muted" style="font-size: 0.75rem;">
+                                    <i class="bi bi-clock-history"></i> {{ item.formatted_timestamp }}
+                                </small>
+                                {% endif %}
+                            </div>
                         </td>
                         <td>{{ item.cost|intcomma }} ₽</td>
                         <td>
@@ -176,13 +183,27 @@
                 <h5 class="modal-title fw-bold">Новая реклама</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{% url 'core:add_integration' %}" method="post">
+            <form action="{% url 'core:add_integration' %}" method="post" id="add-integration-form">
                 {% csrf_token %}
                 <div class="modal-body pt-4">
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Ссылка на YouTube (обязательно)*</label>
                         <input type="url" name="youtube_url" class="form-control" placeholder="https://www.youtube.com/watch?v=..." required>
                     </div>
+                    
+                    <!-- Поля для тайминга (Минуты и Секунды) -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Тайминг рекламы (Мин:Сек)</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="number" id="js-mins" class="form-control" placeholder="Мин" min="0">
+                            <span class="fw-bold">:</span>
+                            <input type="number" id="js-secs" class="form-control" placeholder="Сек" min="0" max="59">
+                            
+                            <!-- Скрытое поле для передачи общего кол-ва секунд в Django -->
+                            <input type="hidden" name="timestamp" id="js-final-timestamp" value="0">
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label small fw-bold">Товар</label>
@@ -206,4 +227,15 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Рассчитываем секунды перед отправкой формы
+    document.getElementById('add-integration-form').addEventListener('submit', function(e) {
+        const mins = parseInt(document.getElementById('js-mins').value) || 0;
+        const secs = parseInt(document.getElementById('js-secs').value) || 0;
+        const totalSeconds = (mins * 60) + secs;
+        document.getElementById('js-final-timestamp').value = totalSeconds;
+    });
+</script>
+
 {% endblock %}

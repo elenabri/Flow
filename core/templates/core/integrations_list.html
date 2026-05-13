@@ -1,88 +1,209 @@
 {% extends "core/base.html" %}
+{% load humanize %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --glass-bg: rgba(255, 255, 255, 0.8);
+        --accent-color: #2c3e50;
+    }
+    .content-wrapper {
+        padding: 2rem;
+        background-color: #f8f9fa;
+        min-height: 100vh;
+    }
+    .table-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        border: 1px solid #eef0f2;
+        overflow: hidden;
+    }
+    .table thead th {
+        background-color: #fcfcfd;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        color: #6c757d;
+        border-bottom: 1px solid #eef0f2;
+        padding: 1rem;
+    }
+    .table tbody td {
+        padding: 1.2rem 1rem;
+        vertical-align: middle;
+        font-size: 0.9rem;
+        color: #333;
+        border-bottom: 1px solid #f8f9fa;
+    }
+    .brand-badge {
+        font-size: 0.8rem;
+        color: #7f8c8d;
+        display: block;
+    }
+    .cpv-value {
+        font-weight: 600;
+        color: #27ae60;
+    }
+    .btn-add {
+        background-color: var(--accent-color);
+        color: white;
+        border-radius: 8px;
+        padding: 0.6rem 1.5rem;
+        transition: all 0.3s ease;
+    }
+    .btn-add:hover {
+        background-color: #000;
+        color: white;
+        transform: translateY(-1px);
+    }
+    .filter-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        border: 1px solid #eef0f2;
+    }
+    .sort-link {
+        text-decoration: none;
+        color: inherit;
+    }
+    .sort-link:hover { color: #007bff; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div style="max-width: 1200px; margin: 40px auto; font-family: 'Inter', sans-serif;">
-    <h1 style="font-weight: 800; color: #1a1a1a; margin-bottom: 30px;">Мои Интеграции</h1>
-
-    {% for contract in contracts %}
-    <div style="background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 30px; overflow: hidden; border: 1px solid #eee;">
-        
-        <div style="padding: 20px 30px; background: #fcfcfc; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #888;">Договор</span>
-                <h2 style="margin: 5px 0 0 0; font-size: 18px;">№{{ contract.number }} — {{ contract.blogger.username }}</h2>
-            </div>
-            <div style="text-align: right;">
-                <div style="font-weight: 700; color: #28a745; font-size: 18px;">{{ contract.total_amount }} ₽</div>
-                <div style="font-size: 12px; color: #666;">
-                    Статус: 
-                    <span style="padding: 4px 12px; border-radius: 20px; background: #e3f2fd; color: #0d47a1; font-weight: 600;">
-                        {{ contract.get_status_display }}
-                    </span>
-                </div>
-            </div>
-        </div>
-
-        <div style="padding: 30px;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                {% for video in contract.videos.all %}
-                <div style="border: 1px solid #f0f0f0; border-radius: 15px; padding: 20px; position: relative; background: {% if video.status == 'released' %}#fafffa{% else %}white{% endif %};">
-                    
-                    <div style="position: absolute; top: 15px; right: 15px; font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 10px; 
-                        {% if video.status == 'in_progress' %} background: #fff3e0; color: #e65100;
-                        {% elif video.status == 'review' %} background: #ede7f6; color: #512da8;
-                        {% elif video.status == 'released' %} background: #e8f5e9; color: #2e7d32;
-                        {% endif %}">
-                        {{ video.get_status_display|upper }}
-                    </div>
-
-                    <h4 style="margin: 0 0 10px 0;">{{ video.format }}</h4>
-                    <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Дедлайн: <b>{{ video.deadline|date:"d.m.Y" }}</b></p>
-
-                    {% if user == contract.blogger and video.status == 'in_progress' %}
-                    <form method="POST" action="{% url 'upload_video' video.id %}">
-                        <input type="url" name="link" placeholder="Ссылка на ролик (Unlisted)" style="width:100%; padding:8px; margin-bottom:8px; border-radius:8px; border:1px solid #ddd;">
-                        <div style="display:flex; gap:5px;">
-                            <input type="text" name="start" placeholder="01:20" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
-                            <input type="text" name="end" placeholder="02:10" style="width:50%; padding:8px; border-radius:8px; border:1px solid #ddd;">
-                        </div>
-                        <button type="submit" style="width:100%; margin-top:10px; background:#007bff; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer;">Отправить на проверку</button>
-                    </form>
-                    {% endif %}
-
-                    {% if user == contract.advertiser and video.status == 'review' %}
-                    <div style="background: #f9f9f9; padding: 10px; border-radius: 10px; margin-bottom: 10px;">
-                        <a href="{{ video.link }}" target="_blank" style="color: #007bff; font-size: 13px; text-decoration: none;">Просмотреть ролик ↗</a>
-                        <div style="font-size: 11px; margin-top: 5px;">Таймкод: {{ video.start_time }} — {{ video.end_time }}</div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <button onclick="approveVideo({{ video.id }})" style="background:#28a745; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:600;">Утвердить</button>
-                        <button onclick="rejectVideo({{ video.id }})" style="background:#dc3545; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:600;">Доработка</button>
-                    </div>
-                    {% endif %}
-
-                    {% if user == contract.blogger and video.status == 'approved' %}
-                    <div style="text-align: center;">
-                        <p style="font-size: 12px; color: #28a745;">✅ Ролик утвержден!</p>
-                        <button style="background: #000; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">
-                            💎 ПОЛУЧИТЬ ERID
-                        </button>
-                    </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        {% if contract.all_videos_released and contract.status != 'completed' %}
-        <div style="padding: 20px 30px; background: #fffceb; border-top: 1px solid #ffeeba; text-align: center;">
-            <p style="margin-bottom: 10px; font-weight: 600;">Все ролики выпущены. Завершить сделку и перевести оплату?</p>
-            <button style="background: #28a745; color: white; border: none; padding: 15px 40px; border-radius: 30px; font-weight: 800; cursor: pointer; font-size: 16px; box-shadow: 0 4px 15px rgba(40,167,69,0.3);">
-                ✅ ВСЕ ОК, ВЫПЛАТИТЬ {{ contract.total_amount }} ₽
-            </button>
-        </div>
-        {% endif %}
+<div class="content-wrapper">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Моя реклама</h1>
+        <button class="btn btn-add d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#addIntegrationModal">
+            <i class="bi bi-plus-lg me-2"></i> Добавить ролик
+        </button>
     </div>
-    {% endfor %}
+
+    <!-- Блок фильтрации и поиска -->
+    <div class="filter-section shadow-sm">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="q" class="form-control form-control-sm" placeholder="Поиск по названию или бренду..." value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-3">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">Просмотры от</span>
+                    <input type="number" name="views_min" class="form-control" value="{{ request.GET.views_min }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">До</span>
+                    <input type="number" name="views_max" class="form-control" value="{{ request.GET.views_max }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Применить</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Таблица интеграций -->
+    <div class="table-container">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Товар и Бренд</th>
+                        <th><a href="?sort={% if request.GET.sort == 'publish_date' %}-publish_date{% else %}publish_date{% endif %}" class="sort-link">Дата выхода ↑↓</a></th>
+                        <th>Ролик</th>
+                        <th><a href="?sort={% if request.GET.sort == 'cost' %}-cost{% else %}cost{% endif %}" class="sort-link">Стоимость</a></th>
+                        <th><a href="?sort={% if request.GET.sort == 'views' %}-views{% else %}views{% endif %}" class="sort-link">Просмотры</a></th>
+                        <th>CPV</th>
+                        <th class="text-end">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in integrations %}
+                    <tr>
+                        <td>
+                            <span class="fw-bold">{{ item.product_name|default:"—" }}</span>
+                            <span class="brand-badge">{{ item.brand|default:"Без бренда" }}</span>
+                        </td>
+                        <td>{{ item.publish_date|date:"d.m.Y"|default:"Ожидается" }}</td>
+                        <td>
+                            <a href="{{ item.youtube_url }}" target="_blank" class="text-primary text-decoration-none">
+                                <i class="bi bi-youtube"></i> Перейти
+                            </a>
+                        </td>
+                        <td>{{ item.cost|intcomma }} ₽</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {{ item.views|intcomma }}
+                                {% if item.can_update %}
+                                <a href="{% url 'core:update_views' item.id %}" class="ms-2 text-muted" title="Обновить просмотры">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td><span class="cpv-value">{{ item.cpv }} ₽</span></td>
+                        <td class="text-end">
+                            <form action="{% url 'core:delete_integration' item.id %}" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-link text-danger p-0" onclick="return confirm('Удалить эту запись?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-camera-video d-block mb-2" style="font-size: 2rem;"></i>
+                            У вас пока нет добавленных рекламных роликов.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно добавления -->
+<div class="modal fade" id="addIntegrationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Новая реклама</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'core:add_integration' %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body pt-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Ссылка на YouTube (обязательно)*</label>
+                        <input type="url" name="youtube_url" class="form-control" placeholder="https://www.youtube.com/watch?v=..." required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">Товар</label>
+                            <input type="text" name="product_name" class="form-control" placeholder="Название товара">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">Бренд</label>
+                            <input type="text" name="brand" class="form-control" placeholder="Название бренда">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Стоимость (₽)</label>
+                        <input type="number" name="cost" class="form-control" placeholder="0.00" step="0.01">
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-add">Сохранить данные</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}

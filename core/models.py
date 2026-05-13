@@ -303,8 +303,8 @@ class AdIntegration(models.Model):
     channel_name = models.CharField(max_length=255, blank=True)
     publish_date = models.DateTimeField(null=True, blank=True)
     views = models.PositiveIntegerField(default=0)
-    
-    last_updated = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(null=True, blank=True)
+
 
     @property
     def cpv(self):
@@ -313,4 +313,6 @@ class AdIntegration(models.Model):
         return 0
 
     def can_update_views(self):
+        if not self.last_updated:
+            return True
         return timezone.now() > self.last_updated + timedelta(days=7)

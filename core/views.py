@@ -1130,21 +1130,18 @@ from django.utils import timezone
 from django.conf import settings
 from .utils import get_youtube_views # импорт функции
 
-def update_integration_views(request, pk):
-    # Используем get_object_or_404, чтобы не упасть с ошибкой, если записи нет
+def update_integration_views(request, item_id): 
     from django.shortcuts import get_object_or_404
-    integration = get_object_or_404(AdIntegration, pk=pk, user=request.user)
+    integration = get_object_or_404(AdIntegration, pk=item_id, user=request.user)
     
     if integration.can_update_views():
-        # Получаем просмотры (API_KEY лучше хранить в settings.py)
         new_views = get_youtube_views(integration.youtube_url, settings.YOUTUBE_API_KEY)
-        
         if new_views is not None:
             integration.views = new_views
             integration.last_updated = timezone.now()
             integration.save()
             
-    return redirect('core:integration') # Убедитесь, что имя совпадает с urls.py
+    return redirect('core:integration')
 
 from django.utils import timezone
 

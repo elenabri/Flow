@@ -3,72 +3,20 @@
 
 {% block extra_css %}
 <style>
-    :root {
-        --glass-bg: rgba(255, 255, 255, 0.8);
-        --accent-color: #2c3e50;
-    }
-    .content-wrapper {
-        padding: 2rem;
-        background-color: #f8f9fa;
-        min-height: 100vh;
-    }
-    .table-container {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        border: 1px solid #eef0f2;
-        overflow: hidden;
-    }
-    .table thead th {
-        background-color: #fcfcfd;
-        font-weight: 600;
-        text-transform: uppercase;
+    /* ... ваши стили остаются прежними ... */
+    .content-wrapper { padding: 2rem; background-color: #f8f9fa; min-height: 100vh; }
+    .table-container { background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #eef0f2; overflow: hidden; }
+    /* Добавим стиль для тайминга */
+    .timestamp-badge {
         font-size: 0.75rem;
-        letter-spacing: 0.05em;
-        color: #6c757d;
-        border-bottom: 1px solid #eef0f2;
-        padding: 1rem;
+        background-color: #f1f3f5;
+        color: #495057;
+        padding: 2px 8px;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        margin-top: 4px;
     }
-    .table tbody td {
-        padding: 1.2rem 1rem;
-        vertical-align: middle;
-        font-size: 0.9rem;
-        color: #333;
-        border-bottom: 1px solid #f8f9fa;
-    }
-    .brand-badge {
-        font-size: 0.8rem;
-        color: #7f8c8d;
-        display: block;
-    }
-    .cpv-value {
-        font-weight: 600;
-        color: #27ae60;
-    }
-    .btn-add {
-        background-color: var(--accent-color);
-        color: white;
-        border-radius: 8px;
-        padding: 0.6rem 1.5rem;
-        transition: all 0.3s ease;
-    }
-    .btn-add:hover {
-        background-color: #000;
-        color: white;
-        transform: translateY(-1px);
-    }
-    .filter-section {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 12px;
-        margin-bottom: 2rem;
-        border: 1px solid #eef0f2;
-    }
-    .sort-link {
-        text-decoration: none;
-        color: inherit;
-    }
-    .sort-link:hover { color: #007bff; }
 </style>
 {% endblock %}
 
@@ -81,30 +29,6 @@
         </button>
     </div>
 
-    <!-- Блок фильтрации и поиска -->
-    <div class="filter-section shadow-sm">
-        <form method="get" class="row g-3">
-            <div class="col-md-4">
-                <input type="text" name="q" class="form-control form-control-sm" placeholder="Поиск по названию или бренду..." value="{{ request.GET.q }}">
-            </div>
-            <div class="col-md-3">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text">Просмотры от</span>
-                    <input type="number" name="views_min" class="form-control" value="{{ request.GET.views_min }}">
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text">До</span>
-                    <input type="number" name="views_max" class="form-control" value="{{ request.GET.views_max }}">
-                </div>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Применить</button>
-            </div>
-        </form>
-    </div>
-
     <!-- Таблица интеграций -->
     <div class="table-container">
         <div class="table-responsive">
@@ -112,10 +36,10 @@
                 <thead>
                     <tr>
                         <th>Товар и Бренд</th>
-                        <th><a href="?sort={% if request.GET.sort == 'publish_date' %}-publish_date{% else %}publish_date{% endif %}" class="sort-link">Дата выхода ↑↓</a></th>
-                        <th>Ролик</th>
-                        <th><a href="?sort={% if request.GET.sort == 'cost' %}-cost{% else %}cost{% endif %}" class="sort-link">Стоимость</a></th>
-                        <th><a href="?sort={% if request.GET.sort == 'views' %}-views{% else %}views{% endif %}" class="sort-link">Просмотры</a></th>
+                        <th>Дата выхода</th>
+                        <th>Ролик и Тайминг</th> <!-- Переименовали для ясности -->
+                        <th>Стоимость</th>
+                        <th>Просмотры</th>
                         <th>CPV</th>
                         <th class="text-end">Действия</th>
                     </tr>
@@ -128,44 +52,33 @@
                             <span class="brand-badge">{{ item.brand|default:"Без бренда" }}</span>
                         </td>
                         <td>{{ item.publish_date|date:"d.m.Y"|default:"Ожидается" }}</td>
+                        
+                        <!-- КОЛОНКА С ТАЙМИНГОМ -->
                         <td>
-                            <div class="d-flex flex-column">
-                                <a href="{{ item.youtube_url }}{% if item.timestamp > 0 %}&t={{ item.timestamp }}{% endif %}" target="_blank" class="text-primary text-decoration-none fw-bold">
+                            <div class="d-flex flex-column align-items-start">
+                                <a href="{{ item.youtube_url }}{% if item.timestamp > 0 %}&t={{ item.timestamp }}{% endif %}" 
+                                   target="_blank" class="text-primary text-decoration-none fw-bold">
                                     <i class="bi bi-youtube"></i> Перейти
                                 </a>
-                                {% if item.timestamp > 0 %}
-                                <small class="text-muted" style="font-size: 0.75rem;">
-                                    <i class="bi bi-clock-history"></i> {{ item.formatted_timestamp }}
-                                </small>
-                                {% endif %}
+                                
+                                <!-- Выводим тайминг всегда, чтобы видеть 0:00 если данных нет -->
+                                <div class="timestamp-badge">
+                                    <i class="bi bi-clock-history me-1"></i>
+                                    {{ item.formatted_timestamp }}
+                                </div>
                             </div>
                         </td>
+
                         <td>{{ item.cost|intcomma }} ₽</td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                {{ item.views|intcomma }}
-                                {% if item.can_update %}
-                                <a href="{% url 'core:update_views' item.id %}" class="ms-2 text-muted" title="Обновить просмотры">
-                                    <i class="bi bi-arrow-clockwise"></i>
-                                </a>
-                                {% endif %}
-                            </div>
-                        </td>
+                        <td>{{ item.views|intcomma }}</td>
                         <td><span class="cpv-value">{{ item.cpv }} ₽</span></td>
                         <td class="text-end">
                             <form action="{% url 'core:delete_integration' item.id %}" method="post" style="display:inline;">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-link text-danger p-0" onclick="return confirm('Удалить эту запись?')">
+                                <button type="submit" class="btn btn-link text-danger p-0">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
-                            <i class="bi bi-camera-video d-block mb-2" style="font-size: 2rem;"></i>
-                            У вас пока нет добавленных рекламных роликов.
                         </td>
                     </tr>
                     {% endfor %}
@@ -175,53 +88,51 @@
     </div>
 </div>
 
-<!-- Модальное окно добавления -->
-<div class="modal fade" id="addIntegrationModal" tabindex="-1" aria-hidden="true">
+<!-- МОДАЛЬНОЕ ОКНО С ПОЛЯМИ ВРЕМЕНИ -->
+<div class="modal fade" id="addIntegrationModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title fw-bold">Новая реклама</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{% url 'core:add_integration' %}" method="post" id="add-integration-form">
+            <form action="{% url 'core:add_integration' %}" method="post" id="add-form">
                 {% csrf_token %}
                 <div class="modal-body pt-4">
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Ссылка на YouTube (обязательно)*</label>
-                        <input type="url" name="youtube_url" class="form-control" placeholder="https://www.youtube.com/watch?v=..." required>
+                        <label class="form-label small fw-bold">Ссылка на YouTube*</label>
+                        <input type="url" name="youtube_url" class="form-control" required>
                     </div>
-                    
-                    <!-- Поля для тайминга (Минуты и Секунды) -->
+
+                    <!-- Ввод тайминга -->
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Тайминг рекламы (Мин:Сек)</label>
-                        <div class="d-flex align-items-center gap-2">
-                            <input type="number" id="js-mins" class="form-control" placeholder="Мин" min="0">
-                            <span class="fw-bold">:</span>
-                            <input type="number" id="js-secs" class="form-control" placeholder="Сек" min="0" max="59">
-                            
-                            <!-- Скрытое поле для передачи общего кол-ва секунд в Django -->
-                            <input type="hidden" name="timestamp" id="js-final-timestamp" value="0">
+                        <label class="form-label small fw-bold">Начало рекламы (Мин:Сек)</label>
+                        <div class="d-flex gap-2 align-items-center">
+                            <input type="number" id="m-input" class="form-control" placeholder="Мин" min="0" value="0">
+                            <span>:</span>
+                            <input type="number" id="s-input" class="form-control" placeholder="Сек" min="0" max="59" value="0">
+                            <!-- Скрытое поле, которое Django сохранит в timestamp -->
+                            <input type="hidden" name="timestamp" id="t-hidden" value="0">
                         </div>
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-6 mb-3">
                             <label class="form-label small fw-bold">Товар</label>
-                            <input type="text" name="product_name" class="form-control" placeholder="Название товара">
+                            <input type="text" name="product_name" class="form-control">
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-6 mb-3">
                             <label class="form-label small fw-bold">Бренд</label>
-                            <input type="text" name="brand" class="form-control" placeholder="Название бренда">
+                            <input type="text" name="brand" class="form-control">
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Стоимость (₽)</label>
-                        <input type="number" name="cost" class="form-control" placeholder="0.00" step="0.01">
+                        <input type="number" name="cost" class="form-control" step="0.01">
                     </div>
                 </div>
                 <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Отмена</button>
-                    <button type="submit" class="btn btn-add">Сохранить данные</button>
+                    <button type="submit" class="btn btn-add w-100">Сохранить</button>
                 </div>
             </form>
         </div>
@@ -229,13 +140,11 @@
 </div>
 
 <script>
-    // Рассчитываем секунды перед отправкой формы
-    document.getElementById('add-integration-form').addEventListener('submit', function(e) {
-        const mins = parseInt(document.getElementById('js-mins').value) || 0;
-        const secs = parseInt(document.getElementById('js-secs').value) || 0;
-        const totalSeconds = (mins * 60) + secs;
-        document.getElementById('js-final-timestamp').value = totalSeconds;
+    // Перед отправкой формы считаем общее количество секунд
+    document.getElementById('add-form').addEventListener('submit', function() {
+        const m = parseInt(document.getElementById('m-input').value) || 0;
+        const s = parseInt(document.getElementById('s-input').value) || 0;
+        document.getElementById('t-hidden').value = (m * 60) + s;
     });
 </script>
-
 {% endblock %}

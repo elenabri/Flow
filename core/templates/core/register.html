@@ -106,6 +106,12 @@
         <div class="register-header">
             <h2>Регистрация</h2>
             <p id="header-desc">Создайте аккаунт в TubeFlow</p>
+            {% if form.errors %}
+    <div style="color: red; background: #ffeeee; padding: 10px; border-radius: 8px; margin-bottom: 20px;">
+        <strong>Пожалуйста, исправьте следующие ошибки:</strong>
+        {{ form.errors }}
+    </div>
+{% endif %}
         </div>
 
         <form method="post" id="reg-form" enctype="multipart/form-data">

@@ -295,6 +295,7 @@ from datetime import timedelta
 class AdIntegration(models.Model):
     user = models.ForeignKey('User', on_delete=models.CASCADE)
     youtube_url = models.URLField(verbose_name="Ссылка на ролик")
+    timestamp = models.IntegerField(default=0)
     product_name = models.CharField(max_length=255, blank=True, verbose_name="Товар")
     brand = models.CharField(max_length=255, blank=True, verbose_name="Бренд")
     cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Стоимость")
@@ -316,3 +317,13 @@ class AdIntegration(models.Model):
         if not self.last_updated:
             return True
         return timezone.now() > self.last_updated + timedelta(days=7)
+
+    @property
+    def formatted_timestamp(self):
+        if self.timestamp:
+            mins = self.timestamp // 60
+            secs = self.timestamp % 60
+            return f"{mins}:{secs:02d}" # :02d добавит ноль, если секунд меньше 10 (например, 5:03)
+        return "0:00"
+
+

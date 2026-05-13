@@ -286,3 +286,31 @@ class SupportTicket(models.Model):
 
     def __str__(self):
         return f"От {self.email} - {self.created_at.strftime('%d.%m %H:%M')}"
+
+
+from django.db import models
+from django.utils import timezone
+from datetime import timedelta
+
+class AdIntegration(models.Model):
+    user = models.ForeignKey('User', on_shared_samples=models.CASCADE)
+    youtube_url = models.URLField(verbose_name="Ссылка на ролик")
+    product_name = models.CharField(max_length=255, blank=True, verbose_name="Товар")
+    brand = models.CharField(max_length=255, blank=True, verbose_name="Бренд")
+    cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Стоимость")
+    
+    # Данные из API
+    channel_name = models.CharField(max_length=255, blank=True)
+    publish_date = models.DateTimeField(null=True, blank=True)
+    views = models.PositiveIntegerField(default=0)
+    
+    last_updated = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def cpv(self):
+        if self.cost and self.views and self.views > 0:
+            return round(self.cost / self.views, 2)
+        return 0
+
+    def can_update_views(self):
+        return timezone.now() > self.last_updated + timedelta(days=7)

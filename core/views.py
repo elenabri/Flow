@@ -1100,3 +1100,38 @@ def edit_profile(request):
             messages.error(request, f"Произошла непредвиденная ошибка: {e}")
 
     return render(request, 'core/edit_profile.html', {'profile': profile})
+
+import django_filters
+from django.shortcuts import render, redirect
+from .models import AdIntegration
+
+# Класс для фильтрации
+class IntegrationFilter(django_filters.FilterSet):
+    cost = django_filters.RangeFilter()
+    views = django_filters.RangeFilter()
+    publish_date = django_filters.DateFromToRangeFilter()
+    
+    class Meta:
+        model = AdIntegration
+        fields = ['product_name', 'brand', 'publish_date']
+
+def integration_list(request):
+    integrations = AdIntegration.objects.filter(user=request.user)
+    
+    # Сортировка
+    sort = request.GET.get('sort')
+    if sort:
+        integrations = integrations.order_by(sort)
+    
+    f = IntegrationFilter(request.GET, queryset=integrations)
+    return render(request, 'core/integrations.html', {'filter': f})
+
+def update_integration_views(request, pk):
+    integration = AdIntegration.objects.get(pk=pk, user=request.user)
+    if integration.can_update_views():
+        # Здесь вызываем ваш скрипт YouTube API
+        # new_views = get_youtube_data(integration.youtube_url)
+        # integration.views = new_views
+        integration.last_updated = timezone.now()
+        integration.save()
+    return redirect('core:integration_list')

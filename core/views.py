@@ -1124,7 +1124,7 @@ def integration_list(request):
         integrations = integrations.order_by(sort)
     
     f = IntegrationFilter(request.GET, queryset=integrations)
-    return render(request, 'core/integrations.html', {'filter': f})
+    return render(request, 'core/integrations_list.html', {'filter': f})
 
 from django.utils import timezone
 from django.conf import settings

@@ -1126,12 +1126,37 @@ def integration_list(request):
     f = IntegrationFilter(request.GET, queryset=integrations)
     return render(request, 'core/integrations.html', {'filter': f})
 
+from django.utils import timezone
+from django.conf import settings
+from .utils import get_youtube_views # импорт функции
+
 def update_integration_views(request, pk):
-    integration = AdIntegration.objects.get(pk=pk, user=request.user)
+    # Используем get_object_or_404, чтобы не упасть с ошибкой, если записи нет
+    from django.shortcuts import get_object_or_404
+    integration = get_object_or_404(AdIntegration, pk=pk, user=request.user)
+    
     if integration.can_update_views():
-        # Здесь вызываем ваш скрипт YouTube API
-        # new_views = get_youtube_data(integration.youtube_url)
-        # integration.views = new_views
-        integration.last_updated = timezone.now()
-        integration.save()
-    return redirect('core:integration_list')
+        # Получаем просмотры (API_KEY лучше хранить в settings.py)
+        new_views = get_youtube_views(integration.youtube_url, settings.YOUTUBE_API_KEY)
+        
+        if new_views is not None:
+            integration.views = new_views
+            integration.last_updated = timezone.now()
+            integration.save()
+            
+    return redirect('core:integration') # Убедитесь, что имя совпадает с urls.py
+
+from django.utils import timezone
+
+def add_integration(request):
+    if request.method == 'POST':
+        # Создаем запись в базе
+        AdIntegration.objects.create(
+            user=request.user,
+            youtube_url=request.POST.get('youtube_url'),
+            product_name=request.POST.get('product_name'),
+            brand=request.POST.get('brand'),
+            cost=request.POST.get('cost') or 0,
+            publish_date=timezone.now() # или другое поле
+        )
+    return redirect('core:integration') # Возвращаемся на список

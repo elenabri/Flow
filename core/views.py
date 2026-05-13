@@ -1160,3 +1160,11 @@ def add_integration(request):
             publish_date=timezone.now() # или другое поле
         )
     return redirect('core:integration') # Возвращаемся на список
+
+# core/views.py
+
+def delete_integration(request, item_id):
+    integration = get_object_or_404(AdIntegration, pk=item_id, user=request.user)
+    if request.method == 'POST':
+        integration.delete()
+    return redirect('core:integration')

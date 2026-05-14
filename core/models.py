@@ -334,7 +334,7 @@ class AdIntegration(models.Model):
         if not video_id:
             return False
 
-        api_key = "ВАШ_API_КЛЮЧ"
+        api_key = "AIzaSyBIQSgM6nAcLnt5En1E59Ee65jL-NHTJDs"
         url = f"https://www.googleapis.com/youtube/v3/videos?id={video_id}&key={api_key}&part=statistics,snippet"
         
         try:

@@ -308,7 +308,55 @@ class AdIntegration(models.Model):
     publish_date = models.DateTimeField(null=True, blank=True)
     views = models.PositiveIntegerField(default=0)
     last_updated = models.DateTimeField(null=True, blank=True)
+  
+    def can_update_views(self):
+        """Проверка: можно ли обновлять данные (раз в 7 дней или если данных еще нет)"""
+        if not self.last_updated:
+            return True
+        return timezone.now() > self.last_updated + timedelta(days=7)
 
+    def extract_video_id(self):
+        """Извлекает ID видео из ссылки YouTube"""
+        regex = r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})'
+        match = re.search(regex, self.youtube_url)
+        return match.group(1) if match else None
+
+    def update_youtube_data(self):
+        """Запрашивает данные с YouTube API с учетом лимита в одну неделю"""
+        if not self.can_update_views():
+            print(f"Обновление отклонено: неделя еще не прошла для {self.id}")
+            return False
+
+        video_id = self.extract_video_id()
+        if not video_id:
+            return False
+
+        api_key = "ВАШ_API_КЛЮЧ"
+        url = f"https://www.googleapis.com/youtube/v3/videos?id={video_id}&key={api_key}&part=statistics,snippet"
+        
+        try:
+            response = requests.get(url).json()
+            if 'items' in response and response['items']:
+                item = response['items'][0]
+                self.views = int(item['statistics'].get('viewCount', 0))
+                self.channel_name = item['snippet'].get('channelTitle', '')
+                self.publish_date = item['snippet'].get('publishedAt')
+                self.last_updated = timezone.now()
+                self.save(update_fields=['views', 'channel_name', 'publish_date', 'last_updated'])
+                return True
+        except Exception as e:
+            print(f"Ошибка API: {e}")
+        return False
+
+    def save(self, *args, **kwargs):
+        """
+        При первом сохранении (создании) данные подтянутся сразу.
+        При последующих изменениях (через админку) — только если вызовете метод отдельно.
+        """
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        if is_new:
+            self.update_youtube_data()
 
     @property
     def cpv(self):
@@ -316,17 +364,10 @@ class AdIntegration(models.Model):
             return round(self.cost / self.views, 2)
         return 0
 
-    def can_update_views(self):
-        if not self.last_updated:
-            return True
-        return timezone.now() > self.last_updated + timedelta(days=7)
-
     @property
     def formatted_timestamp(self):
         if self.timestamp:
             mins = self.timestamp // 60
             secs = self.timestamp % 60
-            return f"{mins}:{secs:02d}" # :02d добавит ноль, если секунд меньше 10 (например, 5:03)
+            return f"{mins}:{secs:02d}"
         return "0:00"
-
-

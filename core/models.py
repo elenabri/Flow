@@ -1,8 +1,11 @@
+import requests
+import re
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from .constants import TOPIC_CHOICES
 from django.db.models import JSONField
+
 
 # --- ПОЛЬЗОВАТЕЛЬ ---
 

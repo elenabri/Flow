@@ -29,6 +29,7 @@ class User(AbstractUser):
     # Оставляем ваш существующий tg_chat_id для уведомлений бота
     tg_chat_id = models.BigIntegerField(null=True, blank=True)
     
+    
 
     def __str__(self):
         return f"{self.email} ({self.get_role_display()})"
@@ -181,7 +182,7 @@ class ProductAd(models.Model):
             return "Без категории"
         try:
             # Импортируем внутри, если TOPIC_CHOICES в другом файле
-            from .choices import TOPIC_CHOICES 
+
             choices_dict = dict(TOPIC_CHOICES)
             cats = [choices_dict.get(c.strip(), c.strip()) for c in self.category.split(',') if c.strip()]
         except (NameError, ImportError):

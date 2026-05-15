@@ -3,70 +3,147 @@
 
 {% block extra_css %}
 <style>
-    .content-wrapper { padding: 2rem; background-color: #f8f9fa; min-height: 100vh; }
-    .table-container { background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #eef0f2; overflow: hidden; }
-    .timestamp-badge { font-size: 0.75rem; background-color: #f1f3f5; color: #495057; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; margin-top: 4px; }
-    .filter-card { background: white; border-radius: 12px; border: 1px solid #eef0f2; padding: 1.5rem; margin-bottom: 1.5rem; }
-    .sort-link { color: #495057; text-decoration: none; font-weight: 600; }
-    .sort-link:hover { color: #0d6efd; }
+    :root {
+        --ios-blue: #007AFF;
+        --ios-gray: #F2F2F7;
+        --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .content-wrapper { padding: 1.5rem 1rem; background-color: #f8f9fa; min-height: 100vh; }
+    
+    /* Стили для карточек на мобильных */
+    .mobile-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: var-card-shadow;
+        border: 1px solid #eee;
+    }
+
+    .mobile-card .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+
+    .mobile-card .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        background: var(--ios-gray);
+        padding: 0.75rem;
+        border-radius: 12px;
+    }
+
+    .stat-item .label { font-size: 0.7rem; color: #8E8E93; text-transform: uppercase; }
+    .stat-item .value { font-size: 0.9rem; font-weight: 600; color: #1C1C1E; }
+
+    /* Скрываем таблицу на мобильных, карточки на десктопе */
+    @media (max-width: 768px) {
+        .desktop-table { display: none; }
+        .filter-card { padding: 1rem; border-radius: 16px; }
+        .h3 { font-weight: 700; }
+    }
+    @media (min-width: 769px) {
+        .mobile-cards-container { display: none; }
+    }
+
+    /* Красивые кнопки */
+    .btn-ios {
+        background-color: var(--ios-blue);
+        color: white;
+        border-radius: 10px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+        border: none;
+    }
+
+    .timestamp-badge {
+        font-size: 0.75rem;
+        background-color: #E5E5EA;
+        color: #3A3A3C;
+        padding: 4px 10px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="content-wrapper">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">Моя реклама</h1>
-        <button class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#addIntegrationModal">
-            <i class="bi bi-plus-lg me-2"></i> Добавить ролик
+        <h1 class="h3 mb-0 fw-bold">Моя реклама</h1>
+        <button class="btn-ios d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#addIntegrationModal">
+            <i class="bi bi-plus-lg me-1"></i> Добавить
         </button>
     </div>
 
-    <!-- БЛОК ФИЛЬТРОВ -->
-    <div class="filter-card shadow-sm">
-        <h6 class="fw-bold mb-3"><i class="bi bi-funnel"></i> Фильтрация данных</h6>
-        <form method="get" class="row g-3 align-items-end">
-            <!-- Дата выхода -->
-            <div class="col-md-3">
-                <label class="form-label small text-muted">Дата выхода (от / до)</label>
-                <div class="d-flex gap-1">
-                    <input type="date" name="publish_date_after" value="{{ request.GET.publish_date_after }}" class="form-control form-control-sm">
-                    <input type="date" name="publish_date_before" value="{{ request.GET.publish_date_before }}" class="form-control form-control-sm">
-                </div>
+    <div class="filter-card shadow-sm mb-4">
+        <form method="get" class="row g-2">
+            <div class="col-6 col-md-3">
+                <input type="number" name="cost_min" placeholder="Цена от" class="form-control form-control-sm border-0 bg-light">
             </div>
-            <!-- Стоимость -->
-            <div class="col-md-3">
-                <label class="form-label small text-muted">Стоимость (от / до)</label>
-                <div class="d-flex gap-1">
-                    <input type="number" name="cost_min" value="{{ request.GET.cost_min }}" placeholder="Мин" class="form-control form-control-sm">
-                    <input type="number" name="cost_max" value="{{ request.GET.cost_max }}" placeholder="Макс" class="form-control form-control-sm">
-                </div>
+            <div class="col-6 col-md-3">
+                <input type="number" name="cost_max" placeholder="Цена до" class="form-control form-control-sm border-0 bg-light">
             </div>
-            <!-- Просмотры -->
-            <div class="col-md-2">
-                <label class="form-label small text-muted">Просмотры (от / до)</label>
-                <div class="d-flex gap-1">
-                    <input type="number" name="views_min" value="{{ request.GET.views_min }}" placeholder="Мин" class="form-control form-control-sm">
-                    <input type="number" name="views_max" value="{{ request.GET.views_max }}" placeholder="Макс" class="form-control form-control-sm">
-                </div>
-            </div>
-            <!-- CPV -->
-            <div class="col-md-2">
-                <label class="form-label small text-muted">CPV (от / до)</label>
-                <div class="d-flex gap-1">
-                    <input type="number" step="0.01" name="cpv_min" value="{{ request.GET.cpv_min }}" placeholder="Мин" class="form-control form-control-sm">
-                    <input type="number" step="0.01" name="cpv_max" value="{{ request.GET.cpv_max }}" placeholder="Макс" class="form-control form-control-sm">
-                </div>
-            </div>
-            <!-- Кнопки -->
-            <div class="col-md-2 d-flex gap-2">
-                <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Применить</button>
-                <a href="{% url 'core:integration_list' %}" class="btn btn-sm btn-light text-muted"><i class="bi bi-x-circle"></i></a>
+            <div class="col-12 col-md-4">
+                <button type="submit" class="btn btn-sm btn-dark w-100 rounded-3">Применить фильтры</button>
             </div>
         </form>
     </div>
 
-    <!-- ТАБЛИЦА С ИНТЕРАКТИВНОЙ СОРТИРОВКОЙ -->
-    <div class="table-container">
+    <div class="mobile-cards-container">
+        {% for item in integrations %}
+        <div class="mobile-card">
+            <div class="header">
+                <div>
+                    <h5 class="mb-0 fw-bold">{{ item.product_name|default:"Без названия" }}</h5>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill small">{{ item.brand|default:"No Brand" }}</span>
+                </div>
+                <form action="{% url 'core:delete_integration' item.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-link text-danger p-0"><i class="bi bi-trash3"></i></button>
+                </form>
+            </div>
+
+            <div class="d-flex align-items-center mb-3">
+                <a href="{{ item.youtube_url }}{% if item.timestamp > 0 %}&t={{ item.timestamp }}{% endif %}" target="_blank" class="text-decoration-none d-flex align-items-center">
+                    <div class="bg-danger rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                        <i class="bi bi-play-fill text-white"></i>
+                    </div>
+                    <span class="small text-dark fw-medium">{{ item.channel_name|truncatechars:20 }}</span>
+                </a>
+                <div class="ms-auto">
+                    <span class="timestamp-badge">{{ item.formatted_timestamp }}</span>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="label">Просмотры</div>
+                    <div class="value">{{ item.views|intcomma }}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">Дата</div>
+                    <div class="value">{{ item.publish_date|date:"d.m.y" }}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">Стоимость</div>
+                    <div class="value">{{ item.cost|intcomma }} ₽</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">CPV</div>
+                    <div class="value text-primary">{{ item.cpv }} ₽</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="desktop-table table-container">
         <div class="table-responsive">
             <table class="table mb-0">
                 <thead>

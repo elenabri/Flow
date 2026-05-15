@@ -48,9 +48,18 @@
                     {% for item in integrations %}
                     <tr>
                         <td>
-                            <span class="fw-bold">{{ item.product_name|default:"—" }}</span>
-                            <span class="brand-badge">{{ item.brand|default:"Без бренда" }}</span>
-                        </td>
+    <div class="d-flex flex-column">
+        <!-- Название товара и бренд -->
+        <div>
+            <span class="fw-bold">{{ item.product_name|default:"—" }}</span>
+            <span class="brand-badge">{{ item.brand|default:"Без бренда" }}</span>
+        </div>
+        <!-- Название YouTube-канала, прилетевшее из API -->
+        <small class="text-muted mt-1">
+            <i class="bi bi-person-video2"></i> {{ item.channel_name|default:"Канал не определен" }}
+        </small>
+    </div>
+</td>
                         <td>{{ item.publish_date|date:"d.m.Y"|default:"Ожидается" }}</td>
                         
                         <!-- КОЛОНКА С ТАЙМИНГОМ -->

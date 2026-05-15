@@ -339,18 +339,22 @@ class AdIntegration(models.Model):
         
         try:
             response = requests.get(url).json()
+            print(f"DEBUG YOUTUBE RESPONSE: {response}")  # <--- ДОБАВЬТЕ ЭТУ СТРОКУ
+            
             if 'items' in response and response['items']:
                 item = response['items'][0]
                 self.views = int(item['statistics'].get('viewCount', 0))
                 self.channel_name = item['snippet'].get('channelTitle', '')
                 self.publish_date = item['snippet'].get('publishedAt')
                 self.last_updated = timezone.now()
-                
-                # Принудительно обновляем только эти поля в базе данных
                 super().save(update_fields=['views', 'channel_name', 'publish_date', 'last_updated'])
                 return True
+            else:
+                print("DEBUG: Google вернул пустой список items. Возможно, неверный ID видео.")
         except Exception as e:
-            print(f"Ошибка API: {e}")
+            import traceback
+            print("!!! КРИТИЧЕСКАЯ ОШИБКА API YOUTUBE !!!")
+            traceback.print_exc()  # <--- И ЭТУ ТОЖЕ
         return False
 
     def save(self, *args, **kwargs):

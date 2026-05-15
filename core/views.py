@@ -1134,25 +1134,30 @@ def integration_list(request):
         integrations = integrations.order_by(sort)
     
     f = IntegrationFilter(request.GET, queryset=integrations)
-    return render(request, 'core/integrations_list.html', {'filter': f})
+    
+    # Передаем и filter (для формы фильтров), и integrations (для вашей таблицы)
+    return render(request, 'core/integrations_list.html', {
+        'filter': f,
+        'integrations': f.qs  # <--- КРИТИЧЕСКИ ВАЖНО: теперь {% for item in integrations %} заработает!
+    })
 
 
 def add_integration(request):
-    """Добавление интеграции и мгновенный запрос данных из API YouTube"""
+    """Добавление интеграции, сохранение тайминга и запрос данных из API YouTube"""
     if request.method == 'POST':
-        # 1. Создаем запись в базе данных
+        # 1. Создаем запись в базе данных и перехватываем тайминг из формы
         integration = AdIntegration.objects.create(
             user=request.user,
             youtube_url=request.POST.get('youtube_url'),
             product_name=request.POST.get('product_name'),
             brand=request.POST.get('brand'),
             cost=request.POST.get('cost') or 0,
+            timestamp=int(request.POST.get('timestamp') or 0)  # <--- Добавили сбор тайминга
         )
         
         # 2. Запускаем подгрузку данных из YouTube API
         integration.update_youtube_data()
         
-    # Возвращаем редирект с пространством имен 'core:', так как в urls.py указано: include(core_patterns)
     return redirect('core:integration_list')
 
 

@@ -1101,11 +1101,15 @@ def edit_profile(request):
 
     return render(request, 'core/edit_profile.html', {'profile': profile})
 
-import django_filters
-from django.shortcuts import render, redirect
+import django_filters  # Ранее забытый импорт фильтров
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+from django.conf import settings
 from .models import AdIntegration
 
-# Класс для фильтрации
+# =====================================================================
+# КЛАСС ФИЛЬТРАЦИИ
+# =====================================================================
 class IntegrationFilter(django_filters.FilterSet):
     cost = django_filters.RangeFilter()
     views = django_filters.RangeFilter()
@@ -1115,7 +1119,13 @@ class IntegrationFilter(django_filters.FilterSet):
         model = AdIntegration
         fields = ['product_name', 'brand', 'publish_date']
 
+
+# =====================================================================
+# КОНТРОЛЛЕРЫ (VIEWS)
+# =====================================================================
+
 def integration_list(request):
+    """Отображение списка интеграций с фильтрацией и сортировкой"""
     integrations = AdIntegration.objects.filter(user=request.user)
     
     # Сортировка
@@ -1126,41 +1136,38 @@ def integration_list(request):
     f = IntegrationFilter(request.GET, queryset=integrations)
     return render(request, 'core/integrations_list.html', {'filter': f})
 
-from django.utils import timezone
-from django.conf import settings
-from .utils import get_youtube_views # импорт функции
-
-def update_integration_views(request, item_id): 
-    from django.shortcuts import get_object_or_404
-    integration = get_object_or_404(AdIntegration, pk=item_id, user=request.user)
-    
-    if integration.can_update_views():
-        new_views = get_youtube_views(integration.youtube_url, settings.YOUTUBE_API_KEY)
-        if new_views is not None:
-            integration.views = new_views
-            integration.last_updated = timezone.now()
-            integration.save()
-            
-    return redirect('core:integration_list')
-
-from django.utils import timezone
 
 def add_integration(request):
+    """Добавление интеграции и мгновенный запрос данных из API YouTube"""
     if request.method == 'POST':
-        # Создаем запись в базе
-        AdIntegration.objects.create(
+        # 1. Создаем запись в базе данных
+        integration = AdIntegration.objects.create(
             user=request.user,
             youtube_url=request.POST.get('youtube_url'),
             product_name=request.POST.get('product_name'),
             brand=request.POST.get('brand'),
             cost=request.POST.get('cost') or 0,
-            publish_date=timezone.now() # или другое поле
         )
-    return redirect('core:integration_list') # Возвращаемся на список
+        
+        # 2. Запускаем подгрузку данных из YouTube API
+        integration.update_youtube_data()
+        
+    # Возвращаем редирект с пространством имен 'core:', так как в urls.py указано: include(core_patterns)
+    return redirect('core:integration_list')
 
-# core/views.py
+
+def update_integration_views(request, item_id): 
+    """Ручное обновление просмотров по кнопке из интерфейса"""
+    integration = get_object_or_404(AdIntegration, pk=item_id, user=request.user)
+    
+    # Запускаем обновление (внутри модели сработает проверка can_update_views)
+    integration.update_youtube_data()
+            
+    return redirect('core:integration_list')
+
 
 def delete_integration(request, item_id):
+    """Удаление интеграции"""
     integration = get_object_or_404(AdIntegration, pk=item_id, user=request.user)
     if request.method == 'POST':
         integration.delete()

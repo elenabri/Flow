@@ -1102,6 +1102,7 @@ def edit_profile(request):
     return render(request, 'core/edit_profile.html', {'profile': profile})
 
 import django_filters  # Ранее забытый импорт фильтров
+from django.db.models import F, ExpressionWrapper, FloatField
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.conf import settings
@@ -1111,13 +1112,34 @@ from .models import AdIntegration
 # КЛАСС ФИЛЬТРАЦИИ
 # =====================================================================
 class IntegrationFilter(django_filters.FilterSet):
-    cost = django_filters.RangeFilter()
-    views = django_filters.RangeFilter()
-    publish_date = django_filters.DateFromToRangeFilter()
+    cost = django_filters.RangeFilter(label='Стоимость')
+    views = django_filters.RangeFilter(label='Просмотры')
+    publish_date = django_filters.DateFromToRangeFilter(
+        label='Дата выхода',
+        widget=django_filters.widgets.RangeWidget(attrs={'type': 'date', 'class': 'form-control'})
+    )
+    # Кастомный фильтр для диапазона CPV
+    cpv_min = django_filters.NumberFilter(method='filter_cpv_min', label='CPV от')
+    cpv_max = django_filters.NumberFilter(method='filter_cpv_max', label='CPV до')
     
     class Meta:
         model = AdIntegration
-        fields = ['product_name', 'brand', 'publish_date']
+        fields = ['product_name', 'brand']
+
+    # Логика фильтрации вычисляемого CPV (Стоимость / Просмотры)
+    def filter_cpv_min(self, queryset, name, value):
+        if value:
+            return queryset.filter(views__gt=0).annotate(
+                calculated_cpv=ExpressionWrapper(F('cost') / F('views'), output_field=FloatField())
+            ).filter(calculated_cpv__gte=float(value))
+        return queryset
+
+    def filter_cpv_max(self, queryset, name, value):
+        if value:
+            return queryset.filter(views__gt=0).annotate(
+                calculated_cpv=ExpressionWrapper(F('cost') / F('views'), output_field=FloatField())
+            ).filter(calculated_cpv__lte=float(value))
+        return queryset
 
 
 # =====================================================================
@@ -1125,20 +1147,30 @@ class IntegrationFilter(django_filters.FilterSet):
 # =====================================================================
 
 def integration_list(request):
-    """Отображение списка интеграций с фильтрацией и сортировкой"""
-    integrations = AdIntegration.objects.filter(user=request.user)
+    """Отображение списка интеграций с продвинутой фильтрацией и сортировкой"""
+    # Аннотируем queryset полем cpv_order для точной сортировки в БД (чтобы избежать деления на ноль, используем условие)
+    integrations = AdIntegration.objects.filter(user=request.user).annotate(
+        cpv_order=ExpressionWrapper(
+            F('cost') / F('views'), output_field=FloatField()
+        )
+    )
     
-    # Сортировка
-    sort = request.GET.get('sort')
-    if sort:
-        integrations = integrations.order_by(sort)
-    
+    # Применяем фильтры
     f = IntegrationFilter(request.GET, queryset=integrations)
+    filtered_qs = f.qs
     
-    # Передаем и filter (для формы фильтров), и integrations (для вашей таблицы)
+    # Сортировка по колонкам
+    sort = request.GET.get('sort')
+    if sort in ['publish_date', '-publish_date', 'cost', '-cost', 'views', '-views']:
+        filtered_qs = filtered_qs.order_by(sort)
+    elif sort == 'cpv':
+        filtered_qs = filtered_qs.order_by('cpv_order')
+    elif sort == '-cpv':
+        filtered_qs = filtered_qs.order_by('-cpv_order')
+        
     return render(request, 'core/integrations_list.html', {
         'filter': f,
-        'integrations': f.qs  # <--- КРИТИЧЕСКИ ВАЖНО: теперь {% for item in integrations %} заработает!
+        'integrations': filtered_qs
     })
 
 

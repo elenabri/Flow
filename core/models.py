@@ -325,7 +325,7 @@ class AdIntegration(models.Model):
         return match.group(1) if match else None
 
     def update_youtube_data(self):
-        """Запрашивает данные с YouTube API и просто записывает их в поля (БЕЗ self.save())"""
+        """Запрашивает данные с YouTube API и жестко сохраняет их в базу"""
         if not self.can_update_views():
             print(f"Обновление отклонено: неделя еще не прошла для {self.id}")
             return False
@@ -345,19 +345,17 @@ class AdIntegration(models.Model):
                 self.channel_name = item['snippet'].get('channelTitle', '')
                 self.publish_date = item['snippet'].get('publishedAt')
                 self.last_updated = timezone.now()
+                
+                # Принудительно обновляем только эти поля в базе данных
+                super().save(update_fields=['views', 'channel_name', 'publish_date', 'last_updated'])
                 return True
         except Exception as e:
             print(f"Ошибка API: {e}")
         return False
 
     def save(self, *args, **kwargs):
-        """
-        Скачиваем данные перед сохранением в базу, если объект новый.
-        """
-        if self.pk is None: # Если это создание новой записи
-            self.update_youtube_data()
-            
-        super().save(*args, **kwargs) # Сохраняем ВСЁ ОДНИМ ЗАПРОСОМ
+        # Стандартное сохранение без скрытых вызовов API
+        super().save(*args, **kwargs)
 
     @property
     def cpv(self):

@@ -319,8 +319,16 @@ class AdIntegration(models.Model):
         return timezone.now() > self.last_updated + timedelta(days=7)
 
     def extract_video_id(self):
-        """Извлекает ID видео из ссылки YouTube"""
-        regex = r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})'
+        """
+        Извлекает ID видео из любых ссылок YouTube:
+        - Обычные: youtube.com/watch?v=p82GwWnX6XM
+        - Shorts: youtube.com/shorts/yEiF2shjzIU
+        - Мобильные: youtu.be/p82GwWnX6XM
+        """
+        import re
+        # Добавлено слово shorts в список возможных путей URL
+        regex = r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})'
+        
         match = re.search(regex, self.youtube_url)
         return match.group(1) if match else None
 

@@ -12,11 +12,12 @@
     .content-wrapper { padding: 1.5rem 1rem; background-color: #f8f9fa; min-height: 100vh; }
     
     /* Стили для мобильных карточек */
+    /* Стили для мобильных карточек в столбик */
     .mobile-card {
         background: white;
         border-radius: 16px;
-        padding: 1rem;
-        margin-bottom: 1rem;
+        padding: 1.2rem;
+        margin-bottom: 1.2rem;
         box-shadow: var(--card-shadow);
         border: 1px solid #eef0f2;
     }
@@ -25,22 +26,40 @@
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 0.75rem;
+        margin-bottom: 1rem;
     }
 
-    .mobile-card .stats-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
+    /* Вертикальный список показателей */
+    .mobile-card .stats-list {
         background: var(--ios-gray);
-        padding: 0.75rem;
-        border-radius: 12px;
-        margin-top: 0.75rem;
+        border-radius: 14px;
+        padding: 0.25rem 1rem;
+        margin-top: 1rem;
     }
 
-    .stat-item { display: flex; flex-column; direction: vertical; }
-    .stat-item .label { font-size: 0.7rem; color: #8E8E93; text-transform: uppercase; font-weight: 600; margin-bottom: 2px; }
-    .stat-item .value { font-size: 0.9rem; font-weight: 600; color: #1C1C1E; }
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+    }
+
+    /* Добавляем разделительную линию между строками, кроме последней */
+    .stat-row:not(:last-child) {
+        border-bottom: 1px solid #E5E5EA;
+    }
+
+    .stat-row .label { 
+        font-size: 0.85rem; 
+        color: #8E8E93; 
+        font-weight: 500; 
+    }
+    
+    .stat-row .value { 
+        font-size: 0.95rem; 
+        font-weight: 600; 
+        color: #1C1C1E; 
+    }
 
     /* Нативные кнопки и элементы */
     .btn-ios {
@@ -175,23 +194,23 @@
                     <option value="" {% if not request.GET.sort %}selected{% endif %}>Сортировка</option>
                     <option value="publish_date" {% if request.GET.sort == 'publish_date' %}selected{% endif %}>Дата (старые → новые)</option>
                     <option value="-publish_date" {% if request.GET.sort == '-publish_date' %}selected{% endif %}>Дата (новые → старые)</option>
-                    <option value="cost" {% if request.GET.sort == 'cost' %}selected{% endif %}>Стоимость (возрастание)</option>
-                    <option value="-cost" {% if request.GET.sort == '-cost' %}selected{% endif %}>Стоимость (убывание)</option>
-                    <option value="views" {% if request.GET.sort == 'views' %}selected{% endif %}>Просмотры (возрастание)</option>
-                    <option value="-views" {% if request.GET.sort == '-views' %}selected{% endif %}>Просмотры (убывание)</option>
-                    <option value="cpv" {% if request.GET.sort == 'cpv' %}selected{% endif %}>CPV (возрастание)</option>
-                    <option value="-cpv" {% if request.GET.sort == '-cpv' %}selected{% endif %}>CPV (убывание)</option>
+                    <option value="cost" {% if request.GET.sort == 'cost' %}selected{% endif %}>Стоимость (▲)</option>
+                    <option value="-cost" {% if request.GET.sort == '-cost' %}selected{% endif %}>Стоимость (▼)</option>
+                    <option value="views" {% if request.GET.sort == 'views' %}selected{% endif %}>Просмотры (▲)</option>
+                    <option value="-views" {% if request.GET.sort == '-views' %}selected{% endif %}>Просмотры (▼)</option>
+                    <option value="cpv" {% if request.GET.sort == 'cpv' %}selected{% endif %}>CPV (▲)</option>
+                    <option value="-cpv" {% if request.GET.sort == '-cpv' %}selected{% endif %}>CPV (▼)</option>
                 </select>
             </div>
         </div>
 
-        <!-- Лента карточек -->
+        <!-- Лента карточек (в столбик) -->
         {% for item in integrations %}
         <div class="mobile-card">
             <div class="card-header-ios">
                 <div>
-                    <h5 class="mb-0 fw-bold text-dark" style="font-size: 1.05rem;">{{ item.product_name|default:"—" }}</h5>
-                    <span class="badge bg-light text-secondary border rounded-pill mt-1" style="font-size: 0.7rem;">{{ item.brand|default:"Без бренда" }}</span>
+                    <h5 class="mb-0 fw-bold text-dark" style="font-size: 1.1rem;">{{ item.product_name|default:"—" }}</h5>
+                    <span class="badge bg-light text-secondary border rounded-pill mt-1" style="font-size: 0.75rem;">{{ item.brand|default:"Без бренда" }}</span>
                 </div>
                 <form action="{% url 'core:delete_integration' item.id %}" method="post" onsubmit="return confirm('Удалить эту интеграцию?');">
                     {% csrf_token %}
@@ -199,32 +218,33 @@
                 </form>
             </div>
 
-            <div class="d-flex align-items-center my-2 justify-content-between">
+            <div class="d-flex align-items-center my-3 justify-content-between">
                 <a href="{{ item.youtube_url }}{% if item.timestamp > 0 %}&t={{ item.timestamp }}{% endif %}" target="_blank" class="text-decoration-none d-flex align-items-center">
-                    <div class="bg-danger rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px;">
-                        <i class="bi bi-play-fill text-white style=font-size:0.9rem;"></i>
+                    <div class="bg-danger rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                        <i class="bi bi-play-fill text-white"></i>
                     </div>
-                    <span class="small text-primary fw-semibold">{{ item.channel_name|default:"Перейти к видео"|truncatechars:18 }}</span>
+                    <span class="small text-primary fw-semibold">{{ item.channel_name|default:"Перейти к видео"|truncatechars:22 }}</span>
                 </a>
-                <span class="timestamp-badge"><i class="bi bi-clock-history me-1" style="font-size: 0.7rem;"></i> {{ item.formatted_timestamp }}</span>
+                <span class="timestamp-badge"><i class="bi bi-clock-history me-1" style="font-size: 0.75rem;"></i> {{ item.formatted_timestamp }}</span>
             </div>
 
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="label">Дата выхода</div>
-                    <div class="value">{{ item.publish_date|date:"d.m.Y"|default:"—" }}</div>
+            <!-- ПОКАЗАТЕЛИ В СТОЛБИК (iOS List Style) -->
+            <div class="stats-list">
+                <div class="stat-row">
+                    <span class="label">Дата выхода</span>
+                    <span class="value">{{ item.publish_date|date:"d.m.Y"|default:"—" }}</span>
                 </div>
-                <div class="stat-item">
-                    <div class="label">Стоимость</div>
-                    <div class="value">{{ item.cost|intcomma }} ₽</div>
+                <div class="stat-row">
+                    <span class="label">Стоимость</span>
+                    <span class="value">{{ item.cost|intcomma }} ₽</span>
                 </div>
-                <div class="stat-item">
-                    <div class="label">Просмотры</div>
-                    <div class="value">{{ item.views|intcomma }}</div>
+                <div class="stat-row">
+                    <span class="label">Просмотры</span>
+                    <span class="value">{{ item.views|intcomma }}</span>
                 </div>
-                <div class="stat-item">
-                    <div class="label">CPV ролики</div>
-                    <div class="value text-success fw-bold">{{ item.cpv }} ₽</div>
+                <div class="stat-row">
+                    <span class="label">CPV ролики</span>
+                    <span class="value text-success fw-bold">{{ item.cpv }} ₽</span>
                 </div>
             </div>
         </div>
@@ -349,7 +369,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Стоимость (₽)</label>
-                        <input type="number" name="cost" class="form-control rounded-3" step="0.01">
+                        <input type="number" name="cost" class="form-control rounded-3">
                     </div>
                 </div>
                 <div class="modal-footer border-0">

@@ -6,22 +6,22 @@
     :root {
         --ios-blue: #007AFF;
         --ios-gray: #F2F2F7;
-        --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        --card-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
 
     .content-wrapper { padding: 1.5rem 1rem; background-color: #f8f9fa; min-height: 100vh; }
     
-    /* Стили для карточек на мобильных */
+    /* Стили для мобильных карточек */
     .mobile-card {
         background: white;
         border-radius: 16px;
         padding: 1rem;
         margin-bottom: 1rem;
-        box-shadow: var-card-shadow;
-        border: 1px solid #eee;
+        box-shadow: var(--card-shadow);
+        border: 1px solid #eef0f2;
     }
 
-    .mobile-card .header {
+    .mobile-card .card-header-ios {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
@@ -35,30 +35,23 @@
         background: var(--ios-gray);
         padding: 0.75rem;
         border-radius: 12px;
+        margin-top: 0.75rem;
     }
 
-    .stat-item .label { font-size: 0.7rem; color: #8E8E93; text-transform: uppercase; }
+    .stat-item { display: flex; flex-column; direction: vertical; }
+    .stat-item .label { font-size: 0.7rem; color: #8E8E93; text-transform: uppercase; font-weight: 600; margin-bottom: 2px; }
     .stat-item .value { font-size: 0.9rem; font-weight: 600; color: #1C1C1E; }
 
-    /* Скрываем таблицу на мобильных, карточки на десктопе */
-    @media (max-width: 768px) {
-        .desktop-table { display: none; }
-        .filter-card { padding: 1rem; border-radius: 16px; }
-        .h3 { font-weight: 700; }
-    }
-    @media (min-width: 769px) {
-        .mobile-cards-container { display: none; }
-    }
-
-    /* Красивые кнопки */
+    /* Нативные кнопки и элементы */
     .btn-ios {
         background-color: var(--ios-blue);
         color: white;
         border-radius: 10px;
-        padding: 0.6rem 1.2rem;
+        padding: 0.5rem 1rem;
         font-weight: 600;
         border: none;
     }
+    .btn-ios:hover { background-color: #0063CC; color: white; }
 
     .timestamp-badge {
         font-size: 0.75rem;
@@ -69,155 +62,248 @@
         display: inline-flex;
         align-items: center;
     }
+
+    .table-container { 
+        background: white; 
+        border-radius: 12px; 
+        box-shadow: var(--card-shadow); 
+        border: 1px solid #eef0f2; 
+        overflow: hidden; 
+    }
+    
+    .sort-link { color: #495057; text-decoration: none; font-weight: 600; display: inline-block; }
+    .sort-link:hover { color: var(--ios-blue); }
+
+    /* Адаптивность: переключение режимов */
+    @media (max-width: 768px) {
+        .desktop-view { display: none !important; }
+        .content-wrapper { padding: 1rem 0.5rem; }
+        .h3 { font-weight: 700; font-size: 1.5rem; }
+    }
+    @media (min-width: 769px) {
+        .mobile-view { display: none !important; }
+        .content-wrapper { padding: 2rem; }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="content-wrapper">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    
+    <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+    <div class="d-flex justify-content-between align-items-center mb-4 px-2 px-md-0">
         <h1 class="h3 mb-0 fw-bold">Моя реклама</h1>
         <button class="btn-ios d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#addIntegrationModal">
-            <i class="bi bi-plus-lg me-1"></i> Добавить
+            <i class="bi bi-plus-lg me-1"></i> <span class="desktop-view">Добавить ролик</span><span class="mobile-view">Добавить</span>
         </button>
     </div>
 
-    <div class="filter-card shadow-sm mb-4">
-        <form method="get" class="row g-2">
-            <div class="col-6 col-md-3">
-                <input type="number" name="cost_min" placeholder="Цена от" class="form-control form-control-sm border-0 bg-light">
+    <!-- ЕДИНЫЙ БЛОК ФИЛЬТРОВ (Умный Collapse для мобильных) -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-3">
+            <!-- Кнопка фильтров для iPhone -->
+            <button class="btn btn-light bg-light-subtle w-100 d-md-none text-start d-flex justify-content-between align-items-center rounded-3 py-2" 
+                    type="button" data-bs-toggle="collapse" data-bs-target="#allFiltersCollapse">
+                <span class="fw-semibold text-dark"><i class="bi bi-sliders me-2 text-primary"></i> Фильтры данных</span>
+                <i class="bi bi-chevron-down text-muted"></i>
+            </button>
+
+            <!-- Контейнер фильтров -->
+            <div class="collapse d-md-block mt-3 mt-md-0" id="allFiltersCollapse">
+                <form method="get" id="filter-form" class="row g-3 align-items-end">
+                    
+                    <!-- Передаем текущую сортировку, чтобы она не сбросилась при изменении фильтров -->
+                    <input type="hidden" name="sort" id="hidden-sort-field" value="{{ request.GET.sort|default:'' }}">
+
+                    <!-- 1. Дата выхода -->
+                    <div class="col-12 col-md-3">
+                        <label class="form-label small fw-semibold text-secondary mb-1">Дата выхода</label>
+                        <div class="input-group input-group-sm">
+                            <input type="date" name="publish_date_after" value="{{ request.GET.publish_date_after }}" class="form-control border-0 bg-light" placeholder="От">
+                            <span class="input-group-text border-0 bg-light text-muted px-1">─</span>
+                            <input type="date" name="publish_date_before" value="{{ request.GET.publish_date_before }}" class="form-control border-0 bg-light" placeholder="До">
+                        </div>
+                    </div>
+
+                    <!-- 2. Стоимость -->
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary mb-1">Стоимость (₽)</label>
+                        <div class="input-group input-group-sm">
+                            <input type="number" name="cost_min" value="{{ request.GET.cost_min }}" placeholder="От" class="form-control border-0 bg-light">
+                            <input type="number" name="cost_max" value="{{ request.GET.cost_max }}" placeholder="До" class="form-control border-0 bg-light">
+                        </div>
+                    </div>
+
+                    <!-- 3. Просмотры -->
+                    <div class="col-6 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary mb-1">Просмотры</label>
+                        <div class="input-group input-group-sm">
+                            <input type="number" name="views_min" value="{{ request.GET.views_min }}" placeholder="От" class="form-control border-0 bg-light">
+                            <input type="number" name="views_max" value="{{ request.GET.views_max }}" placeholder="До" class="form-control border-0 bg-light">
+                        </div>
+                    </div>
+
+                    <!-- 4. CPV -->
+                    <div class="col-12 col-md-2">
+                        <label class="form-label small fw-semibold text-secondary mb-1">CPV</label>
+                        <div class="input-group input-group-sm">
+                            <input type="number" step="0.01" name="cpv_min" value="{{ request.GET.cpv_min }}" placeholder="От" class="form-control border-0 bg-light">
+                            <input type="number" step="0.01" name="cpv_max" value="{{ request.GET.cpv_max }}" placeholder="До" class="form-control border-0 bg-light">
+                        </div>
+                    </div>
+
+                    <!-- Кнопки отправки -->
+                    <div class="col-12 col-md-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-sm btn-primary flex-grow-1 rounded-3 py-2 fw-medium">Применить</button>
+                        <a href="{% url 'core:integration_list' %}" class="btn btn-sm btn-light text-muted rounded-3 d-flex align-items-center justify-content-center px-3" title="Сбросить всё">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    </div>
+                </form>
             </div>
-            <div class="col-6 col-md-3">
-                <input type="number" name="cost_max" placeholder="Цена до" class="form-control form-control-sm border-0 bg-light">
-            </div>
-            <div class="col-12 col-md-4">
-                <button type="submit" class="btn btn-sm btn-dark w-100 rounded-3">Применить фильтры</button>
-            </div>
-        </form>
+        </div>
     </div>
 
-    <div class="mobile-cards-container">
+    <!-- МОБИЛЬНАЯ ВЕРСИЯ (iPhone) -->
+    <div class="mobile-view">
+        <!-- Нативный блок сортировки для мобильных -->
+        <div class="d-flex align-items-center justify-content-between mb-3 px-2">
+            <span class="small text-muted fw-medium">Найдено: {{ integrations|length }}</span>
+            <div class="d-flex align-items-center gap-1">
+                <i class="bi bi-sort-down text-primary small"></i>
+                <select class="form-select form-select-sm border-0 bg-transparent fw-semibold text-dark p-0 pe-4" style="box-shadow:none; width: auto;" id="mobile-sort-select" onchange="applyMobileSort(this.value)">
+                    <option value="" {% if not request.GET.sort %}selected{% endif %}>Сортировка</option>
+                    <option value="publish_date" {% if request.GET.sort == 'publish_date' %}selected{% endif %}>Дата (старые → новые)</option>
+                    <option value="-publish_date" {% if request.GET.sort == '-publish_date' %}selected{% endif %}>Дата (новые → старые)</option>
+                    <option value="cost" {% if request.GET.sort == 'cost' %}selected{% endif %}>Стоимость (возрастание)</option>
+                    <option value="-cost" {% if request.GET.sort == '-cost' %}selected{% endif %}>Стоимость (убывание)</option>
+                    <option value="views" {% if request.GET.sort == 'views' %}selected{% endif %}>Просмотры (возрастание)</option>
+                    <option value="-views" {% if request.GET.sort == '-views' %}selected{% endif %}>Просмотры (убывание)</option>
+                    <option value="cpv" {% if request.GET.sort == 'cpv' %}selected{% endif %}>CPV (возрастание)</option>
+                    <option value="-cpv" {% if request.GET.sort == '-cpv' %}selected{% endif %}>CPV (убывание)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Лента карточек -->
         {% for item in integrations %}
         <div class="mobile-card">
-            <div class="header">
+            <div class="card-header-ios">
                 <div>
-                    <h5 class="mb-0 fw-bold">{{ item.product_name|default:"Без названия" }}</h5>
-                    <span class="badge bg-primary-subtle text-primary rounded-pill small">{{ item.brand|default:"No Brand" }}</span>
+                    <h5 class="mb-0 fw-bold text-dark" style="font-size: 1.05rem;">{{ item.product_name|default:"—" }}</h5>
+                    <span class="badge bg-light text-secondary border rounded-pill mt-1" style="font-size: 0.7rem;">{{ item.brand|default:"Без бренда" }}</span>
                 </div>
-                <form action="{% url 'core:delete_integration' item.id %}" method="post">
+                <form action="{% url 'core:delete_integration' item.id %}" method="post" onsubmit="return confirm('Удалить эту интеграцию?');">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-link text-danger p-0"><i class="bi bi-trash3"></i></button>
+                    <button type="submit" class="btn btn-link text-danger p-0 m-0"><i class="bi bi-trash3" style="font-size: 1.1rem;"></i></button>
                 </form>
             </div>
 
-            <div class="d-flex align-items-center mb-3">
+            <div class="d-flex align-items-center my-2 justify-content-between">
                 <a href="{{ item.youtube_url }}{% if item.timestamp > 0 %}&t={{ item.timestamp }}{% endif %}" target="_blank" class="text-decoration-none d-flex align-items-center">
-                    <div class="bg-danger rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                        <i class="bi bi-play-fill text-white"></i>
+                    <div class="bg-danger rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px;">
+                        <i class="bi bi-play-fill text-white style=font-size:0.9rem;"></i>
                     </div>
-                    <span class="small text-dark fw-medium">{{ item.channel_name|truncatechars:20 }}</span>
+                    <span class="small text-primary fw-semibold">{{ item.channel_name|default:"Перейти к видео"|truncatechars:18 }}</span>
                 </a>
-                <div class="ms-auto">
-                    <span class="timestamp-badge">{{ item.formatted_timestamp }}</span>
-                </div>
+                <span class="timestamp-badge"><i class="bi bi-clock-history me-1" style="font-size: 0.7rem;"></i> {{ item.formatted_timestamp }}</span>
             </div>
 
             <div class="stats-grid">
                 <div class="stat-item">
-                    <div class="label">Просмотры</div>
-                    <div class="value">{{ item.views|intcomma }}</div>
-                </div>
-                <div class="stat-item">
-                    <div class="label">Дата</div>
-                    <div class="value">{{ item.publish_date|date:"d.m.y" }}</div>
+                    <div class="label">Дата выхода</div>
+                    <div class="value">{{ item.publish_date|date:"d.m.Y"|default:"—" }}</div>
                 </div>
                 <div class="stat-item">
                     <div class="label">Стоимость</div>
                     <div class="value">{{ item.cost|intcomma }} ₽</div>
                 </div>
                 <div class="stat-item">
-                    <div class="label">CPV</div>
-                    <div class="value text-primary">{{ item.cpv }} ₽</div>
+                    <div class="label">Просмотры</div>
+                    <div class="value">{{ item.views|intcomma }}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">CPV ролики</div>
+                    <div class="value text-success fw-bold">{{ item.cpv }} ₽</div>
                 </div>
             </div>
         </div>
+        {% empty %}
+        <div class="text-center text-muted py-5">Нет данных по выбранным фильтрам</div>
         {% endfor %}
     </div>
 
-    <div class="desktop-table table-container">
+
+    <!-- КОМПЬЮТЕРНАЯ ВЕРСИЯ (Классическая интерактивная таблица) -->
+    <div class="desktop-view table-container">
         <div class="table-responsive">
-            <table class="table mb-0">
-                <thead>
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-secondary">
                     <tr>
-                        <th>Товар и Бренд</th>
+                        <th style="width: 25%;">Товар и Бренд</th>
                         
-                        <!-- Сортировка по Дате выхода -->
+                        <!-- Интерактивные шапки с сохранением GET параметров -->
                         <th>
-                            <a class="sort-link" href="?{% if request.GET.sort == 'publish_date' %}sort=-publish_date{% else %}sort=publish_date{% endif %}{% if request.GET.cost_min %}&cost_min={{ request.GET.cost_min }}{% endif %}{% if request.GET.cost_max %}&cost_max={{ request.GET.cost_max }}{% endif %}{% if request.GET.views_min %}&views_min={{ request.GET.views_min }}{% endif %}{% if request.GET.views_max %}&views_max={{ request.GET.views_max }}{% endif %}{% if request.GET.cpv_min %}&cpv_min={{ request.GET.cpv_min }}{% endif %}{% if request.GET.cpv_max %}&cpv_max={{ request.GET.cpv_max }}{% endif %}">
+                            <a class="sort-link" href="?sort={% if request.GET.sort == 'publish_date' %}-publish_date{% else %}publish_date{% endif %}{% for key, val in request.GET.items %}{% if key != 'sort' %}&{{ key }}={{ val }}{% endif %}{% endfor %}">
                                 Дата выхода 
                                 {% if request.GET.sort == 'publish_date' %}▲{% elif request.GET.sort == '-publish_date' %}▼{% endif %}
                             </a>
                         </th>
                         <th>Ролик и Тайминг</th>
-                        
-                        <!-- Сортировка по Стоимости -->
                         <th>
-                            <a class="sort-link" href="?{% if request.GET.sort == 'cost' %}sort=-cost{% else %}sort=cost{% endif %}{% if request.GET.cost_min %}&cost_min={{ request.GET.cost_min }}{% endif %}{% if request.GET.cost_max %}&cost_max={{ request.GET.cost_max }}{% endif %}{% if request.GET.views_min %}&views_min={{ request.GET.views_min }}{% endif %}{% if request.GET.views_max %}&views_max={{ request.GET.views_max }}{% endif %}{% if request.GET.cpv_min %}&cpv_min={{ request.GET.cpv_min }}{% endif %}{% if request.GET.cpv_max %}&cpv_max={{ request.GET.cpv_max }}{% endif %}">
-                                Стоимость
+                            <a class="sort-link" href="?sort={% if request.GET.sort == 'cost' %}-cost{% else %}sort=cost{% endif %}{% for key, val in request.GET.items %}{% if key != 'sort' %}&{{ key }}={{ val }}{% endif %}{% endfor %}">
+                                Стоимость 
                                 {% if request.GET.sort == 'cost' %}▲{% elif request.GET.sort == '-cost' %}▼{% endif %}
                             </a>
                         </th>
-                        
-                        <!-- Сортировка по Просмотрам -->
                         <th>
-                            <a class="sort-link" href="?{% if request.GET.sort == 'views' %}sort=-views{% else %}sort=views{% endif %}{% if request.GET.cost_min %}&cost_min={{ request.GET.cost_min }}{% endif %}{% if request.GET.cost_max %}&cost_max={{ request.GET.cost_max }}{% endif %}{% if request.GET.views_min %}&views_min={{ request.GET.views_min }}{% endif %}{% if request.GET.views_max %}&views_max={{ request.GET.views_max }}{% endif %}{% if request.GET.cpv_min %}&cpv_min={{ request.GET.cpv_min }}{% endif %}{% if request.GET.cpv_max %}&cpv_max={{ request.GET.cpv_max }}{% endif %}">
-                                Просмотры
+                            <a class="sort-link" href="?sort={% if request.GET.sort == 'views' %}-views{% else %}views{% endif %}{% for key, val in request.GET.items %}{% if key != 'sort' %}&{{ key }}={{ val }}{% endif %}{% endfor %}">
+                                Просмотры 
                                 {% if request.GET.sort == 'views' %}▲{% elif request.GET.sort == '-views' %}▼{% endif %}
                             </a>
                         </th>
-                        
-                        <!-- Сортировка по CPV -->
                         <th>
-                            <a class="sort-link" href="?{% if request.GET.sort == 'cpv' %}sort=-cpv{% else %}sort=cpv{% endif %}{% if request.GET.cost_min %}&cost_min={{ request.GET.cost_min }}{% endif %}{% if request.GET.cost_max %}&cost_max={{ request.GET.cost_max }}{% endif %}{% if request.GET.views_min %}&views_min={{ request.GET.views_min }}{% endif %}{% if request.GET.views_max %}&views_max={{ request.GET.views_max }}{% endif %}{% if request.GET.cpv_min %}&cpv_min={{ request.GET.cpv_min }}{% endif %}{% if request.GET.cpv_max %}&cpv_max={{ request.GET.cpv_max }}{% endif %}">
-                                CPV
+                            <a class="sort-link" href="?sort={% if request.GET.sort == 'cpv' %}-cpv{% else %}cpv{% endif %}{% for key, val in request.GET.items %}{% if key != 'sort' %}&{{ key }}={{ val }}{% endif %}{% endfor %}">
+                                CPV 
                                 {% if request.GET.sort == 'cpv' %}▲{% elif request.GET.sort == '-cpv' %}▼{% endif %}
                             </a>
                         </th>
-                        <th class="text-end">Действия</th>
+                        <th class="text-end px-4">Действия</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in integrations %}
                     <tr>
-                        <td>
+                        <td class="fw-medium text-dark">
                             <div class="d-flex flex-column">
                                 <div>
                                     <span class="fw-bold">{{ item.product_name|default:"—" }}</span>
                                     <span class="badge bg-light text-dark border ms-1">{{ item.brand|default:"Без бренда" }}</span>
                                 </div>
-                                <small class="text-muted mt-1"><i class="bi bi-person-video2"></i> {{ item.channel_name|default:"Канал не определен" }}</small>
+                                <small class="text-muted mt-1"><i class="bi bi-person-video2"></i> {{ item.channel_name|default:"Не определен" }}</small>
                             </div>
                         </td>
                         <td>{{ item.publish_date|date:"d.m.Y"|default:"Ожидается" }}</td>
                         <td>
                             <div class="d-flex flex-column align-items-start">
                                 <a href="{{ item.youtube_url }}{% if item.timestamp > 0 %}&t={{ item.timestamp }}{% endif %}" target="_blank" class="text-primary text-decoration-none fw-bold">
-                                    <i class="bi bi-youtube"></i> Перейти
+                                    <i class="bi bi-youtube text-danger"></i> Ссылка
                                 </a>
-                                <div class="timestamp-badge"><i class="bi bi-clock-history me-1"></i> {{ item.formatted_timestamp }}</div>
+                                <div class="timestamp-badge mt-1" style="font-size: 0.7rem;"><i class="bi bi-clock-history me-1"></i> {{ item.formatted_timestamp }}</div>
                             </div>
                         </td>
-                        <td>{{ item.cost|intcomma }} ₽</td>
+                        <td class="fw-semibold">{{ item.cost|intcomma }} ₽</td>
                         <td>{{ item.views|intcomma }}</td>
-                        <td><span class="badge bg-success-subtle text-success fw-bold p-2">{{ item.cpv }} ₽</span></td>
-                        <td class="text-end">
-                            <form action="{% url 'core:delete_integration' item.id %}" method="post" style="display:inline;">
+                        <td><span class="badge bg-success-subtle text-success fw-bold p-2 style=font-size: 0.9rem;">{{ item.cpv }} ₽</span></td>
+                        <td class="text-end px-4">
+                            <form action="{% url 'core:delete_integration' item.id %}" method="post" style="display:inline;" onsubmit="return confirm('Удалить запись?');">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
                             </form>
                         </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="7" class="text-center text-muted py-4">Данные по выбранным фильтрам отсутствуют</td></tr>
+                    <tr><td colspan="7" class="text-center text-muted py-5">Данные по выбранным критериям фильтрации отсутствуют.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -225,10 +311,10 @@
     </div>
 </div>
 
-<!-- МОДАЛЬНОЕ ОКНО С ПОЛЯМИ ВРЕМЕНИ -->
+<!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ РОЛИКА -->
 <div class="modal fade" id="addIntegrationModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
+        <div class="modal-content border-0 shadow rounded-4">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title fw-bold">Новая реклама</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -238,17 +324,15 @@
                 <div class="modal-body pt-4">
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Ссылка на YouTube*</label>
-                        <input type="url" name="youtube_url" class="form-control" required>
+                        <input type="url" name="youtube_url" class="form-control rounded-3" required>
                     </div>
 
-                    <!-- Ввод тайминга -->
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Начало рекламы (Мин:Сек)</label>
                         <div class="d-flex gap-2 align-items-center">
-                            <input type="number" id="m-input" class="form-control" placeholder="Мин" min="0" value="0">
-                            <span>:</span>
-                            <input type="number" id="s-input" class="form-control" placeholder="Сек" min="0" max="59" value="0">
-                            <!-- Скрытое поле, которое Django сохранит в timestamp -->
+                            <input type="number" id="m-input" class="form-control rounded-3" placeholder="Мин" min="0" value="0">
+                            <span class="fw-bold">:</span>
+                            <input type="number" id="s-input" class="form-control rounded-3" placeholder="Сек" min="0" max="59" value="0">
                             <input type="hidden" name="timestamp" id="t-hidden" value="0">
                         </div>
                     </div>
@@ -256,32 +340,41 @@
                     <div class="row">
                         <div class="col-6 mb-3">
                             <label class="form-label small fw-bold">Товар</label>
-                            <input type="text" name="product_name" class="form-control">
+                            <input type="text" name="product_name" class="form-control rounded-3">
                         </div>
                         <div class="col-6 mb-3">
-                            <label class="form-label small fw-bold">Бренд</label>
-                            <input type="text" name="brand" class="form-control">
+                            <label class="form-hidden small fw-bold">Бренд</label>
+                            <input type="text" name="brand" class="form-control rounded-3">
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Стоимость (₽)</label>
-                        <input type="number" name="cost" class="form-control" step="0.01">
+                        <input type="number" name="cost" class="form-control rounded-3" step="0.01">
                     </div>
                 </div>
                 <div class="modal-footer border-0">
-                    <button type="submit" class="btn btn-add w-100">Сохранить</button>
+                    <button type="submit" class="btn-ios w-100 py-2.5">Сохранить ролик</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
+<!-- СКРИПТЫ УПРАВЛЕНИЯ СОРТИРОВКОЙ И ТАЙМИНГОМ -->
 <script>
-    // Перед отправкой формы считаем общее количество секунд
+    // Подсчет секунд перед сохранением ролика
     document.getElementById('add-form').addEventListener('submit', function() {
         const m = parseInt(document.getElementById('m-input').value) || 0;
         const s = parseInt(document.getElementById('s-input').value) || 0;
         document.getElementById('t-hidden').value = (m * 60) + s;
     });
+
+    // Обработка нативной сортировки на iPhone
+    function applyMobileSort(sortValue) {
+        // Записываем значение в скрытое поле основной формы фильтров
+        document.getElementById('hidden-sort-field').value = sortValue;
+        // Сабмитим форму, чтобы применить и фильтры, и новую сортировку одновременно
+        document.getElementById('filter-form').submit();
+    }
 </script>
 {% endblock %}

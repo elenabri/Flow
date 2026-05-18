@@ -133,28 +133,32 @@ class VKORDService:
                     f"Ошибка ОРД VK при загрузке видео (Status {response.status}). Ответ ОРД: {resp_text}"
                 )
 
-    async def create_creative(self, contract_ext_id, channel_name, product_name, kktu_code, media_external_id, target_urls):
-        """Регистрация креатива и получение долгожданного ERID"""
-        creative_ext_id = f"crt_{uuid.uuid4().hex[:10]}"
-        # Эндпоинт: creatives/
-        url = f"{self.BASE_URL}/creatives/"
+    async def create_creative(self, creative_ext_id, payload):
+        """Создание креатива методом PUT по спецификации ОРД VK v3"""
+        url = f"{self.BASE_URL}/v3/creative/{creative_ext_id}"
         
-        payload = {
-            "external_id": creative_ext_id,
-            "contract_external_id": contract_ext_id,
-            "type": "video",
-            "name": f"Интеграция {channel_name} - {product_name}",
-            "okveds": [kktu_code] if isinstance(kktu_code, str) else kktu_code,
-            "media_external_ids": [media_external_id],
-            "target_urls": target_urls
-        }
+        logger.info(f"Отправка PUT-запроса креатива в ОРД VK v3 на URL: {url} с телом: {payload}")
+
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=self.headers) as response:
+            async with session.put(url, json=payload, headers=self.headers) as response:
                 resp_text = await response.text()
-                if response.status == 200:
-                    resp_json = await response.json()
-                    return resp_json.get("erid", "ТЕСТ_ERID_УСПЕШНО")
-                raise Exception(f"Ошибка ОРД VK при генерации ERID: {resp_text}")
+                
+                if response.status in [200, 201]:
+                    try:
+                        data = await response.json()
+                        erid = data.get("erid")
+                        if erid:
+                            logger.info(f"Креатив успешно создан. Получен ERID: {erid}")
+                            return erid
+                    except Exception as json_err:
+                        logger.error(f"Не удалось распарсить JSON ответа ОРД: {resp_text}. Ошибка: {json_err}")
+                    
+                    raise Exception(f"ОРД VK вернул статус {response.status}, но ERID отсутствует в ответе: {resp_text}")
+                
+                raise Exception(
+                    f"Ошибка ОРД VK при создании креатива (Status {response.status}). "
+                    f"Отправлено: {payload}. Ответ ОРД: {resp_text}"
+                )
 
     async def create_invoice(self, contract_ext_id, invoice_number, amount):
         """Регистрация акта/счета"""

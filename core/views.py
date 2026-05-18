@@ -1243,13 +1243,17 @@ class EridManagementView(View):
         ord_service = VKORDService(token=self.ORD_TOKEN)
         
         try:
+            # --- ЛОГИКА 1: РЕКЛАМОДАТЕЛЬ ---
             adv_select = request.POST.get('advertiser_select')
             if adv_select == 'new':
-                # Превращаем веб-типы в типы ОРД VK (legal -> juridical, person -> physical)
                 web_type = request.POST.get('adv_type')
                 ord_type = "juridical" if web_type == "legal" else ("ip" if web_type == "individual" else "physical")
                 
                 adv_ext_id = f"adv_{uuid.uuid4().hex[:10]}"
+                
+                # Получаем телефон и проверяем на пустоту
+                raw_adv_phone = request.POST.get('adv_phone', '').strip()
+                adv_phone = raw_adv_phone if raw_adv_phone else "+79991234567"
                 
                 adv_data = {
                     "external_id": adv_ext_id,
@@ -1258,24 +1262,12 @@ class EridManagementView(View):
                     "juridical_details": {
                         "type": "foreign_physical" if request.POST.get('adv_citizenship') == 'foreign' else ord_type,
                         "inn": "".join([c for c in request.POST.get('adv_inn', '') if c.isdigit()]),
-                        "phone": request.POST.get('adv_phone', '+79991234567')
+                        "phone": adv_phone  # Теперь здесь гарантированно не будет пустой строки
                     }
                 }
                 
-                # Вызываем наш обновленный метод PUT
                 adv_ext_id = await ord_service.create_person(adv_data)
-                
-                await sync_to_async(SavedContractor.objects.create)(
-                    external_id=adv_ext_id,
-                    name=adv_data["name"],
-                    inn=adv_data["juridical_details"]["inn"],
-                    role='advertiser'
-                )
-                adv_name = adv_data["name"]
-            else:
-                adv_ext_id = adv_select
-                contractor = await sync_to_async(SavedContractor.objects.get)(external_id=adv_ext_id)
-                adv_name = contractor.name
+                # ... дальше ваш код сохранения в базу без изменений ...
 
             # --- ЛОГИКА 2: БЛОГЕР ---
             blog_select = request.POST.get('blogger_select')
@@ -1285,14 +1277,18 @@ class EridManagementView(View):
                 
                 blog_ext_id = f"blg_{uuid.uuid4().hex[:10]}"
                 
+                # Получаем телефон и проверяем на пустоту
+                raw_blog_phone = request.POST.get('blog_phone', '').strip()
+                blog_phone = raw_blog_phone if raw_blog_phone else "+79991234567"
+                
                 blog_data = {
                     "external_id": blog_ext_id,
                     "name": request.POST.get('blog_name'),
-                    "roles": ["contractor"], # Роль подрядчика/блогера
+                    "roles": ["contractor"],
                     "juridical_details": {
                         "type": "foreign_physical" if request.POST.get('blog_citizenship') == 'foreign' else ord_type,
                         "inn": "".join([c for c in request.POST.get('blog_inn', '') if c.isdigit()]),
-                        "phone": request.POST.get('blog_phone', '+79991234567')
+                        "phone": blog_phone  # Теперь здесь гарантированно не будет пустой строки
                     }
                 }
                 

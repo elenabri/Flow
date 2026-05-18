@@ -1302,7 +1302,28 @@ class EridManagementView(View):
                 blog_name = blog_data["name"]
 
             # --- ЛОГИКА 3: ДОГОВОР ---
-            contract_ext_id = await ord_service.create_contract(advertiser_ext_id=adv_ext_id, blogger_ext_id=blog_ext_id)
+            # Генерируем уникальный внешний ID для договора
+            contract_ext_id = f"cnt_{uuid.uuid4().hex[:10]}"
+            
+            # Формируем сегодняшнюю дату в формате YYYY-MM-DD и генерируем случайный номер договора
+            current_date_str = timezone.now().date().isoformat()
+            random_serial = f"TF-{uuid.uuid4().hex[:5].upper()}"
+
+            contract_payload = {
+                "type": "service",                      # Строго по спецификации ОРД VK
+                "client_external_id": adv_ext_id,       # ID рекламодателя
+                "contractor_external_id": blog_ext_id,  # ID блогера (издателя)
+                "date": current_date_str,                # Обязательная дата договора
+                "serial": random_serial,                 # Обязательный номер договора
+                "subject_type": "org_distribution",     # Организация распространения рекламы
+                "flags": [
+                    "vat_included"                       # Флаг НДС (опционально, но пусть будет для валидности)
+                ],
+                "amount": "0.0"                          # Можно передать нулевую сумму, если она определится актом
+            }
+
+            # Вызываем наш обновленный метод, передавая сгенерированный ID и тело
+            contract_ext_id = await ord_service.create_contract(contract_ext_id, contract_payload)
             logger.info(f"Договор зарегистрирован в ОРД. ID: {contract_ext_id}")
 
             # --- ЛОГИКА 4: МЕДИАФАЙЛ (ВИДЕО) ---

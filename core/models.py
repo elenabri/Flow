@@ -382,3 +382,29 @@ class AdIntegration(models.Model):
             secs = self.timestamp % 60
             return f"{mins}:{secs:02d}"
         return "0:00"
+
+from django.db import models
+
+class SavedContractor(models.Model):
+    TYPE_CHOICES = [('ur', 'Юрлицо'), ('fiz', 'Физлицо'), ('ip', 'ИП')]
+    
+    external_id = models.CharField(max_length=255, unique=True, verbose_name="Внешний ID в ОРД")
+    name = models.CharField(max_length=255, verbose_name="Название / ФИО")
+    inn = models.CharField(max_length=12, blank=True, null=True, verbose_name="ИНН")
+    role = models.CharField(max_length=50, choices=[('advertiser', 'Рекламодатель'), ('blogger', 'Блогер')])
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_role_display()})"
+
+class EridIntegration(models.Model):
+    blogger_name = models.CharField(max_length=255)
+    advertiser_name = models.CharField(max_length=255)
+    channel_url = models.URLField()
+    creative_name = models.CharField(max_length=255)
+    invoice_number = models.CharField(max_length=100)
+    invoice_date = models.DateField()
+    erid = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']

@@ -1277,18 +1277,17 @@ class EridManagementView(View):
                 
                 blog_ext_id = f"blg_{uuid.uuid4().hex[:10]}"
                 
-                # Получаем телефон и проверяем на пустоту
                 raw_blog_phone = request.POST.get('blog_phone', '').strip()
                 blog_phone = raw_blog_phone if raw_blog_phone else "+79991234567"
                 
                 blog_data = {
                     "external_id": blog_ext_id,
                     "name": request.POST.get('blog_name'),
-                    "roles": ["contractor"],
+                    "roles": ["publisher"],  # <-- ИСПРАВЛЕНО: вместо "contractor" ставим "publisher"
                     "juridical_details": {
                         "type": "foreign_physical" if request.POST.get('blog_citizenship') == 'foreign' else ord_type,
                         "inn": "".join([c for c in request.POST.get('blog_inn', '') if c.isdigit()]),
-                        "phone": blog_phone  # Теперь здесь гарантированно не будет пустой строки
+                        "phone": blog_phone
                     }
                 }
                 

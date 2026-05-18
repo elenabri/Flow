@@ -32,7 +32,7 @@ class VKORDService:
     """Сервис для интеграции с API ОРД VK по официальной спецификации"""
     
     # Точный базовый URL для песочницы из примера документации
-    BASE_URL = "https://api-sandbox.ord.vk.com/v1" 
+    BASE_URL = "https://api-sandbox.ord.vk.com" 
     
     def __init__(self, token):
         self.token = token

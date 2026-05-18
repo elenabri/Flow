@@ -1217,6 +1217,7 @@ from .models import SavedContractor, EridIntegration
 from .services import VKORDService  
 import logging
 from asgiref.sync import sync_to_async
+import uuid
 
 logger = logging.getLogger(__name__)
 

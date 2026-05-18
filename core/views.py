@@ -1242,24 +1242,32 @@ class EridManagementView(View):
         ord_service = VKORDService(token=self.ORD_TOKEN)
         
         try:
-            # --- ЛОГИКА 1: РЕКЛАМОДАТЕЛЬ ---
             adv_select = request.POST.get('advertiser_select')
             if adv_select == 'new':
+                # Превращаем веб-типы в типы ОРД VK (legal -> juridical, person -> physical)
+                web_type = request.POST.get('adv_type')
+                ord_type = "juridical" if web_type == "legal" else ("ip" if web_type == "individual" else "physical")
+                
+                adv_ext_id = f"adv_{uuid.uuid4().hex[:10]}"
+                
                 adv_data = {
-                    "is_foreign": request.POST.get('adv_citizenship') == 'foreign',
-                    "type": request.POST.get('adv_type'),
+                    "external_id": adv_ext_id,
                     "name": request.POST.get('adv_name'),
-                    "inn": request.POST.get('adv_inn'),
-                    "phone": request.POST.get('adv_phone'),
-                    "country_code": request.POST.get('adv_country'),
+                    "roles": ["advertiser"],
+                    "juridical_details": {
+                        "type": "foreign_physical" if request.POST.get('adv_citizenship') == 'foreign' else ord_type,
+                        "inn": "".join([c for c in request.POST.get('adv_inn', '') if c.isdigit()]),
+                        "phone": request.POST.get('adv_phone', '+79991234567')
+                    }
                 }
+                
+                # Вызываем наш обновленный метод PUT
                 adv_ext_id = await ord_service.create_person(adv_data)
-                logger.info(f"Успешно создан рекламодатель в ОРД. ID: {adv_ext_id}")
                 
                 await sync_to_async(SavedContractor.objects.create)(
                     external_id=adv_ext_id,
                     name=adv_data["name"],
-                    inn=adv_data["inn"],
+                    inn=adv_data["juridical_details"]["inn"],
                     role='advertiser'
                 )
                 adv_name = adv_data["name"]
@@ -1268,34 +1276,34 @@ class EridManagementView(View):
                 contractor = await sync_to_async(SavedContractor.objects.get)(external_id=adv_ext_id)
                 adv_name = contractor.name
 
-            # --- ЛОГИКА 2: БЛОГЕР И ПЛОЩАДКА ---
+            # --- ЛОГИКА 2: БЛОГЕР ---
             blog_select = request.POST.get('blogger_select')
             if blog_select == 'new':
+                web_type = request.POST.get('blog_type')
+                ord_type = "juridical" if web_type == "legal" else ("ip" if web_type == "individual" else "physical")
+                
+                blog_ext_id = f"blg_{uuid.uuid4().hex[:10]}"
+                
                 blog_data = {
-                    "is_foreign": request.POST.get('blog_citizenship') == 'foreign',
-                    "type": request.POST.get('blog_type'),
+                    "external_id": blog_ext_id,
                     "name": request.POST.get('blog_name'),
-                    "inn": request.POST.get('blog_inn'),
-                    "phone": request.POST.get('blog_phone'),
-                    "country_code": request.POST.get('blog_country'),
+                    "roles": ["contractor"], # Роль подрядчика/блогера
+                    "juridical_details": {
+                        "type": "foreign_physical" if request.POST.get('blog_citizenship') == 'foreign' else ord_type,
+                        "inn": "".join([c for c in request.POST.get('blog_inn', '') if c.isdigit()]),
+                        "phone": request.POST.get('blog_phone', '+79991234567')
+                    }
                 }
+                
                 blog_ext_id = await ord_service.create_person(blog_data)
-                logger.info(f"Успешно создан блогер в ОРД. ID: {blog_ext_id}")
                 
                 await sync_to_async(SavedContractor.objects.create)(
                     external_id=blog_ext_id,
                     name=blog_data["name"],
-                    inn=blog_data["inn"],
+                    inn=blog_data["juridical_details"]["inn"],
                     role='blogger'
                 )
                 blog_name = blog_data["name"]
-            else:
-                blog_ext_id = blog_select
-                contractor = await sync_to_async(SavedContractor.objects.get)(external_id=blog_ext_id)
-                blog_name = contractor.name
-
-            channel_url = request.POST.get('channel_url')
-            await ord_service.create_pad(blogger_external_id=blog_ext_id, channel_url=channel_url, channel_name=blog_name)
 
             # --- ЛОГИКА 3: ДОГОВОР ---
             contract_ext_id = await ord_service.create_contract(advertiser_ext_id=adv_ext_id, blogger_ext_id=blog_ext_id)

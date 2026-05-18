@@ -101,25 +101,36 @@ class VKORDService:
                     f"Отправлено: {payload}. Ответ ОРД: {resp_text}"
                 )
 
-    async def upload_media(self, file_object):
-        """Загрузка ролика методом PUT"""
-        media_ext_id = f"med_{uuid.uuid4().hex[:10]}"
-        # Эндпоинт: media/
-        url = f"{self.BASE_URL}/media/{media_ext_id}"
+    async def upload_media(self, video_file):
+        """Загрузка медиафайла методом PUT по спецификации ОРД VK"""
+        # Генерируем уникальный external_id для медиафайла
+        media_external_id = f"med_{uuid.uuid4().hex[:10]}"
+        url = f"{self.BASE_URL}/media/{media_external_id}"
         
-        upload_headers = {
-            "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/octet-stream"
-        }
+        logger.info(f"Загрузка медиафайла в ОРД VK на URL: {url}")
+        
+        # Готовим multipart/form-data
+        data = aiohttp.FormData()
+        # Читаем содержимое файла из памяти Django
+        file_bytes = video_file.read()
+        # Передаем строго под ключом 'media_file', как требует спецификация ВК
+        data.add_field('media_file', file_bytes, filename=video_file.name)
+        
+        # Для отправки файлов НЕЛЬЗЯ передавать "Content-Type": "application/json"
+        # Создаем копию заголовков без контент-тайпа, чтобы aiohttp сам выставил multipart/form-data + boundary
+        upload_headers = {k: v for k, v in self.headers.items() if k.lower() != 'content-type'}
         
         async with aiohttp.ClientSession() as session:
-            # Читаем бинарные данные файла
-            file_data = file_object.read()
-            async with session.put(url, data=file_data, headers=upload_headers) as response:
-                if response.status in [200, 201, 204]:
-                    return media_ext_id
+            async with session.put(url, data=data, headers=upload_headers) as response:
                 resp_text = await response.text()
-                raise Exception(f"Ошибка ОРД VK при загрузке видео: {resp_text}")
+                
+                if response.status in [200, 201]:
+                    logger.info(f"Медиафайл успешно загружен в ОРД. ID: {media_external_id}")
+                    return media_external_id
+                
+                raise Exception(
+                    f"Ошибка ОРД VK при загрузке видео (Status {response.status}). Ответ ОРД: {resp_text}"
+                )
 
     async def create_creative(self, contract_ext_id, channel_name, product_name, kktu_code, media_external_id, target_urls):
         """Регистрация креатива и получение долгожданного ERID"""

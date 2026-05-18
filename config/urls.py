@@ -5,6 +5,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from core import views  
 from core.views import telegram_webhook
+from django.urls import path
+from .views import EridManagementView
 
 # Группируем все маршруты основного приложения с именем 'core'
 core_patterns = ([
@@ -84,6 +86,8 @@ urlpatterns = [
     ), name='password_reset_complete'),
     
     path('tg-webhook-8275098246/', telegram_webhook),
+
+    path('erid/', EridManagementView.as_view(), name='erid_management'),
 ]
 
 # Медиа и статика

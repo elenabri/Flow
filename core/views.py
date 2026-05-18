@@ -1216,7 +1216,7 @@ from django.utils import timezone
 from .models import SavedContractor, EridIntegration
 from .services import VKORDService  
 import logging
-from asgiref.sync import sync_to_async  # Для безопасного извлечения данных из БД
+from asgiref.sync import sync_to_async
 
 logger = logging.getLogger(__name__)
 
@@ -1224,9 +1224,7 @@ class EridManagementView(View):
     template_name = 'erid_form.html'
     ORD_TOKEN = "60478fcdaa2c427aa797a747c75a88b2" 
 
-    # 1. ДЕЛАЕМ МЕТОД GET ТОЖЕ АСИНХРОННЫМ!
     async def get(self, request):
-        # Преобразуем синхронные запросы к БД в асинхронные списки
         advertisers = await sync_to_async(list)(SavedContractor.objects.filter(role='advertiser'))
         bloggers = await sync_to_async(list)(SavedContractor.objects.filter(role='blogger'))
         integrations = await sync_to_async(list)(EridIntegration.objects.all())
@@ -1237,9 +1235,9 @@ class EridManagementView(View):
             'integrations': integrations,
             'today_date': timezone.now().date().isoformat()
         }
-        return render(request, self.template_name, context)
+        # Обертываем render в sync_to_async, чтобы контекст-процессоры (авторизация, сессии) читали БД без ошибок
+        return await sync_to_async(render)(request, self.template_name, context)
 
-    # 2. МЕТОД POST (ОСТАЕТСЯ АСИНХРОННЫМ)
     async def post(self, request):
         ord_service = VKORDService(token=self.ORD_TOKEN)
         
@@ -1339,7 +1337,6 @@ class EridManagementView(View):
                 amount=invoice_amount
             )
 
-            # Сохраняем успешный результат в историю на нашей стороне
             await sync_to_async(EridIntegration.objects.create)(
                 blogger_name=blog_name,
                 advertiser_name=adv_name,
@@ -1366,4 +1363,5 @@ class EridManagementView(View):
                 'integrations': integrations,
                 'today_date': timezone.now().date().isoformat()
             }
-            return render(request, self.template_name, context)
+            # Здесь вызываем render точно так же через await sync_to_async
+            return await sync_to_async(render)(request, self.template_name, context)

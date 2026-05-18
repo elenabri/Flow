@@ -21,11 +21,17 @@ async def send_telegram_message(recipient_tg_id, title, text):
             return await response.json()
 
 
+import aiohttp
+import logging
+import uuid
+
+logger = logging.getLogger(__name__)
+
 class VKORDService:
-    """Сервис для прямой асинхронной интеграции TubeFlow с API ОРД VK"""
+    """Сервис для интеграции с API ОРД VK по официальной спецификации"""
     
-    # Правильный базовый URL для песочницы ОРД VK
-    BASE_URL = "https://sandbox.ord.vk.com/api/v1" 
+    # Точный базовый URL для песочницы из примера документации
+    BASE_URL = "https://api-sandbox.ord.vk.com/v1" 
     
     def __init__(self, token):
         self.token = token
@@ -35,21 +41,27 @@ class VKORDService:
         }
 
     async def create_person(self, data):
-        """Регистрация контрагента (Рекламодателя или Блогера)"""
-        # Эндпоинт должен быть во множественном числе: persons/
-        url = f"{self.BASE_URL}/persons/"
+        """Регистрация контрагента через метод PUT по спецификации ОРД VK"""
+        external_id = data.pop("external_id", None) or f"per_{uuid.uuid4().hex[:10]}"
         
-        # Передаем автоматически генерируемый external_id, если его нет
-        if "external_id" not in data:
-            data["external_id"] = f"per_{uuid.uuid4().hex[:10]}"
+        # URL теперь содержит external_id на конце
+        url = f"{self.BASE_URL}/person/{external_id}"
+        
+        logger.info(f"Отправка PUT-запроса в ОРД VK на URL: {url} с телом: {data}")
 
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=data, headers=self.headers) as response:
+            async with session.put(url, json=data, headers=self.headers) as response:
                 resp_text = await response.text()
-                if response.status == 200:
-                    resp_json = await response.json()
-                    return resp_json.get("external_id") or data["external_id"]
-                raise Exception(f"Ошибка ОРД VK при создании контрагента (Status {response.status}): {resp_text}")
+                
+                # По спецификации успешный ответ при создании — 201 Created или 200 OK
+                if response.status in [200, 201]:
+                    logger.info(f"Контрагент успешно сохранен в ОРД. ID: {external_id}")
+                    return external_id
+                
+                raise Exception(
+                    f"Ошибка ОРД VK при создании контрагента (Status {response.status}). "
+                    f"Отправлено: {data}. Ответ ОРД: {resp_text}"
+                )
 
     async def create_pad(self, blogger_external_id, channel_url, channel_name):
         """Регистрация площадки (YouTube-канала)"""

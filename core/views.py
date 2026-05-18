@@ -1216,7 +1216,7 @@ from django.utils import timezone
 from .models import SavedContractor, EridIntegration
 from .services import VKORDService  
 import logging
-from asgiref.sync import sync_to_async  # Обязательно для работы ORM в асинхронных views
+from asgiref.sync import sync_to_async  # Для безопасного извлечения данных из БД
 
 logger = logging.getLogger(__name__)
 
@@ -1224,16 +1224,22 @@ class EridManagementView(View):
     template_name = 'erid_form.html'
     ORD_TOKEN = "60478fcdaa2c427aa797a747c75a88b2" 
 
-    def get(self, request):
+    # 1. ДЕЛАЕМ МЕТОД GET ТОЖЕ АСИНХРОННЫМ!
+    async def get(self, request):
+        # Преобразуем синхронные запросы к БД в асинхронные списки
+        advertisers = await sync_to_async(list)(SavedContractor.objects.filter(role='advertiser'))
+        bloggers = await sync_to_async(list)(SavedContractor.objects.filter(role='blogger'))
+        integrations = await sync_to_async(list)(EridIntegration.objects.all())
+        
         context = {
-            'advertisers': SavedContractor.objects.filter(role='advertiser'),
-            'bloggers': SavedContractor.objects.filter(role='blogger'),
-            'integrations': EridIntegration.objects.all(),
+            'advertisers': advertisers,
+            'bloggers': bloggers,
+            'integrations': integrations,
             'today_date': timezone.now().date().isoformat()
         }
         return render(request, self.template_name, context)
 
-    # Делаем метод асинхронным!
+    # 2. МЕТОД POST (ОСТАЕТСЯ АСИНХРОННЫМ)
     async def post(self, request):
         ord_service = VKORDService(token=self.ORD_TOKEN)
         
@@ -1249,10 +1255,9 @@ class EridManagementView(View):
                     "phone": request.POST.get('adv_phone'),
                     "country_code": request.POST.get('adv_country'),
                 }
-                # Добавляем await для асинхронного вызова API ОРД
                 adv_ext_id = await ord_service.create_person(adv_data)
+                logger.info(f"Успешно создан рекламодатель в ОРД. ID: {adv_ext_id}")
                 
-                # Обертываем создание записи в БД в sync_to_async
                 await sync_to_async(SavedContractor.objects.create)(
                     external_id=adv_ext_id,
                     name=adv_data["name"],
@@ -1277,6 +1282,8 @@ class EridManagementView(View):
                     "country_code": request.POST.get('blog_country'),
                 }
                 blog_ext_id = await ord_service.create_person(blog_data)
+                logger.info(f"Успешно создан блогер в ОРД. ID: {blog_ext_id}")
+                
                 await sync_to_async(SavedContractor.objects.create)(
                     external_id=blog_ext_id,
                     name=blog_data["name"],
@@ -1290,19 +1297,17 @@ class EridManagementView(View):
                 blog_name = contractor.name
 
             channel_url = request.POST.get('channel_url')
-            # Добавляем await
             await ord_service.create_pad(blogger_external_id=blog_ext_id, channel_url=channel_url, channel_name=blog_name)
 
             # --- ЛОГИКА 3: ДОГОВОР ---
-            # Добавляем await
             contract_ext_id = await ord_service.create_contract(advertiser_ext_id=adv_ext_id, blogger_ext_id=blog_ext_id)
+            logger.info(f"Договор зарегистрирован в ОРД. ID: {contract_ext_id}")
 
             # --- ЛОГИКА 4: МЕДИАФАЙЛ (ВИДЕО) ---
             video_file = request.FILES.get('video_file')
             if not video_file:
                 raise ValueError("Файл видео рекламы обязателен для загрузки.")
             
-            # Добавляем await
             media_external_id = await ord_service.upload_media(video_file)
 
             # --- ЛОГИКА 5: КРЕАТИВ И ПОЛУЧЕНИЕ ERID ---
@@ -1314,7 +1319,6 @@ class EridManagementView(View):
             if not target_urls:
                 target_urls = [channel_url]
 
-            # Добавляем await
             erid = await ord_service.create_creative(
                 contract_ext_id=contract_ext_id,
                 channel_name=blog_name,
@@ -1323,19 +1327,19 @@ class EridManagementView(View):
                 media_external_id=media_external_id,
                 target_urls=target_urls
             )
+            logger.info(f"Получен ERID от ВК ОРД: {erid}")
 
             # --- ЛОГИКА 6: БУХГАЛТЕРСКИЙ СЧЕТ ---
             invoice_number = request.POST.get('invoice_number')
             invoice_amount = float(request.POST.get('invoice_amount', 0))
             
-            # Добавляем await
             await ord_service.create_invoice(
                 contract_ext_id=contract_ext_id,
                 invoice_number=invoice_number,
                 amount=invoice_amount
             )
 
-            # Сохраняем в историю интеграций
+            # Сохраняем успешный результат в историю на нашей стороне
             await sync_to_async(EridIntegration.objects.create)(
                 blogger_name=blog_name,
                 advertiser_name=adv_name,
@@ -1349,15 +1353,14 @@ class EridManagementView(View):
             return redirect(request.path_info)
 
         except Exception as e:
-            logger.error(f"Ошибка при работе с ОРД VK: {str(e)}")
+            logger.error(f"Ошибка при работе с ОРД VK: {str(e)}", exc_info=True)
             
-            # Переводим синхронные QuerySet в списки для безопасной передачи в асинхронный контекст
             advs = await sync_to_async(list)(SavedContractor.objects.filter(role='advertiser'))
             blogs = await sync_to_async(list)(SavedContractor.objects.filter(role='blogger'))
             integrations = await sync_to_async(list)(EridIntegration.objects.all())
             
             context = {
-                'error_message': f"Произошла ошибка: {str(e)}",
+                'error_message': f"Произошла ошибка при интеграции с ОРД: {str(e)}",
                 'advertisers': advs,
                 'bloggers': blogs,
                 'integrations': integrations,

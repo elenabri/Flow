@@ -81,26 +81,25 @@ class VKORDService:
                 resp_text = await response.text()
                 raise Exception(f"Ошибка ОРД VK при регистрации площадки: {resp_text}")
 
-    async def create_contract(self, advertiser_ext_id, blogger_ext_id):
-        """Создание договора между Рекламодателем и Блогером"""
-        contract_ext_id = f"cnt_{uuid.uuid4().hex[:10]}"
-        # Эндпоинт: contracts/
-        url = f"{self.BASE_URL}/contracts/"
-        payload = {
-            "external_id": contract_ext_id,
-            "client_external_id": advertiser_ext_id,
-            "contractor_external_id": blogger_ext_id,
-            "type": "contract",
-            "subject_type": "distribution", 
-            "number": f"ДГ-{uuid.uuid4().hex[:5].upper()}",
-            "date": uuid.uuid4().hex[:8] # В реальном API может потребоваться валидная дата, но для теста сойдет строка
-        }
+    async def create_contract(self, contract_ext_id, payload):
+        """Создание договора оказания услуг методом PUT по спецификации ОРД VK"""
+        # Идентификатор передается в URL
+        url = f"{self.BASE_URL}/contract/{contract_ext_id}"
+        
+        logger.info(f"Отправка PUT-запроса договора в ОРД VK на URL: {url} с телом: {payload}")
+
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=self.headers) as response:
-                if response.status in [200, 201]:
-                    return contract_ext_id
+            async with session.put(url, json=payload, headers=self.headers) as response:
                 resp_text = await response.text()
-                raise Exception(f"Ошибка ОРД VK при создании договора: {resp_text}")
+                
+                if response.status in [200, 201]:
+                    logger.info(f"Договор успешно зарегистрирован в ОРД. ID: {contract_ext_id}")
+                    return contract_ext_id
+                
+                raise Exception(
+                    f"Ошибка ОРД VK при создании договора (Status {response.status}). "
+                    f"Отправлено: {payload}. Ответ ОРД: {resp_text}"
+                )
 
     async def upload_media(self, file_object):
         """Загрузка ролика методом PUT"""

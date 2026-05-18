@@ -1210,14 +1210,14 @@ def delete_integration(request, item_id):
         integration.delete()
     return redirect('core:integration_list')
 
+import logging
+import uuid
 from django.shortcuts import render, redirect
 from django.views import View
 from django.utils import timezone
+from asgiref.sync import sync_to_async
 from .models import SavedContractor, EridIntegration
 from .services import VKORDService  
-import logging
-from asgiref.sync import sync_to_async
-import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -1236,13 +1236,15 @@ class EridManagementView(View):
             'integrations': integrations,
             'today_date': timezone.now().date().isoformat()
         }
-        # Обертываем render в sync_to_async, чтобы контекст-процессоры (авторизация, сессии) читали БД без ошибок
         return await sync_to_async(render)(request, self.template_name, context)
 
     async def post(self, request):
         ord_service = VKORDService(token=self.ORD_TOKEN)
         
         try:
+            # Сразу извлекаем URL канала/площадки, чтобы он был доступен во всех логиках
+            channel_url = request.POST.get('channel_url', '').strip() or "https://youtube.com"
+
             # --- ЛОГИКА 1: РЕКЛАМОДАТЕЛЬ ---
             adv_select = request.POST.get('advertiser_select')
             if adv_select == 'new':
@@ -1251,7 +1253,6 @@ class EridManagementView(View):
                 
                 adv_ext_id = f"adv_{uuid.uuid4().hex[:10]}"
                 
-                # Получаем телефон и проверяем на пустоту
                 raw_adv_phone = request.POST.get('adv_phone', '').strip()
                 adv_phone = raw_adv_phone if raw_adv_phone else "+79991234567"
                 
@@ -1262,12 +1263,24 @@ class EridManagementView(View):
                     "juridical_details": {
                         "type": "foreign_physical" if request.POST.get('adv_citizenship') == 'foreign' else ord_type,
                         "inn": "".join([c for c in request.POST.get('adv_inn', '') if c.isdigit()]),
-                        "phone": adv_phone  # Теперь здесь гарантированно не будет пустой строки
+                        "phone": adv_phone 
                     }
                 }
                 
                 adv_ext_id = await ord_service.create_person(adv_data)
-                # ... дальше ваш код сохранения в базу без изменений ...
+                
+                await sync_to_async(SavedContractor.objects.create)(
+                    external_id=adv_ext_id,
+                    name=adv_data["name"],
+                    inn=adv_data["juridical_details"]["inn"],
+                    role='advertiser'
+                )
+                adv_name = adv_data["name"]
+            else:
+                # Возвращаем ветку Использования существующего рекламодателя
+                adv_ext_id = adv_select
+                contractor = await sync_to_async(SavedContractor.objects.get)(external_id=adv_ext_id)
+                adv_name = contractor.name
 
             # --- ЛОГИКА 2: БЛОГЕР ---
             blog_select = request.POST.get('blogger_select')
@@ -1283,7 +1296,7 @@ class EridManagementView(View):
                 blog_data = {
                     "external_id": blog_ext_id,
                     "name": request.POST.get('blog_name'),
-                    "roles": ["publisher"],  # <-- ИСПРАВЛЕНО: вместо "contractor" ставим "publisher"
+                    "roles": ["publisher"], 
                     "juridical_details": {
                         "type": "foreign_physical" if request.POST.get('blog_citizenship') == 'foreign' else ord_type,
                         "inn": "".join([c for c in request.POST.get('blog_inn', '') if c.isdigit()]),
@@ -1300,29 +1313,28 @@ class EridManagementView(View):
                     role='blogger'
                 )
                 blog_name = blog_data["name"]
+            else:
+                # Возвращаем ветку Использования существующего блогера
+                blog_ext_id = blog_select
+                contractor = await sync_to_async(SavedContractor.objects.get)(external_id=blog_ext_id)
+                blog_name = contractor.name
 
             # --- ЛОГИКА 3: ДОГОВОР ---
-            # Генерируем уникальный внешний ID для договора
             contract_ext_id = f"cnt_{uuid.uuid4().hex[:10]}"
-            
-            # Формируем сегодняшнюю дату в формате YYYY-MM-DD и генерируем случайный номер договора
             current_date_str = timezone.now().date().isoformat()
             random_serial = f"TF-{uuid.uuid4().hex[:5].upper()}"
 
             contract_payload = {
-                "type": "service",                      # Строго по спецификации ОРД VK
-                "client_external_id": adv_ext_id,       # ID рекламодателя
-                "contractor_external_id": blog_ext_id,  # ID блогера (издателя)
-                "date": current_date_str,                # Обязательная дата договора
-                "serial": random_serial,                 # Обязательный номер договора
-                "subject_type": "org_distribution",     # Организация распространения рекламы
-                "flags": [
-                    "vat_included"                       # Флаг НДС (опционально, но пусть будет для валидности)
-                ],
-                "amount": "0.0"                          # Можно передать нулевую сумму, если она определится актом
+                "type": "service",                      
+                "client_external_id": adv_ext_id,       
+                "contractor_external_id": blog_ext_id,  
+                "date": current_date_str,                
+                "serial": random_serial,                 
+                "subject_type": "org_distribution",     
+                "flags": ["vat_included"],
+                "amount": "0.0"                          
             }
 
-            # Вызываем наш обновленный метод, передавая сгенерированный ID и тело
             contract_ext_id = await ord_service.create_contract(contract_ext_id, contract_payload)
             logger.info(f"Договор зарегистрирован в ОРД. ID: {contract_ext_id}")
 
@@ -1334,8 +1346,8 @@ class EridManagementView(View):
             media_external_id = await ord_service.upload_media(video_file)
 
             # --- ЛОГИКА 5: КРЕАТИВ И ПОЛУЧЕНИЕ ERID ---
-            product_name = request.POST.get('product_name')
-            kktu_code = request.POST.get('kktu_code')
+            product_name = request.POST.get('product_name', 'Продукт')
+            kktu_code = request.POST.get('kktu_code', '01')
             
             target_urls_raw = request.POST.get('target_urls', '')
             target_urls = [url.strip() for url in target_urls_raw.split('\n') if url.strip()]
@@ -1353,8 +1365,11 @@ class EridManagementView(View):
             logger.info(f"Получен ERID от ВК ОРД: {erid}")
 
             # --- ЛОГИКА 6: БУХГАЛТЕРСКИЙ СЧЕТ ---
-            invoice_number = request.POST.get('invoice_number')
-            invoice_amount = float(request.POST.get('invoice_amount', 0))
+            invoice_number = request.POST.get('invoice_number', f"INV-{uuid.uuid4().hex[:5].upper()}")
+            try:
+                invoice_amount = float(request.POST.get('invoice_amount', 0))
+            except (ValueError, TypeError):
+                invoice_amount = 0.0
             
             await ord_service.create_invoice(
                 contract_ext_id=contract_ext_id,
@@ -1388,5 +1403,4 @@ class EridManagementView(View):
                 'integrations': integrations,
                 'today_date': timezone.now().date().isoformat()
             }
-            # Здесь вызываем render точно так же через await sync_to_async
             return await sync_to_async(render)(request, self.template_name, context)

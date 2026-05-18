@@ -1214,18 +1214,17 @@ from django.shortcuts import render, redirect
 from django.views import View
 from django.utils import timezone
 from .models import SavedContractor, EridIntegration
-from .services import VKORDService  # Подключаем созданный ранее класс API
+from .services import VKORDService  
 import logging
+from asgiref.sync import sync_to_async  # Обязательно для работы ORM в асинхронных views
 
 logger = logging.getLogger(__name__)
 
 class EridManagementView(View):
     template_name = 'erid_form.html'
-    # Токен вашего кабинета ОРД VK (лучше вынести в settings.py или .env)
     ORD_TOKEN = "60478fcdaa2c427aa797a747c75a88b2" 
 
     def get(self, request):
-        # Собираем данные для отображения страницы
         context = {
             'advertisers': SavedContractor.objects.filter(role='advertiser'),
             'bloggers': SavedContractor.objects.filter(role='blogger'),
@@ -1234,14 +1233,14 @@ class EridManagementView(View):
         }
         return render(request, self.template_name, context)
 
-    def post(self, request):
+    # Делаем метод асинхронным!
+    async def post(self, request):
         ord_service = VKORDService(token=self.ORD_TOKEN)
         
         try:
             # --- ЛОГИКА 1: РЕКЛАМОДАТЕЛЬ ---
             adv_select = request.POST.get('advertiser_select')
             if adv_select == 'new':
-                # Собираем данные нового рекламодателя из формы
                 adv_data = {
                     "is_foreign": request.POST.get('adv_citizenship') == 'foreign',
                     "type": request.POST.get('adv_type'),
@@ -1250,10 +1249,11 @@ class EridManagementView(View):
                     "phone": request.POST.get('adv_phone'),
                     "country_code": request.POST.get('adv_country'),
                 }
-                # Регистрируем в ОРД VK API
-                adv_ext_id = ord_service.create_person(adv_data)
-                # Сохраняем в локальную БД Django, чтобы использовать повторно
-                SavedContractor.objects.create(
+                # Добавляем await для асинхронного вызова API ОРД
+                adv_ext_id = await ord_service.create_person(adv_data)
+                
+                # Обертываем создание записи в БД в sync_to_async
+                await sync_to_async(SavedContractor.objects.create)(
                     external_id=adv_ext_id,
                     name=adv_data["name"],
                     inn=adv_data["inn"],
@@ -1262,7 +1262,8 @@ class EridManagementView(View):
                 adv_name = adv_data["name"]
             else:
                 adv_ext_id = adv_select
-                adv_name = SavedContractor.objects.get(external_id=adv_ext_id).name
+                contractor = await sync_to_async(SavedContractor.objects.get)(external_id=adv_ext_id)
+                adv_name = contractor.name
 
             # --- ЛОГИКА 2: БЛОГЕР И ПЛОЩАДКА ---
             blog_select = request.POST.get('blogger_select')
@@ -1275,8 +1276,8 @@ class EridManagementView(View):
                     "phone": request.POST.get('blog_phone'),
                     "country_code": request.POST.get('blog_country'),
                 }
-                blog_ext_id = ord_service.create_person(blog_data)
-                SavedContractor.objects.create(
+                blog_ext_id = await ord_service.create_person(blog_data)
+                await sync_to_async(SavedContractor.objects.create)(
                     external_id=blog_ext_id,
                     name=blog_data["name"],
                     inn=blog_data["inn"],
@@ -1285,37 +1286,36 @@ class EridManagementView(View):
                 blog_name = blog_data["name"]
             else:
                 blog_ext_id = blog_select
-                blog_name = SavedContractor.objects.get(external_id=blog_ext_id).name
+                contractor = await sync_to_async(SavedContractor.objects.get)(external_id=blog_ext_id)
+                blog_name = contractor.name
 
-            # Регистрируем YouTube площадку для этого блогера в ОРД VK
             channel_url = request.POST.get('channel_url')
-            # В качестве имени площадки берем имя блогера
-            ord_service.create_pad(blogger_external_id=blog_ext_id, channel_url=channel_url, channel_name=blog_name)
+            # Добавляем await
+            await ord_service.create_pad(blogger_external_id=blog_ext_id, channel_url=channel_url, channel_name=blog_name)
 
             # --- ЛОГИКА 3: ДОГОВОР ---
-            # Автоматически создаем связку-договор между ними
-            contract_ext_id = ord_service.create_contract(advertiser_ext_id=adv_ext_id, blogger_ext_id=blog_ext_id)
+            # Добавляем await
+            contract_ext_id = await ord_service.create_contract(advertiser_ext_id=adv_ext_id, blogger_ext_id=blog_ext_id)
 
             # --- ЛОГИКА 4: МЕДИАФАЙЛ (ВИДЕО) ---
             video_file = request.FILES.get('video_file')
             if not video_file:
                 raise ValueError("Файл видео рекламы обязателен для загрузки.")
             
-            # Отправляем бинарный файл методом PUT в ОРД VK
-            media_external_id = ord_service.upload_media(video_file)
+            # Добавляем await
+            media_external_id = await ord_service.upload_media(video_file)
 
             # --- ЛОГИКА 5: КРЕАТИВ И ПОЛУЧЕНИЕ ERID ---
             product_name = request.POST.get('product_name')
             kktu_code = request.POST.get('kktu_code')
             
-            # Парсим ссылки на товары, если они введены
             target_urls_raw = request.POST.get('target_urls', '')
             target_urls = [url.strip() for url in target_urls_raw.split('\n') if url.strip()]
             if not target_urls:
-                target_urls = [channel_url] # Если пустой список, ОРД требует хотя бы ссылку площадки
+                target_urls = [channel_url]
 
-            # Запрашиваем токен
-            erid = ord_service.create_creative(
+            # Добавляем await
+            erid = await ord_service.create_creative(
                 contract_ext_id=contract_ext_id,
                 channel_name=blog_name,
                 product_name=product_name,
@@ -1328,15 +1328,15 @@ class EridManagementView(View):
             invoice_number = request.POST.get('invoice_number')
             invoice_amount = float(request.POST.get('invoice_amount', 0))
             
-            # Регистрируем первичку в ОРД
-            ord_service.create_invoice(
+            # Добавляем await
+            await ord_service.create_invoice(
                 contract_ext_id=contract_ext_id,
                 invoice_number=invoice_number,
                 amount=invoice_amount
             )
 
-            # Сохраняем успешный результат в историю на нашей стороне
-            EridIntegration.objects.create(
+            # Сохраняем в историю интеграций
+            await sync_to_async(EridIntegration.objects.create)(
                 blogger_name=blog_name,
                 advertiser_name=adv_name,
                 channel_url=channel_url,
@@ -1346,16 +1346,21 @@ class EridManagementView(View):
                 erid=erid
             )
 
-            return redirect(request.path_info) # Перезагружаем страницу методом GET
+            return redirect(request.path_info)
 
         except Exception as e:
             logger.error(f"Ошибка при работе с ОРД VK: {str(e)}")
-            # Для отладки выведем ошибку прямо на экран (в продакшене лучше выводить через Django messages)
+            
+            # Переводим синхронные QuerySet в списки для безопасной передачи в асинхронный контекст
+            advs = await sync_to_async(list)(SavedContractor.objects.filter(role='advertiser'))
+            blogs = await sync_to_async(list)(SavedContractor.objects.filter(role='blogger'))
+            integrations = await sync_to_async(list)(EridIntegration.objects.all())
+            
             context = {
                 'error_message': f"Произошла ошибка: {str(e)}",
-                'advertisers': SavedContractor.objects.filter(role='advertiser'),
-                'bloggers': SavedContractor.objects.filter(role='blogger'),
-                'integrations': EridIntegration.objects.all(),
+                'advertisers': advs,
+                'bloggers': blogs,
+                'integrations': integrations,
                 'today_date': timezone.now().date().isoformat()
             }
             return render(request, self.template_name, context)

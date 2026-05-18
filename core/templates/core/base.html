@@ -180,6 +180,12 @@
                                 <a href="{% url 'core:edit_profile' %}" class="nav-link {% if url_name == 'edit_profile' %}active{% endif %}">Мои цены</a>
                             </li>
                         {% endif %}
+                    <!-- ДОБАВЛЯЕМ СЮДА ПУНКТ МАРКИРОВКИ -->
+                        <li class="nav-item">
+                            <a href="{% url 'core:erid_management' %}" class="nav-link {% if url_name == 'erid_management' %}active{% endif %}">
+                                <i class="bi bi-qr-code text-accent d-lg-none me-2"></i>Маркировка (ERID)
+                            </a>
+                        </li>
 
                         <li class="nav-item">
                             <a href="{% url 'core:integration_list' %}" class="nav-link {% if 'integration' in url_name %}active{% endif %}">Моя реклама</a>

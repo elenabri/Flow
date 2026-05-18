@@ -1347,21 +1347,32 @@ class EridManagementView(View):
 
             # --- ЛОГИКА 5: КРЕАТИВ И ПОЛУЧЕНИЕ ERID ---
             product_name = request.POST.get('product_name', 'Продукт')
-            kktu_code = request.POST.get('kktu_code', '01')
+            kktu_code = request.POST.get('kktu_code', '30.15.1')  # По умолчанию прочие товары/услуги
             
             target_urls_raw = request.POST.get('target_urls', '')
             target_urls = [url.strip() for url in target_urls_raw.split('\n') if url.strip()]
             if not target_urls:
                 target_urls = [channel_url]
 
-            erid = await ord_service.create_creative(
-                contract_ext_id=contract_ext_id,
-                channel_name=blog_name,
-                product_name=product_name,
-                kktu_code=kktu_code,
-                media_external_id=media_external_id,
-                target_urls=target_urls
-            )
+            # Генерируем уникальный внешний ID для самого креатива
+            creative_ext_id = f"crv_{uuid.uuid4().hex[:10]}"
+
+            # Формируем payload строго по спецификации ОРД VK v3
+            creative_payload = {
+                "contract_external_ids": [contract_ext_id],  # Массив ID договоров (v3)
+                "kktus": [kktu_code],                         # Массив кодов ККТУ (v3)
+                "name": f"Интеграция у блогера {blog_name}",
+                "brand": adv_name,                            # Извлекается из ЛОГИКИ 1
+                "category": f"Реклама товара {product_name}",
+                "description": f"Размещение рекламного видеоролика на канале.",
+                "pay_type": "cpm",                            # Обязательно (cpm или cpc)
+                "form": "banner",                             # Обязательно (banner подходит для видеопостов)
+                "target_urls": target_urls,
+                "media_external_ids": [media_external_id]     # ID видеоролика из ЛОГИКИ 4
+            }
+
+            # Отправляем запрос в обновленный сервис v3
+            erid = await ord_service.create_creative(creative_ext_id, creative_payload)
             logger.info(f"Получен ERID от ВК ОРД: {erid}")
 
             # --- ЛОГИКА 6: БУХГАЛТЕРСКИЙ СЧЕТ ---

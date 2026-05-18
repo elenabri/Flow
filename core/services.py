@@ -150,22 +150,65 @@ class VKORDService:
                     f"Отправлено: {payload}. Ответ ОРД: {resp_text}"
                 )
 
-    async def create_invoice(self, contract_ext_id, invoice_number, amount):
-        """Регистрация акта/счета v1"""
+    async def create_invoice(self, invoice_number, date, date_start, date_end, amount_value, contract_ext_id, client_role="advertiser", contractor_role="agency", items=None):
+        """
+        Регистрация/обновление акта методом PUT по спецификации ОРД VK v3 
+        с последующим подтверждением готовности к отправке в ЕРИР.
+        """
         invoice_ext_id = f"inv_{uuid.uuid4().hex[:10]}"
-        # Акты/отчетность отправляются через v1 префикс
-        url = f"{self.BASE_URL}/v1/invoices/"
         
+        # Шаг 1: Формирование эндпоинта создания полного акта (v3)
+        url_put = f"{self.BASE_URL}/v3/invoice/{invoice_ext_id}"
+        
+        # Если детализация (items) не передана, формируем базовую разаллокацию по изначальному договору
+        if items is None:
+            items = [
+                {
+                    "contract_external_id": contract_ext_id,
+                    "amount": {
+                        "including_vat": str(amount_value),
+                        "vat_rate": "20",  # Укажите актуальную ставку НДС (например, 20, 10 или 0)
+                        "excluding_vat": str(round(float(amount_value) / 1.2, 2)),
+                        "vat": str(round(float(amount_value) - (float(amount_value) / 1.2), 2))
+                    }
+                }
+            ]
+
+        # Собираем структуру payload строго по спецификации v3
         payload = {
-            "external_id": invoice_ext_id,
             "contract_external_id": contract_ext_id,
-            "number": invoice_number,
-            "amount": amount,
-            "items": [{"contract_external_id": contract_ext_id, "amount": amount}]
+            "date": date,              # Формат: "YYYY-MM-DD"
+            "serial": str(invoice_number),
+            "date_start": date_start,  # Формат: "YYYY-MM-DD"
+            "date_end": date_end,      # Формат: "YYYY-MM-DD"
+            "amount": {
+                "services": {
+                    "including_vat": str(amount_value),
+                    "vat_rate": "20",
+                    "excluding_vat": str(round(float(amount_value) / 1.2, 2)),
+                    "vat": str(round(float(amount_value) - (float(amount_value) / 1.2), 2))
+                }
+            },
+            "client_role": client_role,
+            "contractor_role": contractor_role,
+            "items": items
         }
+
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=self.headers) as response:
-                if response.status in [200, 201]:
-                    return invoice_ext_id
+            # Отправка PUT запроса для сохранения черновика акта
+            logger.info(f"Отправка PUT-запроса акта в ОРД VK v3 на URL: {url_put}")
+            async with session.put(url_put, json=payload, headers=self.headers) as response:
                 resp_text = await response.text()
-                raise Exception(f"Ошибка ОРД VK при привязке акта: {resp_text}")
+                if response.status not in [200, 201]:
+                    raise Exception(f"Ошибка ОРД VK при сохранении акта (Status {response.status}): {resp_text}")
+            
+            # Шаг 2: Сигнал готовности отправки акта в ЕРИР (v2 /ready) — ОБЯЗАТЕЛЬНО для API актов
+            url_ready = f"{self.BASE_URL}/v2/invoice/{invoice_ext_id}/ready"
+            logger.info(f"Отправка POST-запроса готовности акта в ЕРИР на URL: {url_ready}")
+            async with session.post(url_ready, headers=self.headers) as response_ready:
+                resp_ready_text = await response_ready.text()
+                if response_ready.status in [200, 201]:
+                    logger.info(f"Акт {invoice_ext_id} успешно зарегистрирован и отправлен в ЕРИР.")
+                    return invoice_ext_id
+                
+                raise Exception(f"Акт создан, но произошла ошибка при отправке /ready в ЕРИР: {resp_ready_text}")

@@ -1222,7 +1222,7 @@ logger = logging.getLogger(__name__)
 class EridManagementView(View):
     template_name = 'erid_form.html'
     # Токен вашего кабинета ОРД VK (лучше вынести в settings.py или .env)
-    ORD_TOKEN = "ВАШ_НАСТОЯЩИЙ_ТОКЕН_ОРД_ВК" 
+    ORD_TOKEN = "60478fcdaa2c427aa797a747c75a88b2" 
 
     def get(self, request):
         # Собираем данные для отображения страницы

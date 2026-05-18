@@ -4,15 +4,16 @@ from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
 from core import views  
-from core.views import telegram_webhook
-from django.urls import path
-from core.views import EridManagementView
+from core.views import telegram_webhook, EridManagementView
 
-# Группируем все маршруты основного приложения с именем 'core'
+# Группируем все маршруты основного приложения с пространством имен 'core'
 core_patterns = ([
     path('', views.home, name='home'),
     path('register/', views.register, name='register'),
     path('dashboard/', views.dashboard, name='dashboard'),
+    
+    # Маркировка рекламы (Внутри пространства имен core)
+    path('erid/', EridManagementView.as_view(), name='erid_management'),
     
     # Объявления (Маркетплейс)
     path('marketplace/', views.marketplace, name='ad_list'), 
@@ -22,13 +23,13 @@ core_patterns = ([
     path('my-products/delete/<int:pk>/', views.delete_product, name='delete_product'),
     
     # Блогеры
-    path('bloggers/', views.blogger_list, name='blogger_list'), # Теперь ведет на правильный view
+    path('bloggers/', views.blogger_list, name='blogger_list'),
     path('blogger/<int:blogger_id>/', views.blogger_detail, name='blogger_detail'),
     path('blogger/profile/edit/', views.edit_profile, name='edit_profile'), 
     
     # Взаимодействие и Интеграции
     path('integration/', views.integration_list, name='integration_list'),
-    path('integration/add/', views.add_integration, name='add_integration'), # Этого имени не хватает!
+    path('integration/add/', views.add_integration, name='add_integration'),
     path('integration/delete/<int:item_id>/', views.delete_integration, name='delete_integration'),
     path('integration/update/<int:item_id>/', views.update_integration_views, name='update_views'),
     
@@ -50,8 +51,6 @@ core_patterns = ([
     path('api/connect-telegram/', views.connect_telegram_api, name='connect_telegram_api'),
     path('bulk-message-setup/', views.bulk_message_setup, name='bulk_message_setup'),
     path('update-profile/', views.update_profile, name='update_profile'),
-    
-    # Мы убрали дубликаты marketplace, которые были в конце списка
 ], 'core')
 
 urlpatterns = [
@@ -60,7 +59,7 @@ urlpatterns = [
     path('verify-email/<path:username>/', views.verify_email, name='verify_email'),
     path('profile/edit/', views.edit_profile, name='edit_profile'),
     
-    # Основные пути приложения
+    # Основные пути приложения (включают в себя erid)
     path('', include(core_patterns)),
 
     # Встроенная авторизация
@@ -86,8 +85,6 @@ urlpatterns = [
     ), name='password_reset_complete'),
     
     path('tg-webhook-8275098246/', telegram_webhook),
-
-    path('erid/', EridManagementView.as_view(), name='erid_management'),
 ]
 
 # Медиа и статика

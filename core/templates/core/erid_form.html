@@ -393,30 +393,46 @@
         }
     }
 
-    function deleteSavedContractor(prefix) {
-        const select = document.getElementById(prefix + 'Select');
-        const selectedId = select.value;
-        if (!selectedId || selectedId === 'new') {
-            alert('Пожалуйста, выберите сохраненного контрагента.');
-            return;
-        }
-        
-        const typeName = prefix === 'adv' ? 'рекламодателя' : 'блогера';
-        if (!confirm(`Удалить ${typeName}?`)) return;
+    async function deleteSavedContractor(prefix) {
+    const select = document.getElementById(prefix + 'Select');
+    const selectedId = select.value;
+    
+    if (!selectedId || selectedId === 'new') {
+        alert('Пожалуйста, выберите сохраненного контрагента для удаления.');
+        return;
+    }
+    
+    const typeName = prefix === 'adv' ? 'рекламодателя' : 'блогера';
+    if (!confirm(`Вы уверены, что хотите удалить ${typeName}?`)) return;
 
-        fetch("{% url 'core:delete_contractor' '0' %}".replace('0', selectedId), {
+    try {
+        const response = await fetch("{% url 'core:delete_contractor' '0' %}".replace('0', selectedId), {
             method: 'POST',
-            headers: {'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json'}
-        }).then(res => {
-            if (res.ok) {
-                select.querySelector(`option[value="${selectedId}"]`).remove();
-                select.value = 'new';
-                updatePartyFields(prefix);
-                alert('Успешно удалено.');
-            } else {
-                alert('Ошибка сервера.');
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
             }
         });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Удаляем опцию из select
+            const option = select.querySelector(`option[value="${selectedId}"]`);
+            if (option) option.remove();
+            
+            // Сбрасываем выбор
+            select.value = 'new';
+            updatePartyFields(prefix);
+            alert('Контрагент успешно удален.');
+        } else {
+            // Выводим ошибку от сервера, если есть
+            alert('Ошибка: ' + (data.error || 'Не удалось удалить контрагента.'));
+        }
+    } catch (error) {
+        console.error('Network error:', error);
+        alert('Произошла ошибка сети. Попробуйте снова.');
     }
+}
 </script>
 {% endblock %}

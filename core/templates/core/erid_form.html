@@ -4,7 +4,7 @@
 
 {% block extra_css %}
 <style>
-    /* Локальные стили, дополняющие дизайн Tubeflow */
+    /* Единый стиль интерфейса TubeFlow */
     .erid-card { 
         border: 1px solid var(--mp-border); 
         border-radius: 12px; 
@@ -36,13 +36,25 @@
     .bg-custom-light {
         background-color: #f8fafc;
     }
+    /* Стили для кастомизации выпадающих списков под общий дизайн */
+    .form-select-custom {
+        border: 1px solid var(--mp-border);
+        border-radius: 6px;
+        background-color: #ffffff;
+        font-size: 0.9rem;
+        padding: 0.45rem 2.25rem 0.45rem 0.75rem;
+    }
+    .form-select-custom:focus {
+        border-color: var(--mp-accent);
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
 </style>
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid px-0">
     
-    <!-- Отображение ошибок валидации ОРД VK -->
     {% if error_message %}
     <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4" role="alert">
         <i class="bi bi-exclamation-octagon-fill me-2"></i> {{ error_message }}
@@ -51,7 +63,6 @@
     {% endif %}
 
     <div class="row g-4">
-        <!-- ЛЕВАЯ КОЛОНКА: ФОРМА РЕГИСТРАЦИИ -->
         <div class="col-xl-5 col-lg-6">
             <div class="card erid-card p-4 shadow-sm">
                 <h5 class="fw-bold mb-4" style="color: var(--mp-text-main);">
@@ -61,10 +72,9 @@
                 <form action="" method="POST" enctype="multipart/form-data">
                     {% csrf_token %}
                     
-                    <!-- БЛОК: РЕКЛАМОДАТЕЛЬ -->
                     <div class="form-section-title">1. Рекламодатель</div>
                     <div class="mb-3">
-                        <select class="form-select mb-2 shadow-sm" id="advSelect" name="advertiser_select" onchange="togglePartyFields('adv')">
+                        <select class="form-select form-select-custom mb-2 shadow-sm" id="advSelect" name="advertiser_select" onchange="togglePartyFields('adv')">
                             <option value="">-- Выберите из сохраненных --</option>
                             {% for adv in advertisers %}
                                 <option value="{{ adv.external_id }}">{{ adv.name }} (ИНН: {{ adv.inn|default:"-" }})</option>
@@ -85,7 +95,7 @@
                             </div>
 
                             <div class="mb-2">
-                                <select class="form-select form-select-sm" name="adv_type" id="adv_type" onchange="toggleTypeFields('adv')">
+                                <select class="form-select form-select-sm form-select-custom" name="adv_type" id="adv_type" onchange="toggleTypeFields('adv')">
                                     <option value="ur">Юридическое лицо</option>
                                     <option value="fiz">Физическое лицо</option>
                                     <option value="ip" id="adv_ip_option">Индивидуальный предприниматель (ИП)</option>
@@ -99,10 +109,9 @@
                         </div>
                     </div>
 
-                    <!-- БЛОК: БЛОГЕР -->
                     <div class="form-section-title">2. Блогер и Площадка</div>
                     <div class="mb-3">
-                        <select class="form-select mb-2 shadow-sm" id="bloggerSelect" name="blogger_select" onchange="togglePartyFields('blog')">
+                        <select class="form-select form-select-custom mb-2 shadow-sm" id="bloggerSelect" name="blogger_select" onchange="togglePartyFields('blog')">
                             <option value="">-- Выберите из сохраненных --</option>
                             {% for blogger in bloggers %}
                                 <option value="{{ blogger.external_id }}">{{ blogger.name }}</option>
@@ -123,7 +132,7 @@
                             </div>
 
                             <div class="mb-2">
-                                <select class="form-select form-select-sm" name="blog_type" id="blog_type" onchange="toggleTypeFields('blog')">
+                                <select class="form-select form-select-sm form-select-custom" name="blog_type" id="blog_type" onchange="toggleTypeFields('blog')">
                                     <option value="ur">Юридическое лицо</option>
                                     <option value="fiz">Физическое лицо</option>
                                     <option value="ip" id="blog_ip_option">Индивидуальный предприниматель (ИП)</option>
@@ -141,28 +150,34 @@
                         </div>
                     </div>
 
-                    <!-- БЛОК: КРЕАТИВ С ВИДЕО -->
                     <div class="form-section-title">3. Данные Креатива (Ролика)</div>
-                    <div class="p-3 bg-white rounded border mb-3">
-                        <div class="mb-2">
+                    <div class="p-3 bg-white rounded border mb-4">
+                        <div class="mb-3">
                             <label class="form-label small fw-bold text-muted">Что рекламируем (Товар)</label>
                             <input type="text" class="form-control form-control-sm" name="product_name" required placeholder="Например: Термос Вкусневич 1л">
                         </div>
-                        <div class="mb-2">
+                        
+                        <div class="mb-3">
                             <label class="form-label small fw-bold text-muted">Категория товара (ККТУ)</label>
-                            <select class="form-select form-select-sm" name="kktu_code" required>
-                                <option value="30.15.1">Прочие товары и услуги (Код 30.15.1)</option>
-                                <option value="10.01.1">Продукты питания (Код 10.01.1)</option>
+                            <select class="form-select form-select-sm form-select-custom" name="kktu_code" id="kktuSelect" required>
+                                <option value="">-- Начните вводить код или название --</option>
+                                {% for kktu in kktu_list %}
+                                    <option value="{{ kktu.code }}">[{{ kktu.code }}] {{ kktu.name }}</option>
+                                {% Brass {% empty %}
+                                    <option value="30.15.1">Прочие товары и услуги (Код 30.15.1)</option>
+                                    <option value="10.01.1">Продукты питания (Код 10.01.1)</option>
+                                {% endfor %}
                             </select>
                         </div>
-                        <div class="mb-2">
+
+                        <div class="mb-3">
                             <label class="form-label small fw-bold text-muted">Период размещения</label>
                             <div class="row g-2">
                                 <div class="col">
-                                    <input type="date" class="form-control form-control-sm" name="date_start" value="{{ today_date }}">
+                                    <input type="date" class="form-control form-control-sm" name="date_start" id="date_start" value="{{ today_date }}">
                                 </div>
                                 <div class="col">
-                                    <select class="form-select form-select-sm" name="date_end_type" id="dateEndType" onchange="if(this.value==='date'){document.getElementById('dateEndInput').classList.remove('d-none')}else{document.getElementById('dateEndInput').classList.add('d-none')}">
+                                    <select class="form-select form-select-sm form-select-custom" name="date_end_type" id="dateEndType" onchange="if(this.value==='date'){document.getElementById('dateEndInput').classList.remove('d-none')}else{document.getElementById('dateEndInput').classList.add('d-none')}">
                                         <option value="infinity">Бессрочно</option>
                                         <option value="date">Указать дату окончания</option>
                                     </select>
@@ -170,7 +185,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="mb-2">
+                        <div class="mb-3">
                             <label class="form-label small fw-bold text-muted">Ссылки на товары (необязательно)</label>
                             <textarea class="form-control form-control-sm" name="target_urls" rows="2" placeholder="Каждая ссылка с новой строки"></textarea>
                         </div>
@@ -180,95 +195,6 @@
                         </div>
                     </div>
 
-                   <!-- ШАГ 4: ИНФОРМАЦИЯ О СЧЕТЕ -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-dark text-white d-flex align-items-center">
-        <span class="badge bg-primary me-2">Шаг 4</span>
-        <h5 class="mb-0">Информация о счете (акте) и отчетном периоде</h5>
-    </div>
-    <div class="card-body">
-        
-        <!-- Верхний ряд: Номер счета и дата составления -->
-        <div class="row g-3 mb-3">
-            <div class="col-md-6">
-                <label for="invoice_number" class="form-label font-weight-bold">Номер счета / акта <span class="text-danger">*</span></label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-file-earmark-binary"></i></span>
-                    <input type="text" name="invoice_number" id="invoice_number" class="form-control" placeholder="Например, АКТ-2026-05" required>
-                </div>
-                <div class="form-text">Официальный номер документа из вашей учетной системы.</div>
-            </div>
-            <div class="col-md-6">
-                <label for="invoice_date" class="form-label font-weight-bold">Дата выставления счета <span class="text-danger">*</span></label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
-                    <input type="date" name="invoice_date" id="invoice_date" class="form-control" required>
-                </div>
-            </div>
-        </div>
-
-        <!-- НОВЫЙ РЯД: Отчетный период (Период актирования) -->
-        <div class="row g-3 mb-3">
-            <div class="col-md-6">
-                <label for="period_start" class="form-label font-weight-bold">Период: Начало <span class="text-danger">*</span></label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-calendar-range"></i></span>
-                    <input type="date" name="period_start" id="period_start" class="form-control" required>
-                </div>
-                <div class="form-text">Дата начала оказания рекламных услуг.</div>
-            </div>
-            <div class="col-md-6">
-                <label for="period_end" class="form-label font-weight-bold">Период: Окончание <span class="text-danger">*</span></label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-calendar-range-fill"></i></span>
-                    <input type="date" name="period_end" id="period_end" class="form-control" required>
-                </div>
-                <div class="form-text">Дата завершения отчетного периода.</div>
-            </div>
-        </div>
-
-        <!-- НОВЫЙ РЯД: Финансовые данные -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-5">
-                <label for="invoice_amount" class="form-label font-weight-bold">Общая сумма счета <span class="text-danger">*</span></label>
-                <div class="input-group">
-                    <input type="number" step="0.01" min="0" name="invoice_amount" id="invoice_amount" class="form-control" placeholder="0.00" required>
-                    <span class="input-group-text">₽</span>
-                </div>
-                <div class="form-text">Итоговая сумма по документу.</div>
-            </div>
-            <div class="col-md-5">
-                <label for="allocated_amount" class="form-label font-weight-bold">Сумма за рекламу (выделенная)</label>
-                <div class="input-group">
-                    <input type="number" step="0.01" min="0" name="allocated_amount" id="allocated_amount" class="form-control" placeholder="0.00">
-                    <span class="input-group-text">₽</span>
-                </div>
-                <div class="form-text">Заполнять, если в счете есть другие услуги кроме рекламы.</div>
-            </div>
-            <div class="col-md-2 d-flex align-items-center justify-content-start pt-3">
-                <div class="form-check form-switch mt-2">
-                    <input class="form-check-input" type="checkbox" role="switch" name="is_vat" id="is_vat" checked>
-                    <label class="form-check-label font-weight-bold" for="is_vat">Включая НДС</label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Интерактивное превью TubeFlow -->
-        <div class="p-3 bg-light rounded border">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="text-muted small fw-bold"><i class="bi bi-eye me-1"></i> Сэмпл итогового документа для проверки (TubeFlow)</span>
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleInvoicePreview()">
-                    <i class="bi bi-fullscreen"></i> Показать образец
-                </button>
-            </div>
-            <div class="text-secondary small">
-                Система автоматически свяжет этот счет с генерируемым креативом и передаст данные в VK ОРД. Перед отправкой убедитесь, что даты отчетного периода входят в рамки основного договора.
-            </div>
-        </div>
-
-    </div>
-</div>
-
                     <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm" style="border-radius: 8px;">
                         <i class="bi bi-cloud-arrow-up-fill me-2"></i>Сгенерировать ERID
                     </button>
@@ -276,7 +202,6 @@
             </div>
         </div>
 
-        <!-- ПРАВАЯ КОЛОНКА: ТАБЛИЦА С ТОКЕНАМИ -->
         <div class="col-xl-7 col-lg-6">
             <div class="card erid-card overflow-hidden shadow-sm">
                 <div class="card-header bg-white py-3 border-bottom">
@@ -289,7 +214,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="ps-4" style="font-size: 13px; color: var(--mp-text-muted);">Интеграция / Ролик</th>
-                                <th style="font-size: 13px; color: var(--mp-text-muted);">Счет</th>
+                                <th style="font-size: 13px; color: var(--mp-text-muted);">Счет / Акт</th>
                                 <th style="font-size: 13px; color: var(--mp-text-muted);">Токен (ERID)</th>
                             </tr>
                         </thead>
@@ -307,7 +232,13 @@
                                     <a href="{{ item.channel_url }}" target="_blank" class="small text-muted" style="font-size: 12px;">{{ item.channel_url }}</a>
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-dark border">№{{ item.invoice_number }}</span>
+                                    {% if item.invoice_number %}
+                                        <span class="badge bg-light text-dark border">№{{ item.invoice_number }}</span>
+                                    {% else %}
+                                        <button class="btn btn-xs btn-outline-warning py-0 px-2" style="font-size: 11px; border-radius: 4px;">
+                                            <i class="bi bi-plus-circle me-1"></i> Прикрепить акт
+                                        </button>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     <span class="erid-style">{{ item.erid }}</span>
@@ -328,46 +259,34 @@
         </div>
     </div>
 </div>
-
-<!-- БОКОВАЯ МОДАЛКА (ОКНО ПРОСМОТРА СЧЕТА) -->
-<div id="invoiceModal" class="modal fade" tabindex="-1" aria-hidden="true" style="background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
-            <div class="modal-header border-bottom py-3">
-                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;">
-                    <i class="bi bi-file-earmark-text text-primary me-2"></i>Документ-основание для сверки данных
-                </h5>
-                <button type="button" class="btn-close shadow-none" onclick="toggleInvoicePreview()"></button>
-            </div>
-            <div class="modal-body text-center bg-light p-4">
-                <img src="/media/invoices/user_invoice_sample.jpg" alt="Счет-фактура" class="img-fluid rounded border shadow-sm" style="max-height: 500px; object-fit: contain;">
-            </div>
-            <div class="modal-footer border-top py-2 d-flex justify-content-between bg-white" style="border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
-                <span class="text-muted small"><i class="bi bi-info-circle me-1"></i> Скопируйте номер счета и сумму, затем внесите их в форму.</span>
-                <button type="button" class="btn btn-sm btn-secondary px-3" onclick="toggleInvoicePreview()" style="border-radius: 6px;">Закрыть</button>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
 <script>
-    function toggleInvoicePreview() {
-        const modalEl = document.getElementById('invoiceModal');
-        if (modalEl.classList.contains('show')) {
-            modalEl.classList.remove('show');
-            modalEl.style.display = 'none';
-        } else {
-            modalEl.classList.add('show');
-            modalEl.style.display = 'block';
+    // Инициализация поиска в выпадающем списке ККТУ
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('kktuSelect')) {
+            new TomSelect('#kktuSelect', {
+                create: false,
+                sortField: { field: "text", direction: "asc" }
+            });
         }
-    }
+        
+        // Установка даты по умолчанию
+        const dateStartInput = document.getElementById('date_start');
+        if (dateStartInput && !dateStartInput.value) {
+            dateStartInput.value = new Date().toISOString().split('T')[0];
+        }
+    });
 
     function togglePartyFields(prefix) {
         const select = document.getElementById(prefix + 'Select');
         const box = document.getElementById(prefix + 'NewBox');
-        box.classList.toggle('d-none', select.value !== 'new');
+        if (select && box) {
+            box.classList.toggle('d-none', select.value !== 'new');
+        }
     }
 
     function toggleCitizenship(prefix) {
@@ -379,12 +298,12 @@
         if (isForeign) {
             countryInput.classList.remove('d-none');
             countryInput.required = true;
-            ipOption.classList.add('d-none');
-            if (typeSelect.value === 'ip') typeSelect.value = 'ur';
+            if(ipOption) ipOption.classList.add('d-none');
+            if (typeSelect && typeSelect.value === 'ip') typeSelect.value = 'ur';
         } else {
             countryInput.classList.add('d-none');
             countryInput.required = false;
-            ipOption.classList.remove('d-none');
+            if(ipOption) ipOption.classList.remove('d-none');
         }
         toggleTypeFields(prefix);
     }
@@ -423,32 +342,6 @@
             innInput.classList.remove('d-none');
         }
     }
-    document.addEventListener('DOMContentLoaded', function() {
-    // Автоматическое заполнение дат отчетного периода текущим месяцем (удобный UX)
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth(); // 0-11
-    
-    // Первый и последний день текущего месяца
-    const firstDay = new Date(y, m, 2).toISOString().split('T')[0]; // коррекция таймзоны
-    const lastDay = new Date(y, m + 1, 1).toISOString().split('T')[0];
-    
-    const periodStartInput = document.getElementById('period_start');
-    const periodEndInput = document.getElementById('period_end');
-    const invoiceDateInput = document.getElementById('invoice_date');
-    
-    if (periodStartInput && !periodStartInput.value) periodStartInput.value = firstDay;
-    if (periodEndInput && !periodEndInput.value) periodEndInput.value = lastDay;
-    if (invoiceDateInput && !invoiceDateInput.value) invoiceDateInput.value = new Date().toISOString().split('T')[0];
-
-    // Валидация: Дата конца периода не может быть меньше даты начала
-    periodEndInput.addEventListener('change', function() {
-        if (periodStartInput.value && this.value < periodStartInput.value) {
-            alert('Дата окончания периода не может быть раньше даты начала!');
-            this.value = periodStartInput.value;
-        }
-    });
-});
 
     window.addEventListener('DOMContentLoaded', () => {
         togglePartyFields('adv');

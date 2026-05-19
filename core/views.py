@@ -1425,13 +1425,31 @@ class EridManagementView(View):
             logger.error(f"Ошибка: {str(e)}", exc_info=True)
             return render(request, self.template_name, {'error_message': str(e)})
 
+from django.db import DatabaseError
+
 @require_POST
 def delete_contractor(request, external_id):
     try:
+        # Пытаемся получить объект
         contractor = SavedContractor.objects.get(external_id=external_id)
-        if OrdContract.objects.filter(advertiser=contractor).exists() or OrdContract.objects.filter(blogger=contractor).exists():
-            return JsonResponse({'error': 'Связанные договоры запрещают удаление.'}, status=400)
+        
+        # Проверка связей (защита от удаления)
+        if OrdContract.objects.filter(advertiser=contractor).exists() or \
+           OrdContract.objects.filter(blogger=contractor).exists():
+            return JsonResponse({'error': 'Нельзя удалить: у контрагента есть связанные договоры.'}, status=400)
+        
         contractor.delete()
         return JsonResponse({'status': 'success'})
+
     except SavedContractor.DoesNotExist:
-        return JsonResponse({'error': 'Не найдено'}, status=404)
+        return JsonResponse({'error': 'Контрагент не найден.'}, status=404)
+    
+    except DatabaseError as e:
+        # Ловим ошибки базы данных (например, проблемы с блокировкой или соединением)
+        logger.error(f"Ошибка БД при удалении контрагента {external_id}: {e}")
+        return JsonResponse({'error': 'Ошибка при работе с базой данных.'}, status=500)
+    
+    except Exception as e:
+        # Ловим любые другие непредвиденные ошибки
+        logger.error(f"Непредвиденная ошибка при удалении: {e}")
+        return JsonResponse({'error': 'Внутренняя ошибка сервера.'}, status=500)

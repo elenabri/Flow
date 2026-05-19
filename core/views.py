@@ -1336,6 +1336,15 @@ class EridManagementView(View):
                     }
                 }
                 blog_api_id = ord_service.create_person(blog_payload)
+                # Регистрируем площадку в ОРД
+                pad_ext_id = f"pad_{uuid.uuid4().hex[:10]}"
+                ord_service.create_pad(
+                    pad_ext_id=pad_ext_id, 
+                    person_ext_id=blog_api_id, # Привязываем к блогеру
+                    name=f"YouTube канал: {blog_payload['name']}",
+                    url=channel_url
+                )
+                
                 # Создаем объект в памяти
                 blogger = SavedContractor(external_id=blog_api_id, name=blog_payload["name"], inn=inn, 
                                           role='blogger', contractor_type=web_type, 

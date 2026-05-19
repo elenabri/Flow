@@ -173,15 +173,9 @@ class VKORDService:
             raise Exception(f"Сетевой сбой при отправке бухгалтерской отчетности в ОРД: {e}")
 
     def get_kktu_catalog(self):
-        """Получение актуального справочника ККТУ по спецификации v1/dict"""
-        # Изменяем эндпоинт в соответствии со Swagger словарей ОРД VK
-        url = f"{self.BASE_URL}/v1/dict/kktu"
-        logger.info(f"Синхронный GET запроса справочника ККТУ v1: {url}")
-        try:
-            # Делаем запрос без лимитов, чтобы выкачать полный каталог для БД
-            response = requests.get(url, headers=self.headers, timeout=25)
-            if response.status_code == 200:
-                return response.json()
-            raise Exception(f"Ошибка при получении ККТУ ({response.status_code}): {response.text}")
-        except requests.RequestException as e:
-            raise Exception(f"Сетевая ошибка при запросе ККТУ: {e}")
+        url = f"{self.base_url}/v1/dict/kktu"
+        params = {"limit": limit, "offset": offset, "search": search}
+        response = requests.get(url, headers=self.headers, params=params)
+        response.raise_for_status()
+        return response.json()
+    

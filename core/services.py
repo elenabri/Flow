@@ -35,10 +35,11 @@ class VKORDService:
     
     def __init__(self, token):
         self.token = token
-        self.headers = {
+        self.session = requests.Session()
+        self.session.headers.update({
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
-        }
+        })
 
     def create_person(self, data):
         """Регистрация контрагента по спецификации v1 (метод PUT)"""
@@ -47,7 +48,7 @@ class VKORDService:
         logger.info(f"Синхронный PUT контрагента в ОРД VK v1: {url}")
 
         try:
-            response = requests.put(url, json=data, headers=self.headers, timeout=15)
+            response = self.session.put(url, json=data, timeout=15)
             if response.status_code in [200, 201]:
                 logger.info(f"Контрагент успешно сохранен в ОРД VK v1. ID: {external_id}")
                 return external_id
@@ -61,15 +62,16 @@ class VKORDService:
         logger.info(f"Синхронный PUT договора в ОРД VK v1: {url}")
 
         try:
-            response = requests.put(url, json=payload, headers=self.headers, timeout=15)
+            response = self.session.put(url, json=payload, timeout=15)
             if response.status_code in [200, 201]:
                 logger.info(f"Договор успешно зарегистрирован в v1. ID: {contract_ext_id}")
                 return contract_ext_id
             raise Exception(f"Ошибка ОРД VK v1 при создании договора ({response.status_code}): {response.text}")
         except requests.RequestException as e:
             raise Exception(f"Сетевая ошибка при создании договора в ОРД: {e}")
+
     def create_pad(self, pad_ext_id, person_ext_id, name, url):
-        # Весь этот блок должен быть сдвинут на 4 пробела относительно def
+        """Регистрация площадки"""
         payload = {
             "person_external_id": person_ext_id,
             "is_owner": True,
@@ -77,11 +79,9 @@ class VKORDService:
             "name": name,
             "url": url
         }
-        response = self.session.put(f"{self.base_url}/v1/pad/{pad_ext_id}", json=payload)
+        response = self.session.put(f"{self.BASE_URL}/v1/pad/{pad_ext_id}", json=payload)
         response.raise_for_status()
         return pad_ext_id
-    
-
 
     def upload_media(self, video_file):
         """Загрузка медиафайла (креатива) по спецификации v3"""
@@ -89,14 +89,15 @@ class VKORDService:
         url = f"{self.BASE_URL}/v1/media/{media_external_id}"
         logger.info(f"Синхронная загрузка медиафайла в ОРД VK v1: {url}")
         
-        upload_headers = {k: v for k, v in self.headers.items() if k.lower() != 'content-type'}
+        # Для файлов убираем application/json
+        headers = {k: v for k, v in self.session.headers.items() if k.lower() != 'content-type'}
         
         try:
             video_file.seek(0)
             files = {
                 'media_file': (video_file.name, video_file.read(), 'video/mp4')
             }
-            response = requests.put(url, files=files, headers=upload_headers, timeout=60)
+            response = self.session.put(url, files=files, headers=headers, timeout=60)
             if response.status_code in [200, 201]:
                 logger.info(f"Медиафайл успешно загружен в v1. ID: {media_external_id}")
                 return media_external_id
@@ -110,7 +111,7 @@ class VKORDService:
         logger.info(f"Синхронный PUT креатива в ОРД VK v3: {url}")
 
         try:
-            response = requests.put(url, json=payload, headers=self.headers, timeout=20)
+            response = self.session.put(url, json=payload, timeout=20)
             if response.status_code in [200, 201]:
                 data = response.json()
                 erid = data.get("erid")
@@ -147,7 +148,6 @@ class VKORDService:
                     "vat": f"{vat:.2f}"
                 }
             },
-            # ДОБАВЛЕНО: Обязательный блок items
             "items": [
                 {
                     "contract_external_id": contract_ext_id,
@@ -163,29 +163,23 @@ class VKORDService:
         }
 
         try:
-            # PUT создание акта в v4
-            response = requests.put(url_put, json=payload, headers=self.headers, timeout=20)
+            response = self.session.put(url_put, json=payload, timeout=20)
             if response.status_code not in [200, 201]:
-                logger.error(f"Ошибка создания акта: {response.text}")
                 raise Exception(f"Ошибка v4 при создании акта: {response.text}")
             
-            # Финализация (ready)
             url_ready = f"{self.BASE_URL}/v4/invoice/{invoice_ext_id}/ready"
-            response_ready = requests.post(url_ready, headers=self.headers, timeout=15)
+            response_ready = self.session.post(url_ready, timeout=15)
             
             if response_ready.status_code in [200, 201]:
                 logger.info(f"Акт {invoice_ext_id} успешно отправлен в ЕРИР (v4).")
                 return invoice_ext_id
-            
             raise Exception(f"Акт создан, но /v4/ready отклонил запрос: {response_ready.text}")
-            
         except requests.RequestException as e:
             raise Exception(f"Сетевая ошибка: {e}")
             
-    def get_kktu_catalog(self):
+    def get_kktu_catalog(self, limit=100, offset=0, search=None):
         url = f"{self.BASE_URL}/v1/dict/kktu"
         params = {"limit": limit, "offset": offset, "search": search}
-        response = requests.get(url, headers=self.headers, params=params)
+        response = self.session.get(url, params=params)
         response.raise_for_status()
         return response.json()
-    

@@ -41,39 +41,39 @@ class VKORDService:
         }
 
     def create_person(self, data):
-        """Регистрация контрагента по спецификации v3 (метод PUT)"""
+        """Регистрация контрагента по спецификации v1 (метод PUT)"""
         external_id = data.pop("external_id", None) or f"per_{uuid.uuid4().hex[:10]}"
-        url = f"{self.BASE_URL}/v3/person/{external_id}"
-        logger.info(f"Синхронный PUT контрагента в ОРД VK v3: {url}")
+        url = f"{self.BASE_URL}/v1/person/{external_id}"
+        logger.info(f"Синхронный PUT контрагента в ОРД VK v1: {url}")
 
         try:
             response = requests.put(url, json=data, headers=self.headers, timeout=15)
             if response.status_code in [200, 201]:
-                logger.info(f"Контрагент успешно сохранен в ОРД VK v3. ID: {external_id}")
+                logger.info(f"Контрагент успешно сохранен в ОРД VK v1. ID: {external_id}")
                 return external_id
-            raise Exception(f"Ошибка ОРД VK v3 ({response.status_code}): {response.text}")
+            raise Exception(f"Ошибка ОРД VK v1 ({response.status_code}): {response.text}")
         except requests.RequestException as e:
             raise Exception(f"Сетевая ошибка при создании контрагента в ОРД: {e}")
 
     def create_contract(self, contract_ext_id, payload):
-        """Регистрация договора по спецификации v3 (метод PUT)"""
-        url = f"{self.BASE_URL}/v3/contract/{contract_ext_id}"
-        logger.info(f"Синхронный PUT договора в ОРД VK v3: {url}")
+        """Регистрация договора по спецификации v1 (метод PUT)"""
+        url = f"{self.BASE_URL}/v1/contract/{contract_ext_id}"
+        logger.info(f"Синхронный PUT договора в ОРД VK v1: {url}")
 
         try:
             response = requests.put(url, json=payload, headers=self.headers, timeout=15)
             if response.status_code in [200, 201]:
-                logger.info(f"Договор успешно зарегистрирован в v3. ID: {contract_ext_id}")
+                logger.info(f"Договор успешно зарегистрирован в v1. ID: {contract_ext_id}")
                 return contract_ext_id
-            raise Exception(f"Ошибка ОРД VK v3 при создании договора ({response.status_code}): {response.text}")
+            raise Exception(f"Ошибка ОРД VK v1 при создании договора ({response.status_code}): {response.text}")
         except requests.RequestException as e:
             raise Exception(f"Сетевая ошибка при создании договора в ОРД: {e}")
 
     def upload_media(self, video_file):
         """Загрузка медиафайла (креатива) по спецификации v3"""
         media_external_id = f"med_{uuid.uuid4().hex[:10]}"
-        url = f"{self.BASE_URL}/v3/media/{media_external_id}"
-        logger.info(f"Синхронная загрузка медиафайла в ОРД VK v3: {url}")
+        url = f"{self.BASE_URL}/v1/media/{media_external_id}"
+        logger.info(f"Синхронная загрузка медиафайла в ОРД VK v1: {url}")
         
         upload_headers = {k: v for k, v in self.headers.items() if k.lower() != 'content-type'}
         
@@ -84,9 +84,9 @@ class VKORDService:
             }
             response = requests.put(url, files=files, headers=upload_headers, timeout=60)
             if response.status_code in [200, 201]:
-                logger.info(f"Медиафайл успешно загружен в v3. ID: {media_external_id}")
+                logger.info(f"Медиафайл успешно загружен в v1. ID: {media_external_id}")
                 return media_external_id
-            raise Exception(f"Ошибка ОРД VK v3 при загрузке медиа ({response.status_code}): {response.text}")
+            raise Exception(f"Ошибка ОРД VK v1 при загрузке медиа ({response.status_code}): {response.text}")
         except requests.RequestException as e:
             raise Exception(f"Сетевая ошибка при отправке видео в ОРД: {e}")
 
@@ -153,7 +153,7 @@ class VKORDService:
             raise Exception(f"Сетевая ошибка: {e}")
 
     def get_kktu_catalog(self):
-        url = f"{self.BASE_URL}/v3/dict/kktu"
+        url = f"{self.BASE_URL}/v1/dict/kktu"
         params = {"limit": limit, "offset": offset, "search": search}
         response = requests.get(url, headers=self.headers, params=params)
         response.raise_for_status()

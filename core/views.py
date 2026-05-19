@@ -1353,6 +1353,7 @@ class EridManagementView(View):
             else:
                 blogger = SavedContractor.objects.get(external_id=blog_select)
                 blog_api_id = blogger.external_id
+                pad_ext_id = ord_service.find_or_create_pad(person_ext_id=blog_api_id, url=channel_url)
 
             # --- Работа с договором ---
             ord_contract = OrdContract.objects.filter(advertiser__external_id=adv_api_id, blogger__external_id=blog_api_id).first()

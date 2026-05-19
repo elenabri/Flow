@@ -75,7 +75,7 @@ class KktuCodeAdmin(admin.ModelAdmin):
 @admin.register(EridIntegration)
 class EridIntegrationAdmin(admin.ModelAdmin):
     list_display = ('creative_name', 'erid', 'invoice_number', 'invoice_amount')
-    search_fields = ('creative_name', 'erid', 'invoice_number')
+    search_fields = ('creative_name', 'blogger_name', 'channel_url')
     
     # Группировка для удобства: сначала регистрируем, потом заполняем отчетность
     fieldsets = (

@@ -84,12 +84,12 @@ class VKORDService:
         return pad_ext_id
 
     def upload_media(self, video_file):
-        """Загрузка медиафайла (креатива) по спецификации v3"""
+        """Загрузка медиафайла (креатива) по спецификации v1"""
         media_external_id = f"med_{uuid.uuid4().hex[:10]}"
         url = f"{self.BASE_URL}/v1/media/{media_external_id}"
         logger.info(f"Синхронная загрузка медиафайла в ОРД VK v1: {url}")
         
-        # Для файлов убираем application/json
+        # СОЗДАЕМ КОПИЮ заголовков БЕЗ Content-Type
         headers = {k: v for k, v in self.session.headers.items() if k.lower() != 'content-type'}
         
         try:
@@ -97,7 +97,9 @@ class VKORDService:
             files = {
                 'media_file': (video_file.name, video_file.read(), 'video/mp4')
             }
+            # Передаем headers без Content-Type
             response = self.session.put(url, files=files, headers=headers, timeout=60)
+            
             if response.status_code in [200, 201]:
                 logger.info(f"Медиафайл успешно загружен в v1. ID: {media_external_id}")
                 return media_external_id

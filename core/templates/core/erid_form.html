@@ -220,7 +220,17 @@
         <input type="file" class="form-control form-control-sm" name="video_file" accept="video/*" required>
     </div>
 </div>
-
+<div class="form-section-title">4. Данные для отчетности (Акт)</div>
+<div class="p-3 bg-white rounded border mb-4">
+    <div class="mb-2">
+        <label class="form-label small fw-bold text-muted">Номер счета/акта</label>
+        <input type="text" class="form-control form-control-sm" name="invoice_number" placeholder="Например: INV-12345" required>
+    </div>
+    <div class="mb-2">
+        <label class="form-label small fw-bold text-muted">Сумма акта</label>
+        <input type="number" step="0.01" class="form-control form-control-sm" name="invoice_amount" value="0.00" required>
+    </div>
+</div>
                     <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm" style="border-radius: 8px;">
                         <i class="bi bi-cloud-arrow-up-fill me-2"></i>Сгенерировать ERID
                     </button>

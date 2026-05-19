@@ -1,0 +1,202 @@
+{% block content %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --primary: #0071e3;
+        --dark: #1d1d1f;
+        --gray: #86868b;
+        --bg: #f5f5f7;
+    }
+
+    /* Убираем прокрутку и фиксируем высоту под экран устройства */
+    html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden; 
+        font-family: 'Inter', -apple-system, sans-serif;
+        background: #fff;
+    }
+
+    .wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100vh; /* Ровно высота экрана */
+        width: 100vw;
+        box-sizing: border-box;
+    }
+
+    /* --- NAV --- */
+    .nav-custom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 20px;
+        height: 50px; /* Уменьшили высоту */
+        flex-shrink: 0;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .logo {
+        font-weight: 800;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .logo-icon {
+        background: var(--primary);
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 10px;
+    }
+
+    /* --- HERO (Центрированный контент) --- */
+    .hero {
+        flex-grow: 1; /* Занимает всё свободное место */
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Центровка по вертикали */
+        align-items: center;
+        text-align: center;
+        padding: 0 20px;
+        background: radial-gradient(circle at 50% 0%, #f5faff 0%, #ffffff 100%);
+    }
+
+    .hero h1 {
+        font-size: clamp(24px, 7vw, 42px); /* Уменьшили размер */
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -1px;
+        margin: 0 0 10px 0;
+    }
+
+    .hero p {
+        font-size: clamp(14px, 3.5vw, 16px);
+        color: var(--gray);
+        max-width: 320px;
+        margin: 0 auto 25px auto;
+    }
+
+    /* --- GRID --- */
+    .features-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+        max-width: 340px; /* Ограничили ширину, чтобы не ехало влево */
+        margin-bottom: 25px;
+    }
+
+    .card {
+        background: #fff;
+        padding: 15px 20px;
+        border-radius: 18px;
+        border: 1px solid #f0f0f2;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    }
+
+    .card i {
+        color: var(--primary);
+        font-size: 18px;
+        width: 25px;
+        text-align: center;
+    }
+
+    .card div h3 {
+        font-size: 15px;
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .card div p {
+        font-size: 12px;
+        color: var(--gray);
+        margin: 0;
+    }
+
+    /* --- CTA --- */
+    .cta-container {
+        width: 100%;
+        max-width: 340px;
+    }
+
+    .btn-dark {
+        display: block;
+        background: var(--dark);
+        color: #fff;
+        padding: 14px;
+        border-radius: 14px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 14px;
+        transition: 0.2s;
+    }
+
+    /* Устранение смещения влево на iPhone */
+    @media (max-width: 600px) {
+        .hero { padding: 0 20px; }
+        .features-grid, .cta-container {
+            margin-left: auto;
+            margin-right: auto;
+        }
+    }
+</style>
+
+<div class="wrapper">
+    <nav class="nav-custom">
+        <div class="logo">
+            <div class="logo-icon"><i class="fas fa-play"></i></div>
+            Tube<span style="color: var(--primary)">Flow</span>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            {% if not user.is_authenticated %}
+                <a href="{% url 'login' %}" style="text-decoration: none; color: var(--dark); font-size: 13px; font-weight: 600; padding: 8px;">Войти</a>
+            {% else %}
+                <a href="{% url 'core:ad_list' %}" style="text-decoration: none; color: var(--primary); font-size: 13px; font-weight: 600;">Личный кабинет</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>Прозрачные<br>интеграции.</h1>
+        <p>Маркировка рекламы и прямая статистика YouTube в одном приложении.</p>
+
+        <div class="features-grid">
+            <div class="card">
+                <i class="fas fa-chart-bar"></i>
+                <div>
+                    <h3>Авто-аналитика</h3>
+                    <p>Данные напрямую из YouTube API.</p>
+                </div>
+            </div>
+            <div class="card">
+                <i class="fas fa-check-circle"></i>
+                <div>
+                    <h3>Маркировка</h3>
+                    <p>Авто-отчеты в ОРД и ERID.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="cta-container">
+            <a href="{% url 'core:register' %}" class="btn-dark">Начать работу</a>
+        </div>
+    </section>
+</div>
+
+{% endblock %}

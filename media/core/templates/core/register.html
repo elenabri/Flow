@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Регистрация | TubeFlow</title>
+    <style>
+        :root { 
+            --primary: #0071e3; 
+            --border: #d2d2d7;
+            --text-main: #1d1d1f;
+            --text-label: #86868b;
+            --error: #ff3b30;
+            --bg-light: #f5f5f7;
+            --text-dark: #1d1d1f;
+        }
+
+        body { background: white; margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-main); -webkit-font-smoothing: antialiased; }
+        .register-wrapper { padding: 20px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+        
+        .back-nav { width: 100%; max-width: 600px; margin-bottom: 20px; }
+        .btn-back { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 15px; font-weight: 500; padding: 0; }
+
+        .register-card { width: 100%; max-width: 600px; background: white; border-radius: 20px; box-sizing: border-box; }
+        .register-header { text-align: left; margin-bottom: 30px; }
+        .register-header h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin: 0; }
+        #header-desc { color: var(--text-label); margin-top: 8px; font-size: 15px; }
+
+        /* Роли */
+        .role-options { display: flex; gap: 10px; margin-bottom: 30px; }
+        .role-option { flex: 1; cursor: pointer; display: flex; }
+        .role-radio { display: none; }
+        .role-box { 
+            flex: 1; padding: 16px 10px; border: 1px solid var(--border); border-radius: 14px; 
+            text-align: center; font-weight: 600; color: var(--text-main); transition: 0.2s;
+            display: flex; align-items: center; justify-content: center; font-size: 14px;
+        }
+        .role-radio:checked + .role-box { border-color: var(--primary); background: var(--primary); color: white; }
+
+        .section-label { 
+            font-size: 12px; font-weight: 700; text-transform: uppercase; 
+            letter-spacing: 0.5px; color: var(--text-label); 
+            margin: 35px 0 15px 0; display: block; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;
+        }
+
+        .info-bubble { 
+            background: #f5f5f7; border-radius: 14px; padding: 16px; 
+            margin-bottom: 25px; font-size: 13px; color: var(--text-main); line-height: 1.5;
+        }
+
+        .form-group { margin-bottom: 20px; display: flex; flex-direction: column; position: relative; }
+        .form-group label { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+        
+        input[type="text"], input[type="email"], input[type="url"], input[type="number"], textarea { 
+            width: 100%; padding: 14px; border: 1px solid var(--border); 
+            border-radius: 12px; box-sizing: border-box; font-size: 16px;
+            transition: 0.2s; outline: none; background: #fff;
+        }
+        input:focus { border-color: var(--primary); }
+        input.invalid { border-color: var(--error); background: #fff8f8; }
+
+        /* Прайс-лист */
+        .price-container { background: #f5f5f7; padding: 16px; border-radius: 18px; margin-bottom: 20px; }
+        .price-group-title { font-size: 11px; font-weight: 800; color: var(--text-label); margin-bottom: 12px; text-transform: uppercase; }
+        .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .price-item label { font-size: 12px; color: var(--text-label); display: block; margin-bottom: 4px; }
+
+        /* Категории */
+        .category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .cat-item { display: flex; }
+        .cat-item input { display: none; }
+        .cat-btn { 
+            flex: 1; padding: 14px 10px; border: 1px solid var(--border); border-radius: 12px; 
+            font-size: 13px; text-align: center; background: #fff; cursor: pointer; transition: 0.2s; 
+            font-weight: 500; display: flex; align-items: center; justify-content: center; min-height: 50px;
+        }
+        .cat-item input:checked + .cat-btn { border-color: var(--primary); background: #e8f3ff; color: var(--primary); }
+
+        .sub-topics-container { 
+            margin-top: 20px; padding: 20px; background: #f9f9fb; 
+            border-radius: 18px; display: none; border: 1px solid #eee;
+        }
+        .sub-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .sub-tag { padding: 8px 16px; background: white; border: 1px solid var(--border); border-radius: 20px; font-size: 13px; cursor: pointer; }
+        .sub-tag.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .file-zone { border: 2px dashed var(--border); border-radius: 14px; padding: 25px; text-align: center; cursor: pointer; font-size: 14px; color: var(--text-label); }
+        .btn-submit { width: 100%; margin-top: 30px; padding: 18px; background: var(--text-dark); color: white; border: none; border-radius: 16px; font-weight: 700; cursor: pointer; font-size: 16px; }
+        
+        textarea { resize: none; min-height: 120px; font-family: inherit; }
+        .btn-submit:disabled { background: var(--border); cursor: not-allowed; }
+        
+        #api-status { display: none; margin-top: 20px; padding: 15px; border-radius: 12px; font-size: 14px; }
+
+        @media (min-width: 600px) { .category-grid { grid-template-columns: 1fr 1fr 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="register-wrapper">
+    <nav class="back-nav">
+        <button onclick="window.history.back()" class="btn-back">← Назад</button>
+    </nav>
+
+    <div class="register-card">
+        <div class="register-header">
+            <h2>Регистрация</h2>
+            <p id="header-desc">Создайте аккаунт в TubeFlow</p>
+            {% if form.errors %}
+    <div style="color: red; background: #ffeeee; padding: 10px; border-radius: 8px; margin-bottom: 20px;">
+        <strong>Пожалуйста, исправьте следующие ошибки:</strong>
+        {{ form.errors }}
+    </div>
+{% endif %}
+        </div>
+
+        <form method="post" id="reg-form" enctype="multipart/form-data">
+            {% csrf_token %}
+            <!-- Скрытые поля для данных из API -->
+            <input type="hidden" name="api_channel_name" id="id_api_name">
+            <input type="hidden" name="api_subs" id="id_api_subs">
+            <input type="hidden" name="api_long_median" id="id_api_long_median">
+            <input type="hidden" name="api_shorts_median" id="id_api_shorts_median">
+            <input type="hidden" name="api_avatar" id="id_api_avatar">
+            <input type="hidden" name="sub_topics" id="id_sub_topics_json">
+
+            <div class="role-selection">
+                <div class="role-options">
+                    <label class="role-option">
+                        <input type="radio" name="role" value="blogger" class="role-radio" checked>
+                        <div class="role-box">Я Блогер</div>
+                    </label>
+                    <label class="role-option">
+                        <input type="radio" name="role" value="advertiser" class="role-radio">
+                        <div class="role-box">Я Рекламодатель</div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="hidden-content">
+                <div class="form-group">
+                    <label>E-mail для связи</label>
+                    <input type="email" name="email" placeholder="mail@example.com" required>
+                </div>
+                <div class="form-group">
+    <label>Ник в Telegram</label>
+    <div style="position: relative;">
+        <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-label); font-weight: 600;">@</span>
+        <input type="text" name="telegram_handle" placeholder="username" style="padding-left: 35px;" required>
+    </div>
+    <div class="info-bubble" style="margin-top: 10px; margin-bottom: 0; background: #f0f7ff; font-size: 12px; border: 1px solid #e1efff;">
+        <i class="bi bi-info-circle"></i> 
+        <b>Зачем это нужно?</b> Телеграм необходим для быстрой связи между вами и партнером.
+    </div>
+</div>
+
+                <!-- БЛОГЕР -->
+                <div id="blogger-fields">
+                    <div class="form-group">
+                        <label>YouTube канал</label>
+                        <input type="text" name="channel_link" placeholder="@channel_name" required>
+                    </div>
+
+                    <label class="section-label">Стоимость вашей рекламы</label>
+                    <div class="info-bubble">
+                        <b>Зачем указывать стоимость?</b> Это позволит брендам сразу видеть ваши условия. Указанные суммы являются ориентировочными.
+                    </div>
+
+                    <div class="price-container">
+                        <div class="price-group-title">Длинная версия ролика (Long)</div>
+                        <div class="price-grid">
+                            <div class="price-item" style="grid-column: span 2;">
+                                <label>Начало ролика</label>
+                                <input type="number" name="price_start" class="p-input" placeholder="₽">
+                            </div>
+                            <div class="price-item" style="grid-column: span 2;">
+                                <label>Середина ролика</label>
+                                <input type="number" name="price_middle" class="p-input" placeholder="₽">
+                            </div>
+                            <div class="price-item" style="grid-column: span 2;">
+                                <label>Конец ролика</label>
+                                <input type="number" name="price_end" class="p-input" placeholder="₽">
+                            </div>
+                        </div>
+
+                        <div class="price-group-title">Короткая версия ролика (Shorts)</div>
+                        <div class="price-item">
+                            <input type="number" name="price_shorts" class="p-input" placeholder="₽">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- РЕКЛАМОДАТЕЛЬ -->
+                <div id="advertiser-fields" style="display:none;">
+                    <label class="section-label">О бренде и продукте</label>
+                    <div class="form-group">
+                        <label>Бренд</label>
+                        <input type="text" name="company_name" placeholder="Напр: Вкусневич">
+                    </div>
+                    <div class="form-group">
+                        <label>Продукт</label>
+                        <input type="text" name="product_title" placeholder="Напр: Паштет из утки">
+                    </div>
+                    <div class="form-group">
+                        <label>Ссылка на продукт</label>
+                        <input type="url" name="product_link" placeholder="https://...">
+                    </div>
+                    <div class="form-group">
+                        <label>Краткое описание (УТП)</label>
+                        <input type="text" name="short_description" id="short_desc" maxlength="30" placeholder="Макс. 30 символов" oninput="updateCount()">
+                        <small id="char-count" style="font-size: 11px; color: var(--text-label); text-align: right; margin-top: 4px;">Осталось: 30 симв.</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Фото продукта</label>
+                        <div class="file-zone" onclick="document.getElementById('id_product_image').click()">
+                            <span id="file-name">Нажмите для загрузки</span>
+                            <input type="file" name="product_image" id="id_product_image" style="display:none;" onchange="document.getElementById('file-name').innerText = this.files[0].name">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>ТЗ (техническое задание)</label>
+                        <textarea name="description" placeholder="О чем должен рассказать блогер?"></textarea>
+                    </div>
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label class="barter-label" style="display: flex; align-items: center; cursor: pointer; background: #f5f5f7; padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border);">
+                            <input type="checkbox" name="is_barter" id="barter-check" style="width: 20px; height: 20px; margin-right: 12px; accent-color: var(--primary);" onchange="toggleBarterInfo(this.checked)">
+                            <span style="font-size: 15px; font-weight: 600;">Только бартер</span>
+                        </label>
+                    </div>
+
+                    <div id="barter-info" class="info-bubble" style="display: none; background: #eef7ff; border: 1px solid #cce5ff; margin-top: -10px;">
+                        <strong>Что это значит?</strong> Рекламная кампания будет проводиться без денежной оплаты. Вы предоставляете блогеру товар, а он выпускает ролик.
+                    </div>
+                </div>
+
+                <!-- КАТЕГОРИИ -->
+                <label class="section-label">Категории контента <span style="text-transform: none; font-weight: 400; font-size: 11px;">(можно несколько)</span></label>
+                <div class="category-grid">
+                    {% for value, text in form.topics.field.choices %}
+                        <label class="cat-item">
+                            <input type="checkbox" name="topics" value="{{ value }}" onchange="renderSubTopics()">
+                            <div class="cat-btn">{{ text }}</div>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <div id="sub-area" class="sub-topics-container">
+                    <div id="sub-grid" class="sub-grid"></div>
+                </div>
+
+                <div id="api-status"></div>
+                <button type="button" id="submit-handler" class="btn-submit">Создать профиль</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 1. Карта подкатегорий
+    const subTopicsMap = {
+        'tech': ['Обзоры смартфонов', 'Гаджеты', 'Нейросети', 'Программирование'],
+        'beauty': ['Макияж', 'Уход за кожей', 'Прически', 'Парфюм'],
+        'food': ['Рецепты', 'Обзоры ресторанов', 'Стрит-фуд', 'Веганство'],
+    };
+
+    let selectedSubTopics = new Set();
+
+    function updateCount() {
+        const input = document.getElementById('short_desc');
+        const count = document.getElementById('char-count');
+        const remaining = 30 - input.value.length;
+        count.innerText = `Осталось: ${remaining} симв.`;
+        count.style.color = remaining <= 5 ? 'var(--error)' : 'var(--text-label)';
+    }
+
+    function toggleBarterInfo(checked) {
+        document.getElementById('barter-info').style.display = checked ? 'block' : 'none';
+    }
+
+    function toggleRole(v) {
+        const isBlogger = (v === 'blogger');
+        document.getElementById('blogger-fields').style.display = isBlogger ? 'block' : 'none';
+        document.getElementById('advertiser-fields').style.display = isBlogger ? 'none' : 'block';
+        
+        // Настройка обязательности полей
+        document.querySelectorAll('#blogger-fields input').forEach(el => el.required = isBlogger);
+        document.querySelectorAll('#advertiser-fields input:not([type="checkbox"]), #advertiser-fields textarea').forEach(el => {
+            el.required = !isBlogger;
+        });
+    }
+
+    function renderSubTopics() {
+        const checked = Array.from(document.querySelectorAll('input[name="topics"]:checked')).map(el => el.value);
+        const subGrid = document.getElementById('sub-grid');
+        const subArea = document.getElementById('sub-area');
+        
+        subGrid.innerHTML = '';
+        if (checked.length === 0) { 
+            subArea.style.display = 'none'; 
+            selectedSubTopics.clear();
+            document.getElementById('id_sub_topics_json').value = "";
+            return; 
+        }
+        
+        subArea.style.display = 'block';
+        checked.forEach(cat => {
+            if (subTopicsMap[cat]) {
+                subTopicsMap[cat].forEach(sub => {
+                    const tag = document.createElement('div');
+                    tag.className = `sub-tag ${selectedSubTopics.has(sub) ? 'active' : ''}`;
+                    tag.innerText = sub;
+                    tag.onclick = () => {
+                        tag.classList.toggle('active');
+                        tag.classList.contains('active') ? selectedSubTopics.add(sub) : selectedSubTopics.delete(sub);
+                        document.getElementById('id_sub_topics_json').value = JSON.stringify(Array.from(selectedSubTopics));
+                    };
+                    subGrid.appendChild(tag);
+                });
+            }
+        });
+    }
+
+    document.querySelectorAll('.role-radio').forEach(r => r.addEventListener('change', () => toggleRole(r.value)));
+
+    document.getElementById('submit-handler').addEventListener('click', async () => {
+        const form = document.getElementById('reg-form');
+        const role = document.querySelector('.role-radio:checked').value;
+        const submitBtn = document.getElementById('submit-handler');
+        const apiStatus = document.getElementById('api-status');
+
+        // Валидация
+        let isValid = true;
+        const visibleRequired = document.querySelectorAll(`input[required]:not([style*="display:none"]), textarea[required]:not([style*="display:none"])`);
+        
+        visibleRequired.forEach(f => {
+            if (!f.value.trim()) { f.classList.add('invalid'); isValid = false; }
+            else { f.classList.remove('invalid'); }
+        });
+
+        if (!isValid) { alert("Заполните обязательные поля"); return; }
+
+        if (role === 'blogger') {
+            const channelLink = document.querySelector('input[name="channel_link"]').value;
+            submitBtn.disabled = true;
+            apiStatus.style.display = 'block';
+            apiStatus.style.background = '#f5f5f7';
+            apiStatus.innerHTML = "⏳ Синхронизация с YouTube API...";
+
+            try {
+                const response = await fetch(`/api/fetch-youtube/?handle=${encodeURIComponent(channelLink)}`);
+                const data = await response.json();
+
+                if (data.channel_name || data.title) {
+                    document.getElementById('id_api_name').value = data.channel_name || data.title;
+                    document.getElementById('id_api_subs').value = data.subscribers_count || 0;
+                    document.getElementById('id_api_long_median').value = data.median_views || 0;
+                    document.getElementById('id_api_shorts_median').value = data.median_views_shorts || 0;
+                    document.getElementById('id_api_avatar').value = data.avatar_url || '';
+                    
+                    apiStatus.style.background = '#e8f3ff';
+                    apiStatus.innerHTML = `✅ Канал найден: <b>${data.channel_name || data.title}</b>`;
+                    setTimeout(() => form.submit(), 1200);
+                } else {
+                    throw new Error(data.error || "Канал не найден");
+                }
+            } catch (e) {
+                apiStatus.style.background = '#fff8f8';
+                apiStatus.innerHTML = `❌ ${e.message}`;
+                submitBtn.disabled = false;
+            }
+        } else {
+            form.submit();
+        }
+    });
+
+    // Инициализация
+    toggleRole('blogger');
+</script>
+</body>
+</html>

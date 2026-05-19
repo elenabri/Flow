@@ -1,0 +1,293 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Личный кабинет | TubeFlow{% endblock %}
+
+{% block extra_css %}
+    <style>
+        /* Локальные улучшения для карточек кабинета */
+        .dashboard-header {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--mp-border);
+            padding-bottom: 1.5rem;
+        }
+
+        .section-card {
+            background: #ffffff;
+            border: 1px solid var(--mp-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .section-card:hover {
+            box-shadow: 0 8px 24px rgba(148, 163, 184, 0.08);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--mp-text-main);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-label-custom {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--mp-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .form-control-custom {
+            border: 1px solid var(--mp-border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 15px;
+            color: var(--mp-text-main);
+            background-color: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        .form-control-custom:focus {
+            border-color: var(--mp-accent);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            outline: none;
+        }
+
+        /* Динамические поля */
+        .custom-field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 40px;
+            gap: 16px;
+            background: var(--mp-bg);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            align-items: end;
+        }
+
+        .btn-add-field {
+            background: rgba(59, 130, 246, 0.05);
+            color: var(--mp-accent);
+            border: 1px dashed var(--mp-accent);
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .btn-remove {
+            color: #ef4444;
+            background: none;
+            border: none;
+            font-size: 20px;
+            padding-bottom: 8px;
+        }
+
+        .sticky-save-bar {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--mp-border);
+            padding: 15px 0;
+            position: sticky;
+            bottom: 0;
+            margin: 0 -15px;
+            z-index: 100;
+        }
+        .btn-logout {
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid var(--mp-border);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-logout:hover {
+    background: #fee2e2;
+    color: #ef4444;
+    border-color: #fecaca;
+}
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        
+       
+<!-- Заголовок -->
+<div class="dashboard-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="h3 mb-1 fw-bold">
+            {% if user.role == 'blogger' %}Кабинет автора{% else %}Профиль бренда{% endif %}
+        </h1>
+        <p class="text-muted small mb-0">Управление данными и платежными реквизитами</p>
+    </div>
+    
+</div>
+        <form method="POST" action="{% url 'core:update_profile' %}">
+            {% csrf_token %}
+
+            {% if user.role == 'blogger' %}
+                <!-- СЕКЦИЯ БЛОГЕРА -->
+                <div class="section-card">
+                    <div class="section-title">
+                        <i class="bi bi-youtube text-danger"></i> Основные данные
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label-custom">Ссылка на YouTube канал</label>
+                            <input type="url" name="channel_link" class="form-control-custom w-100" 
+                                   value="{{ user.blogger_profile.channel_link }}" placeholder="https://youtube.com/@...">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label-custom">Описание контента</label>
+                            <textarea name="channel_description" class="form-control-custom w-100" rows="3" 
+                                      placeholder="О чем ваш канал?">{{ user.blogger_profile.channel_description }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">
+                        <i class="bi bi-credit-card text-primary"></i> Реквизиты для выплат
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label-custom">ФИО получателя</label>
+                            <input type="text" name="bank_receiver" class="form-control-custom w-100" value="{{ user.blogger_profile.bank_receiver }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">ИНН</label>
+                            <input type="text" name="inn" class="form-control-custom w-100" value="{{ user.blogger_profile.inn }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">БИК Банка</label>
+                            <input type="text" name="bik" class="form-control-custom w-100" value="{{ user.blogger_profile.bik }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">Расчетный счет</label>
+                            <input type="text" name="account_number" class="form-control-custom w-100" value="{{ user.blogger_profile.account_number }}">
+                        </div>
+                    </div>
+                </div>
+
+            {% else %}
+                <!-- СЕКЦИЯ РЕКЛАМОДАТЕЛЯ -->
+                <div class="section-card">
+                    <div class="section-title">
+                        <i class="bi bi-building text-primary"></i> Данные организации
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label-custom">Компания / ООО</label>
+                            <input type="text" name="company_name" class="form-control-custom w-100" value="{{ user.advertiser_profile.company_name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">Сайт</label>
+                            <input type="url" name="website" class="form-control-custom w-100" value="{{ user.advertiser_profile.website }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label-custom">Юридический адрес</label>
+                            <input type="text" name="legal_address" class="form-control-custom w-100" value="{{ user.advertiser_profile.legal_address }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">
+                        <i class="bi bi-file-earmark-text text-primary"></i> Реквизиты
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label-custom">ИНН</label>
+                            <input type="text" name="inn" class="form-control-custom w-100" value="{{ user.advertiser_profile.inn }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">ОГРН</label>
+                            <input type="text" name="ogrn" class="form-control-custom w-100" value="{{ user.advertiser_profile.ogrn }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">БИК Банка</label>
+                            <input type="text" name="bik" class="form-control-custom w-100" value="{{ user.advertiser_profile.bik }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-custom">Счет</label>
+                            <input type="text" name="account_number" class="form-control-custom w-100" value="{{ user.advertiser_profile.account_number }}">
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- ДОП ПОЛЯ -->
+            <div class="section-card">
+                <div class="section-title d-flex justify-content-between">
+                    <span><i class="bi bi-plus-circle text-primary"></i> Дополнительно</span>
+                </div>
+                
+                <div id="custom-fields-container">
+                    {% with profile=user.blogger_profile|default:user.advertiser_profile %}
+                        {% for key, value in profile.custom_data.items %}
+                        <div class="custom-field-row">
+                            <div>
+                                <label class="form-label-custom">Название</label>
+                                <input type="text" name="custom_label[]" value="{{ key }}" class="form-control-custom w-100" required>
+                            </div>
+                            <div>
+                                <label class="form-label-custom">Значение</label>
+                                <input type="text" name="custom_value[]" value="{{ value }}" class="form-control-custom w-100" required>
+                            </div>
+                            <button type="button" class="btn-remove" onclick="this.parentElement.remove()">×</button>
+                        </div>
+                        {% endfor %}
+                    {% endwith %}
+                </div>
+                
+                <button type="button" class="btn-add-field" onclick="addCustomField()">
+                    <i class="bi bi-plus-lg"></i> Добавить новое поле
+                </button>
+            </div>
+
+            <!-- ПАНЕЛЬ СОХРАНЕНИЯ -->
+            <div class="sticky-save-bar">
+                <div class="container d-flex gap-3 justify-content-center">
+                    <button type="submit" class="btn btn-primary px-5 rounded-pill shadow-sm">
+                        Сохранить изменения
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function addCustomField() {
+        const container = document.getElementById('custom-fields-container');
+        const row = document.createElement('div');
+        row.className = 'custom-field-row';
+        row.innerHTML = `
+            <div>
+                <label class="form-label-custom">Название</label>
+                <input type="text" name="custom_label[]" placeholder="Напр: Telegram" class="form-control-custom w-100" required>
+            </div>
+            <div>
+                <label class="form-label-custom">Значение</label>
+                <input type="text" name="custom_value[]" placeholder="@username" class="form-control-custom w-100" required>
+            </div>
+            <button type="button" class="btn-remove" onclick="this.parentElement.remove()">×</button>
+        `;
+        container.appendChild(row);
+    }
+</script>
+{% endblock %}

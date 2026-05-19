@@ -88,7 +88,7 @@
                     <i class="bi bi-layers-half text-primary me-2"></i>Регистрация интеграции & ERID
                 </h5>
                 
-                <form action="" method="POST" enctype="multipart/form-data" id="eridForm">
+                <form action="{% url 'core:erid_management' %}" method="POST" enctype="multipart/form-data" id="eridForm">
                     {% csrf_token %}
                     
                     <div class="form-section-title">1. Рекламодатель</div>
@@ -313,7 +313,7 @@
         togglePartyFields('blog');
     });
 
-    // Функция переключения отображения полей и ОЧИСТКИ значений, если выбран сохраненный контрагент
+    // Функция переключения отображения полей и ОЧИСТКИ значений
     function togglePartyFields(prefix) {
         const select = document.getElementById(prefix + 'Select');
         const box = document.getElementById(prefix + 'NewBox');
@@ -322,12 +322,12 @@
 
         if (select.value === 'new') {
             box.classList.remove('d-none');
-            // Делаем поля ввода обязательными при добавлении нового контрагента
             document.getElementById(prefix + '_name').required = true;
             toggleCitizenship(prefix);
         } else {
             box.classList.add('d-none');
-            // Снимаем обязательность и ПОЛНОСТЬЮ очищаем поля, чтобы HTML5-валидация и бэкенд не путались
+            
+            // Фикс валидации: полностью снимаем required с невидимых полей
             document.getElementById(prefix + '_name').required = false;
             document.getElementById(prefix + '_name').value = '';
             document.getElementById(prefix + '_inn').value = '';
@@ -336,14 +336,17 @@
             
             const innInput = document.getElementById(prefix + '_inn');
             const phoneInput = document.getElementById(prefix + '_phone');
+            const countryInput = document.getElementById(prefix + '_country');
+            
             if(innInput) innInput.required = false;
             if(phoneInput) phoneInput.required = false;
+            if(countryInput) countryInput.required = false;
         }
     }
 
     function toggleCitizenship(prefix) {
         const select = document.getElementById(prefix + 'Select');
-        if (select && select.value !== 'new') return; // Игнорируем логику, если выбран готовый элемент
+        if (select && select.value !== 'new') return; 
 
         const isForeign = document.getElementById(prefix + '_foreign').checked;
         const countryInput = document.getElementById(prefix + '_country');
@@ -365,7 +368,7 @@
 
     function toggleTypeFields(prefix) {
         const select = document.getElementById(prefix + 'Select');
-        if (select && select.value !== 'new') return; // Игнорируем логику, если выбран готовый элемент
+        if (select && select.value !== 'new') return; 
 
         const type = document.getElementById(prefix + '_type').value;
         const isForeign = document.getElementById(prefix + '_foreign').checked;
@@ -403,7 +406,7 @@
         }
     }
 
-    // Асинхронное удаление контрагентов (Рекламодателей/Блогеров) прямо со страницы формы
+    // Асинхронное удаление контрагентов
     function deleteSavedContractor(prefix) {
         const select = document.getElementById(prefix + 'Select');
         const selectedId = select.value;
@@ -418,8 +421,10 @@
             return;
         }
 
-        // Отправляем AJAX запрос на бэкенд на удаление
-        fetch(`/delete-contractor/${selectedId}/`, {
+        const deleteUrl = "{% url 'core:delete_contractor' 'placeholder' %}".replace('placeholder', selectedId);
+
+        // Код полностью очищен от неразрывных пробелов
+        fetch(deleteUrl, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': '{{ csrf_token }}',
@@ -428,11 +433,9 @@
         })
         .then(response => {
             if (response.ok) {
-                // Удаляем опцию из селекта на фронтенде
                 const optionToDelete = select.querySelector(`option[value="${selectedId}"]`);
                 if (optionToDelete) optionToDelete.remove();
                 
-                // Сбрасываем селект в дефолтное положение "Добавить нового"
                 select.value = 'new';
                 togglePartyFields(prefix);
                 alert('Контрагент успешно удален.');

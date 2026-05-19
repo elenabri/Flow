@@ -76,39 +76,44 @@ class RegistrationForm(forms.ModelForm):
         return cleaned_data
 
     def save(self, commit=True):
-        """
-        Переопределяем сохранение, чтобы автоматически генерировать username 
-        из email, хэшировать пароль и сохранять дополнительные поля.
-        """
+        # 1. Сначала сохраняем самого пользователя (базовые поля: email, username, password)
         user = super().save(commit=False)
         email = self.cleaned_data.get('email')
         
-        # Автоматически ставим username равным email (для совместимости с Django)
         user.username = email
         user.password = make_password(self.cleaned_data.get('password'))
         
         if commit:
-            user.save()
+            user.save()  # Сохраняем User в базу данных, чтобы получить его id
             
-            # Логика создания связанных профилей (адаптируйте под ваши модели профилей)
+            # 2. Вытаскиваем роль, выбранную на форме
             role = self.cleaned_data.get('role')
+            
             if role == 'blogger':
-                # Пример создания профиля блогера:
-                # BloggerProfile.objects.create(
-                #     user=user,
-                #     channel_link=self.cleaned_data.get('channel_link'),
-                #     price_start=self.cleaned_data.get('price_start'),
-                #     ...
-                # )
-                pass
+                # Создаем реальную запись в таблице блогеров
+                # ВНИМАНИЕ: Замените BloggerProfile на ваше название модели (например, Blogger)
+                BloggerProfile.objects.create(
+                    user=user,  # Связываем профиль с созданным пользователем
+                    channel_link=self.cleaned_data.get('channel_link'),
+                    price_start=self.cleaned_data.get('price_start'),
+                    price_middle=self.cleaned_data.get('price_middle'),
+                    price_end=self.cleaned_data.get('price_end'),
+                    price_shorts=self.cleaned_data.get('price_shorts'),
+                    # Для ManyToMany (темы) нужен другой подход, он описан ниже
+                )
+                
+                # Если у вас темы сохраняются в профиль блогера как ManyToMany:
+                # blogger_profile.topics.set(self.cleaned_data.get('topics'))
+                
             elif role == 'advertiser':
-                # Пример создания профиля рекламодателя:
-                # AdvertiserProfile.objects.create(
-                #     user=user,
-                #     company_name=self.cleaned_data.get('company_name'),
-                #     ...
-                # )
-                pass
+                # Создаем реальную запись в таблице рекламодателей
+                # ВНИМАНИЕ: Замените AdvertiserProfile на ваше название модели
+                AdvertiserProfile.objects.create(
+                    user=user,  # Связываем профиль с созданным пользователем
+                    company_name=self.cleaned_data.get('company_name'),
+                    product_title=self.cleaned_data.get('product_title'),
+                    product_link=self.cleaned_data.get('product_link'),
+                )
                 
         return user
 

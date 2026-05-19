@@ -1375,26 +1375,58 @@ class EridManagementView(View):
             erid = await ord_service.create_creative(creative_ext_id, creative_payload)
             logger.info(f"Получен ERID от ВК ОРД: {erid}")
 
-            # --- ЛОГИКА 6: БУХГАЛТЕРСКИЙ СЧЕТ ---
+           # --- ЛОГИКА 6: БУХГАЛТЕРСКИЙ СЧЕТ (АКТ) ---
             invoice_number = request.POST.get('invoice_number', f"INV-{uuid.uuid4().hex[:5].upper()}")
+            
+            # Парсинг дат (с фолбеком на текущую дату, если что-то пошло не так)
+            current_date = timezone.now().date()
+            invoice_date_str = request.POST.get('invoice_date')
+            period_start_str = request.POST.get('period_start')
+            period_end_str = request.POST.get('period_end')
+
+            invoice_date = timezone.datetime.strptime(invoice_date_str, '%Y-%m-%d').date() if invoice_date_str else current_date
+            period_start = timezone.datetime.strptime(period_start_str, '%Y-%m-%d').date() if period_start_str else current_date
+            period_end = timezone.datetime.strptime(period_end_str, '%Y-%m-%d').date() if period_end_str else current_date
+
+            # Финансовые показатели
             try:
                 invoice_amount = float(request.POST.get('invoice_amount', 0))
             except (ValueError, TypeError):
                 invoice_amount = 0.0
-            
+
+            try:
+                allocated_raw = request.POST.get('allocated_amount')
+                allocated_amount = float(allocated_raw) if allocated_raw else invoice_amount
+            except (ValueError, TypeError):
+                allocated_amount = invoice_amount
+
+            # Чекбокс НДС (в Django передается как наличие ключа в POST)
+            is_vat = 'is_vat' in request.POST
+
+            # Отправка расширенных данных в ОРД сервис (API v3)
             await ord_service.create_invoice(
                 contract_ext_id=contract_ext_id,
                 invoice_number=invoice_number,
-                amount=invoice_amount
+                invoice_date=invoice_date,
+                period_start=period_start,
+                period_end=period_end,
+                amount=invoice_amount,
+                allocated_amount=allocated_amount,
+                is_vat=is_vat
             )
 
+            # Сохраняем в локальную базу данных (убедитесь, что в модели EridIntegration есть эти поля)
             await sync_to_async(EridIntegration.objects.create)(
                 blogger_name=blog_name,
                 advertiser_name=adv_name,
                 channel_url=channel_url,
                 creative_name=f"{blog_name} YouTube {product_name}",
                 invoice_number=invoice_number,
-                invoice_date=timezone.now().date(),
+                invoice_date=invoice_date,
+                period_start=period_start,
+                period_end=period_end,
+                invoice_amount=invoice_amount,
+                allocated_amount=allocated_amount,
                 erid=erid
             )
 

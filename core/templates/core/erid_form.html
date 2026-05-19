@@ -303,15 +303,13 @@
 <script>
     let kktuSelectInstance = null;
 
-    // Инициализация кастомных выпадающих списков при загрузке страницы
     document.addEventListener('DOMContentLoaded', function() {
         if (document.getElementById('kktuSelect')) {
             kktuSelectInstance = new TomSelect('#kktuSelect', {
-                create: false,
-                maxItems: 1,
+                create: false, maxItems: 1,
                 placeholder: '-- Начните вводить код или название --',
                 sortField: { field: "text", direction: "asc" },
-                dropdownParent: 'body' // Позволяет списку не обрезаться границами блоков card
+                dropdownParent: 'body'
             });
         }
         
@@ -320,158 +318,98 @@
             dateStartInput.value = new Date().toISOString().split('T')[0];
         }
 
-        // Первичный вызов логики отображения полей
-        togglePartyFields('adv');
-        togglePartyFields('blog');
+        // Инициализируем оба блока
+        updatePartyFields('adv');
+        updatePartyFields('blog');
     });
 
-    // Функция переключения отображения полей и ОЧИСТКИ значений
-    function togglePartyFields(prefix) {
+    // Единая функция управления полями
+    function updatePartyFields(prefix) {
         const select = document.getElementById(prefix + 'Select');
         const box = document.getElementById(prefix + 'NewBox');
-        
         if (!select || !box) return;
 
-        if (select.value === 'new') {
-            box.classList.remove('d-none');
-            document.getElementById(prefix + '_name').required = true;
-            toggleCitizenship(prefix);
-        } else {
+        const isNew = (select.value === 'new');
+        
+        // 1. Базовая видимость блока
+        if (!isNew) {
             box.classList.add('d-none');
-            
-            // Фикс валидации: полностью снимаем required с невидимых полей
-            document.getElementById(prefix + '_name').required = false;
-            document.getElementById(prefix + '_name').value = '';
-            document.getElementById(prefix + '_inn').value = '';
-            document.getElementById(prefix + '_phone').value = '';
-            document.getElementById(prefix + '_country').value = '';
-            
-            const innInput = document.getElementById(prefix + '_inn');
-            const phoneInput = document.getElementById(prefix + '_phone');
-            const countryInput = document.getElementById(prefix + '_country');
-            
-            if(innInput) innInput.required = false;
-            if(phoneInput) phoneInput.required = false;
-            if(countryInput) countryInput.required = false;
+            box.querySelectorAll('input, select').forEach(i => i.disabled = true);
+            return;
         }
-    }
 
-    function toggleCitizenship(prefix) {
-        const select = document.getElementById(prefix + 'Select');
-        if (select && select.value !== 'new') return; 
+        box.classList.remove('d-none');
+        box.querySelectorAll('input, select').forEach(i => i.disabled = false);
 
+        // 2. Логика типов и гражданства
+        const type = document.getElementById(prefix + '_type').value;
         const isForeign = document.getElementById(prefix + '_foreign').checked;
+        
+        const innInput = document.getElementById(prefix + '_inn');
+        const nameInput = document.getElementById(prefix + '_name');
+        const phoneInput = document.getElementById(prefix + '_phone');
         const countryInput = document.getElementById(prefix + '_country');
         const ipOption = document.getElementById(prefix + '_ip_option');
-        const typeSelect = document.getElementById(prefix + '_type');
 
+        // Страна
         if (isForeign) {
             countryInput.classList.remove('d-none');
             countryInput.required = true;
-            if(ipOption) ipOption.classList.add('d-none');
-            if (typeSelect && typeSelect.value === 'ip') typeSelect.value = 'ur';
+            if (ipOption) ipOption.classList.add('d-none');
+            if (type === 'ip') document.getElementById(prefix + '_type').value = 'ur';
         } else {
             countryInput.classList.add('d-none');
             countryInput.required = false;
-            if(ipOption) ipOption.classList.remove('d-none');
+            if (ipOption) ipOption.classList.remove('d-none');
         }
-        toggleTypeFields(prefix);
-    }
 
-    function updatePartyFields(prefix) {
-    const select = document.getElementById(prefix + 'Select');
-    const box = document.getElementById(prefix + 'NewBox');
-    
-    // 1. Логика скрытия/показа всего блока (ваша исходная задача)
-    const isNew = (select && select.value === 'new');
-    if (!isNew) {
-        box.classList.add('d-none');
-        // Отключаем все поля внутри, чтобы они не ушли в POST
-        box.querySelectorAll('input, select').forEach(i => i.disabled = true);
-        return;
-    }
-    
-    // Если выбрали 'new', показываем блок и включаем поля
-    box.classList.remove('d-none');
-    box.querySelectorAll('input, select').forEach(i => i.disabled = false);
-
-    // 2. ВАША ЛОГИКА ТИПОВ (вынесенная в отдельную функцию или блок)
-    const type = document.getElementById(prefix + '_type').value;
-    const isForeign = document.getElementById(prefix + '_foreign').checked;
-    
-    const innInput = document.getElementById(prefix + '_inn');
-    const nameInput = document.getElementById(prefix + '_name');
-    const phoneInput = document.getElementById(prefix + '_phone');
-
-    if (type === 'ur') {
-        nameInput.placeholder = "Название компании (ООО '...')";
-        innInput.placeholder = isForeign ? "Tax ID / Код" : "ИНН организации (10 цифр)";
-        phoneInput.classList.add('d-none');
-        phoneInput.required = false;
-        innInput.classList.remove('d-none');
-        innInput.required = !isForeign; 
-    } else if (type === 'fiz') {
-        nameInput.placeholder = "ФИО полностью";
-        phoneInput.classList.remove('d-none');
-        phoneInput.required = true;
-        if (isForeign) {
-            innInput.classList.add('d-none');
-            innInput.required = false;
-        } else {
-            innInput.classList.remove('d-none');
-            innInput.placeholder = "ИНН физлица (12 цифр)";
-            innInput.required = true;
+        // Поля в зависимости от типа
+        if (type === 'ur') {
+            nameInput.placeholder = "Название компании (ООО '...')";
+            innInput.placeholder = isForeign ? "Tax ID / Код" : "ИНН организации (10 цифр)";
+            phoneInput.classList.add('d-none'); phoneInput.required = false;
+            innInput.classList.remove('d-none'); innInput.required = !isForeign;
+        } else if (type === 'fiz') {
+            nameInput.placeholder = "ФИО полностью";
+            phoneInput.classList.remove('d-none'); phoneInput.required = true;
+            if (isForeign) {
+                innInput.classList.add('d-none'); innInput.required = false;
+            } else {
+                innInput.classList.remove('d-none');
+                innInput.placeholder = "ИНН физлица (12 цифр)";
+                innInput.required = true;
+            }
+        } else if (type === 'ip') {
+            nameInput.placeholder = "ИП Фамилия Имя Отчество";
+            innInput.placeholder = "ИНН ИП (12 цифр)";
+            phoneInput.classList.remove('d-none'); phoneInput.required = false; // или true, если нужно
+            innInput.classList.remove('d-none'); innInput.required = true;
         }
-    } else if (type === 'ip') {
-        nameInput.placeholder = "ИП Фамилия Имя Отчество";
-        innInput.placeholder = "ИНН ИП (12 цифр)";
-        phoneInput.classList.add('d-none');
-        phoneInput.required = false;
-        innInput.classList.remove('d-none');
-        innInput.required = true;
     }
-}
 
-    // Асинхронное удаление контрагентов
     function deleteSavedContractor(prefix) {
         const select = document.getElementById(prefix + 'Select');
         const selectedId = select.value;
-        
         if (!selectedId || selectedId === 'new') {
-            alert('Пожалуйста, выберите сохраненного контрагента для удаления.');
+            alert('Пожалуйста, выберите сохраненного контрагента.');
             return;
         }
         
         const typeName = prefix === 'adv' ? 'рекламодателя' : 'блогера';
-        if (!confirm(`Вы уверены, что хотите безвозвратно удалить выбранного ${typeName} из сохраненных списков системы?`)) {
-            return;
-        }
+        if (!confirm(`Удалить ${typeName}?`)) return;
 
-        const deleteUrl = "{% url 'core:delete_contractor' 'placeholder' %}".replace('placeholder', selectedId);
-
-        // Код полностью очищен от неразрывных пробелов
-        fetch(deleteUrl, {
+        fetch("{% url 'core:delete_contractor' '0' %}".replace('0', selectedId), {
             method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                const optionToDelete = select.querySelector(`option[value="${selectedId}"]`);
-                if (optionToDelete) optionToDelete.remove();
-                
+            headers: {'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json'}
+        }).then(res => {
+            if (res.ok) {
+                select.querySelector(`option[value="${selectedId}"]`).remove();
                 select.value = 'new';
-                togglePartyFields(prefix);
-                alert('Контрагент успешно удален.');
+                updatePartyFields(prefix);
+                alert('Успешно удалено.');
             } else {
-                alert('Ошибка сервера при попытке удаления контрагента.');
+                alert('Ошибка сервера.');
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Сетевая ошибка при удалении.');
         });
     }
 </script>

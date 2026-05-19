@@ -1262,7 +1262,7 @@ class EridManagementView(View):
             raise ValueError("КРИТИЧЕСКАЯ ОШИБКА: VK_ORD_TOKEN не настроен в settings.py")
         return token
 
-    ddef get(self, request):
+    def get(self, request):
         kktu_queryset = KktuCode.objects.filter(is_active=True)
         
         # ОТЛАДКА: Выведет количество и состав в консоль сервера (где запущен runserver)

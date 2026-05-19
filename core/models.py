@@ -408,3 +408,16 @@ class EridIntegration(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+class KktuCode(models.Model):
+    code = models.CharField("Код ККТУ", max_length=50, unique=True) # Например: "10.20"
+    name = models.CharField("Название категории", max_length=500)   # Например: "Переработка рыбы"
+    parent_code = models.CharField("Код родителя", max_length=50, blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Код ККТУ ОРД"
+        verbose_name_plural = "Коды ККТУ ОРД"
+        ordering = ['code']
+
+    def __str__(self):
+        return f"{self.code} — {self.name}"

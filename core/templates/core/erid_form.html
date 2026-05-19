@@ -178,66 +178,49 @@
                     </div>
 
                     <div class="form-section-title">3. Данные Креатива (Ролика)</div>
-                    <div class="p-3 bg-white rounded border mb-4">
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">Что рекламируем (Товар)</label>
-                            <input type="text" class="form-control form-control-sm" name="product_name" required placeholder="Например: Термос Вкусневич 1л">
-                        </div>
-                        <div style="background: yellow; color: black; padding: 20px; border: 2px solid red;">
-    <h3>Отладка данных (Context Check):</h3>
-    <p>Всего ККТУ в контексте: {{ kktu_codes|length }}</p>
-    <pre>
-        {% for k in kktu_codes %}
-            {{ k.code }} - {{ k.name }}
-        {% empty %}
-            Пустой список!
-        {% endfor %}
-    </pre>
-</div>
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">Категория товара (ККТУ)</label>
-                            <select class="form-select form-select-sm form-select-custom" name="kktu_code" id="kktuSelect" required>
-    <option value="">-- Начните вводить код или название --</option>
-    <!-- Тестовые хардкод-данные -->
-    <option value="01.1">01.1 | Продукты питания</option>
-    <option value="02.2">02.2 | Одежда и обувь</option>
-    
-    {% for kktu in kktu_list %}
-        <option value="{{ kktu.code }}">[{{ kktu.code }}] {{ kktu.name }}</option>
-    {% endfor %}
-</select>
-                            <select class="form-select form-select-sm form-select-custom" name="kktu_code" id="kktuSelect" required>
-                                <option value="">-- Начните вводить код или название --</option>
-                                {% for kktu in kktu_list %}
-                                    <option value="{{ kktu.code }}">[{{ kktu.code }}] {{ kktu.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
+<div class="p-3 bg-white rounded border mb-4">
+    <div class="mb-3">
+        <label class="form-label small fw-bold text-muted">Что рекламируем (Товар)</label>
+        <input type="text" class="form-control form-control-sm" name="product_name" required placeholder="Например: Термос Вкусневич 1л">
+    </div>
 
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">Период размещения</label>
-                            <div class="row g-2">
-                                <div class="col">
-                                    <input type="date" class="form-control form-control-sm" name="date_start" id="date_start" value="{{ today_date }}">
-                                </div>
-                                <div class="col">
-                                    <select class="form-select form-select-sm form-select-custom" name="date_end_type" id="dateEndType" onchange="if(this.value==='date'){document.getElementById('dateEndInput').classList.remove('d-none')}else{document.getElementById('dateEndInput').classList.add('d-none')}">
-                                        <option value="infinity">Бессрочно</option>
-                                        <option value="date">Указать дату окончания</option>
-                                    </select>
-                                    <input type="date" class="form-control form-control-sm mt-1 d-none" id="dateEndInput" name="date_end">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">Ссылки на товары (необязательно)</label>
-                            <textarea class="form-control form-control-sm" name="target_urls" rows="2" placeholder="Каждая ссылка с новой строки"></textarea>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small fw-bold text-muted">Файл видео рекламы</label>
-                            <input type="file" class="form-control form-control-sm" name="video_file" accept="video/*" required>
-                        </div>
-                    </div>
+    <div class="mb-3">
+        <label class="form-label small fw-bold text-muted">Категория товара (ККТУ)</label>
+        <!-- Исправлено: имя переменной kktu_codes и убрано дублирование -->
+        <select class="form-select form-select-sm form-select-custom" name="kktu_code" id="kktuSelect" required>
+            <option value="">-- Выберите категорию --</option>
+            {% for kktu in kktu_codes %}
+                <option value="{{ kktu.code }}">[{{ kktu.code }}] {{ kktu.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label small fw-bold text-muted">Период размещения</label>
+        <div class="row g-2">
+            <div class="col">
+                <input type="date" class="form-control form-control-sm" name="date_start" id="date_start" value="{{ today_date }}">
+            </div>
+            <div class="col">
+                <select class="form-select form-select-sm form-select-custom" name="date_end_type" id="dateEndType" onchange="if(this.value==='date'){document.getElementById('dateEndInput').classList.remove('d-none')}else{document.getElementById('dateEndInput').classList.add('d-none')}">
+                    <option value="infinity">Бессрочно</option>
+                    <option value="date">Указать дату окончания</option>
+                </select>
+                <input type="date" class="form-control form-control-sm mt-1 d-none" id="dateEndInput" name="date_end">
+            </div>
+        </div>
+    </div>
+    
+    <div class="mb-3">
+        <label class="form-label small fw-bold text-muted">Ссылки на товары (необязательно)</label>
+        <textarea class="form-control form-control-sm" name="target_urls" rows="2" placeholder="Каждая ссылка с новой строки"></textarea>
+    </div>
+    
+    <div class="mb-2">
+        <label class="form-label small fw-bold text-muted">Файл видео рекламы</label>
+        <input type="file" class="form-control form-control-sm" name="video_file" accept="video/*" required>
+    </div>
+</div>
 
                     <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm" style="border-radius: 8px;">
                         <i class="bi bi-cloud-arrow-up-fill me-2"></i>Сгенерировать ERID

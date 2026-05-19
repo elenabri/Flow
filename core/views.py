@@ -1262,12 +1262,19 @@ class EridManagementView(View):
             raise ValueError("КРИТИЧЕСКАЯ ОШИБКА: VK_ORD_TOKEN не настроен в settings.py")
         return token
 
-    def get(self, request):
+    ddef get(self, request):
+        kktu_queryset = KktuCode.objects.filter(is_active=True)
+        
+        # ОТЛАДКА: Выведет количество и состав в консоль сервера (где запущен runserver)
+        print(f"DEBUG: Количество ККТУ в базе: {kktu_queryset.count()}")
+        for item in kktu_queryset:
+            print(f"DEBUG: {item.code} | {item.name}")
+
         context = {
             'advertisers': SavedContractor.objects.filter(role='advertiser'),
             'bloggers': SavedContractor.objects.filter(role='blogger'),
             'integrations': EridIntegration.objects.select_related('ord_contract', 'kktu').all(),
-            'kktu_codes': KktuCode.objects.filter(is_active=True),
+            'kktu_codes': kktu_queryset,
             'today_date': timezone.now().date().isoformat()
         }
         return render(request, self.template_name, context)

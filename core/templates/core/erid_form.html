@@ -423,6 +423,32 @@
             innInput.classList.remove('d-none');
         }
     }
+    document.addEventListener('DOMContentLoaded', function() {
+    // Автоматическое заполнение дат отчетного периода текущим месяцем (удобный UX)
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth(); // 0-11
+    
+    // Первый и последний день текущего месяца
+    const firstDay = new Date(y, m, 2).toISOString().split('T')[0]; // коррекция таймзоны
+    const lastDay = new Date(y, m + 1, 1).toISOString().split('T')[0];
+    
+    const periodStartInput = document.getElementById('period_start');
+    const periodEndInput = document.getElementById('period_end');
+    const invoiceDateInput = document.getElementById('invoice_date');
+    
+    if (periodStartInput && !periodStartInput.value) periodStartInput.value = firstDay;
+    if (periodEndInput && !periodEndInput.value) periodEndInput.value = lastDay;
+    if (invoiceDateInput && !invoiceDateInput.value) invoiceDateInput.value = new Date().toISOString().split('T')[0];
+
+    // Валидация: Дата конца периода не может быть меньше даты начала
+    periodEndInput.addEventListener('change', function() {
+        if (periodStartInput.value && this.value < periodStartInput.value) {
+            alert('Дата окончания периода не может быть раньше даты начала!');
+            this.value = periodStartInput.value;
+        }
+    });
+});
 
     window.addEventListener('DOMContentLoaded', () => {
         togglePartyFields('adv');

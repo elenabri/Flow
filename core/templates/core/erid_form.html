@@ -163,9 +163,7 @@
                                 <option value="">-- Начните вводить код или название --</option>
                                 {% for kktu in kktu_list %}
                                     <option value="{{ kktu.code }}">[{{ kktu.code }}] {{ kktu.name }}</option>
-                                {% Brass {% empty %}
-                                    <option value="30.15.1">Прочие товары и услуги (Код 30.15.1)</option>
-                                    <option value="10.01.1">Продукты питания (Код 10.01.1)</option>
+                               
                                 {% endfor %}
                             </select>
                         </div>

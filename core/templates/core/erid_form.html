@@ -183,20 +183,11 @@
         <label class="form-label small fw-bold text-muted">Что рекламируем (Товар)</label>
         <input type="text" class="form-control form-control-sm" name="product_name" required placeholder="Например: Термос Вкусневич 1л">
     </div>
-    <label>Тестовый список (без стилей):</label>
-<select name="kktu_code" size="5" style="display: block; width: 100%;">
-    {% for kktu in kktu_codes %}
-        <option value="{{ kktu.code }}">{{ kktu.code }} - {{ kktu.name }}</option>
-    {% empty %}
-        <option>Ошибка: данных нет</option>
-    {% endfor %}
-</select>
 
     <div class="mb-3">
         <label class="form-label small fw-bold text-muted">Категория товара (ККТУ)</label>
-        <!-- Исправлено: имя переменной kktu_codes и убрано дублирование -->
         <select class="form-select form-select-sm form-select-custom" name="kktu_code" id="kktuSelect" required>
-            <option value="">-- Выберите категорию --</option>
+            <option value="">-- Начните вводить код или название --</option>
             {% for kktu in kktu_codes %}
                 <option value="{{ kktu.code }}">[{{ kktu.code }}] {{ kktu.name }}</option>
             {% endfor %}

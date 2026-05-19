@@ -180,24 +180,94 @@
                         </div>
                     </div>
 
-                    <!-- БЛОК: СЧЕТ / АКТ -->
-                    <div class="form-section-title">4. Бухгалтерский Счет</div>
-                    <div class="p-3 bg-white rounded border mb-4">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label class="form-label small fw-bold text-muted mb-0">Первичный документ</label>
-                            <button type="button" onclick="toggleInvoicePreview()" class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size: 0.75rem; border-radius: 20px;">
-                                <i class="bi bi-eye-fill"></i> Посмотреть счет
-                            </button>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col">
-                                <input type="text" class="form-control form-control-sm" name="invoice_number" required placeholder="№ Счета / Акта">
-                            </div>
-                            <div class="col">
-                                <input type="text" class="form-control form-control-sm" name="invoice_amount" required placeholder="Сумма (руб)">
-                            </div>
-                        </div>
-                    </div>
+                   <!-- ШАГ 4: ИНФОРМАЦИЯ О СЧЕТЕ -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-dark text-white d-flex align-items-center">
+        <span class="badge bg-primary me-2">Шаг 4</span>
+        <h5 class="mb-0">Информация о счете (акте) и отчетном периоде</h5>
+    </div>
+    <div class="card-body">
+        
+        <!-- Верхний ряд: Номер счета и дата составления -->
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label for="invoice_number" class="form-label font-weight-bold">Номер счета / акта <span class="text-danger">*</span></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-file-earmark-binary"></i></span>
+                    <input type="text" name="invoice_number" id="invoice_number" class="form-control" placeholder="Например, АКТ-2026-05" required>
+                </div>
+                <div class="form-text">Официальный номер документа из вашей учетной системы.</div>
+            </div>
+            <div class="col-md-6">
+                <label for="invoice_date" class="form-label font-weight-bold">Дата выставления счета <span class="text-danger">*</span></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                    <input type="date" name="invoice_date" id="invoice_date" class="form-control" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- НОВЫЙ РЯД: Отчетный период (Период актирования) -->
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label for="period_start" class="form-label font-weight-bold">Период: Начало <span class="text-danger">*</span></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-calendar-range"></i></span>
+                    <input type="date" name="period_start" id="period_start" class="form-control" required>
+                </div>
+                <div class="form-text">Дата начала оказания рекламных услуг.</div>
+            </div>
+            <div class="col-md-6">
+                <label for="period_end" class="form-label font-weight-bold">Период: Окончание <span class="text-danger">*</span></label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-calendar-range-fill"></i></span>
+                    <input type="date" name="period_end" id="period_end" class="form-control" required>
+                </div>
+                <div class="form-text">Дата завершения отчетного периода.</div>
+            </div>
+        </div>
+
+        <!-- НОВЫЙ РЯД: Финансовые данные -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-5">
+                <label for="invoice_amount" class="form-label font-weight-bold">Общая сумма счета <span class="text-danger">*</span></label>
+                <div class="input-group">
+                    <input type="number" step="0.01" min="0" name="invoice_amount" id="invoice_amount" class="form-control" placeholder="0.00" required>
+                    <span class="input-group-text">₽</span>
+                </div>
+                <div class="form-text">Итоговая сумма по документу.</div>
+            </div>
+            <div class="col-md-5">
+                <label for="allocated_amount" class="form-label font-weight-bold">Сумма за рекламу (выделенная)</label>
+                <div class="input-group">
+                    <input type="number" step="0.01" min="0" name="allocated_amount" id="allocated_amount" class="form-control" placeholder="0.00">
+                    <span class="input-group-text">₽</span>
+                </div>
+                <div class="form-text">Заполнять, если в счете есть другие услуги кроме рекламы.</div>
+            </div>
+            <div class="col-md-2 d-flex align-items-center justify-content-start pt-3">
+                <div class="form-check form-switch mt-2">
+                    <input class="form-check-input" type="checkbox" role="switch" name="is_vat" id="is_vat" checked>
+                    <label class="form-check-label font-weight-bold" for="is_vat">Включая НДС</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Интерактивное превью TubeFlow -->
+        <div class="p-3 bg-light rounded border">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small fw-bold"><i class="bi bi-eye me-1"></i> Сэмпл итогового документа для проверки (TubeFlow)</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleInvoicePreview()">
+                    <i class="bi bi-fullscreen"></i> Показать образец
+                </button>
+            </div>
+            <div class="text-secondary small">
+                Система автоматически свяжет этот счет с генерируемым креативом и передаст данные в VK ОРД. Перед отправкой убедитесь, что даты отчетного периода входят в рамки основного договора.
+            </div>
+        </div>
+
+    </div>
+</div>
 
                     <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm" style="border-radius: 8px;">
                         <i class="bi bi-cloud-arrow-up-fill me-2"></i>Сгенерировать ERID

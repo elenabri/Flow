@@ -153,7 +153,7 @@ class VKORDService:
             raise Exception(f"Сетевая ошибка: {e}")
 
     def get_kktu_catalog(self):
-       url = f"{self.BASE_URL}/v3/dict/kktu"
+        url = f"{self.BASE_URL}/v3/dict/kktu"
         params = {"limit": limit, "offset": offset, "search": search}
         response = requests.get(url, headers=self.headers, params=params)
         response.raise_for_status()

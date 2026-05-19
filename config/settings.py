@@ -158,3 +158,10 @@ CSRF_TRUSTED_ORIGINS = [
 # Для дополнительной надежности при работе с сессиями
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+
+import os
+
+# ... ваши другие настройки ...
+
+# Django будет искать переменную в системе, а если не найдет — оставит None
+ORD_VK_TOKEN = os.getenv("ORD_VK_TOKEN", None)

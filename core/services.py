@@ -111,21 +111,21 @@ class VKORDService:
         """Регистрация и финализация акта выполненных работ (v4)"""
         invoice_ext_id = f"inv_{uuid.uuid4().hex[:10]}"
         
-        total = float(amount) 
-        vat_rate = 20 # или другой ваш НДС
+        # 1. Точный расчет (округление до 2 знаков)
+        total = float(amount)
+        vat_rate = 20 if is_vat else 0
         
         if is_vat:
-            excluding_vat = round(total / (1 + vat_rate / 100), 2)
+            excluding_vat = round(total / 1.20, 2)
             vat = round(total - excluding_vat, 2)
+            # Важно: корректируем total, чтобы он точно был равен сумме частей после округления
+            total = excluding_vat + vat
         else:
             excluding_vat = total
-            vat = 0
-            vat_rate = 0
-        # -----------------------------
+            vat = 0.0
+            total = excluding_vat
 
         url_put = f"{self.BASE_URL}/v4/invoice/{invoice_ext_id}"
-        
-        # ... (логика расчета НДС остается прежней) ...
         
         payload = {
             "contract_external_id": contract_ext_id,
@@ -137,34 +137,34 @@ class VKORDService:
             "date_end": period_end.isoformat() if hasattr(period_end, 'isoformat') else str(period_end),
             "amount": {
                 "services": {
-                    "including_vat": str(total),
-                    "vat_rate": vat_rate,
-                    "excluding_vat": str(excluding_vat),
-                    "vat": str(vat)
+                    "including_vat": f"{total:.2f}",
+                    "vat_rate": str(vat_rate),  # Обязательно строка!
+                    "excluding_vat": f"{excluding_vat:.2f}",
+                    "vat": f"{vat:.2f}"
                 }
-            },
-            # ... (остальной payload согласно документации v4)
+            }
         }
 
         try:
             # PUT создание акта в v4
             response = requests.put(url_put, json=payload, headers=self.headers, timeout=20)
             if response.status_code not in [200, 201]:
+                logger.error(f"Ошибка создания акта: {response.text}")
                 raise Exception(f"Ошибка v4 при создании акта: {response.text}")
             
-            # 2. ИСПОЛЬЗУЕМ v4 ДЛЯ READY
-            # Путь изменился с /v2/ на /v4/
+            # Финализация (ready)
             url_ready = f"{self.BASE_URL}/v4/invoice/{invoice_ext_id}/ready"
             response_ready = requests.post(url_ready, headers=self.headers, timeout=15)
             
             if response_ready.status_code in [200, 201]:
                 logger.info(f"Акт {invoice_ext_id} успешно отправлен в ЕРИР (v4).")
                 return invoice_ext_id
+            
             raise Exception(f"Акт создан, но /v4/ready отклонил запрос: {response_ready.text}")
             
         except requests.RequestException as e:
             raise Exception(f"Сетевая ошибка: {e}")
-
+            
     def get_kktu_catalog(self):
         url = f"{self.BASE_URL}/v1/dict/kktu"
         params = {"limit": limit, "offset": offset, "search": search}

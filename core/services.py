@@ -107,6 +107,17 @@ class VKORDService:
                     return media_external_id
                 
                 raise Exception(f"Ошибка ОРД VK при загрузке видео ({response.status}): {resp_text}")
+    async def get_kktu_catalog(self):
+        """Получение актуального справочника ККТУ из ОРД VK (v1)"""
+        url = f"{self.BASE_URL}/v1/kktu"
+        logger.info(f"Запрос справочника ККТУ из ОРД VK на URL: {url}")
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=self.headers) as response:
+                if response.status == 200:
+                    return await response.json()
+                resp_text = await response.text()
+                raise Exception(f"Не удалось получить справочник ККТУ ({response.status}): {resp_text}")
 
     async def create_creative(self, creative_ext_id, payload):
         """Создание креатива методом PUT (v3)"""

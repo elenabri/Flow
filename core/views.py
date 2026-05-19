@@ -1346,7 +1346,7 @@ class EridManagementView(View):
                 blog_api_id = blogger.external_id
 
             # --- Работа с договором ---
-            ord_contract = OrdContract.objects.filter(advertiser=advertiser, blogger=blogger).first()
+            ord_contract = OrdContract.objects.filter(advertiser__external_id=adv_api_id, blogger__external_id=blog_api_id).first()
             contract_api_id = ord_contract.external_id if ord_contract else f"cnt_{uuid.uuid4().hex[:10]}"
             
             if not ord_contract:

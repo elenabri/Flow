@@ -385,32 +385,63 @@ class AdIntegration(models.Model):
 
 from django.db import models
 
+# =====================================================================
+# --- БЛОК МАРКИРОВКИ РЕКЛАМЫ (ОРД VK И ККТУ) ---
+# =====================================================================
+
 class SavedContractor(models.Model):
+    """Сохраненные контрагенты для ОРД (Рекламодатели и Блогеры)"""
     TYPE_CHOICES = [('ur', 'Юрлицо'), ('fiz', 'Физлицо'), ('ip', 'ИП')]
+    CITIZENSHIP_CHOICES = [('rf', 'РФ'), ('foreign', 'Иностранец')]
+    ROLE_CHOICES = [('advertiser', 'Рекламодатель'), ('blogger', 'Блогер')]
     
     external_id = models.CharField(max_length=255, unique=True, verbose_name="Внешний ID в ОРД")
     name = models.CharField(max_length=255, verbose_name="Название / ФИО")
     inn = models.CharField(max_length=12, blank=True, null=True, verbose_name="ИНН")
-    role = models.CharField(max_length=50, choices=[('advertiser', 'Рекламодатель'), ('blogger', 'Блогер')])
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES, verbose_name="Роль в интеграции")
     
-    def __str__(self):
-        return f"{self.name} ({self.get_role_display()})"
-
-class EridIntegration(models.Model):
-    blogger_name = models.CharField(max_length=255)
-    advertiser_name = models.CharField(max_length=255)
-    channel_url = models.URLField()
-    creative_name = models.CharField(max_length=255)
-    invoice_number = models.CharField(max_length=100)
-    invoice_date = models.DateField()
-    erid = models.CharField(max_length=100, unique=True)
+    # Дополнительные поля для полной синхронизации
+    contractor_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='ur', verbose_name="Тип контрагента")
+    citizenship = models.CharField(max_length=10, choices=CITIZENSHIP_CHOICES, default='rf', verbose_name="Гражданство")
+    country = models.CharField(max_length=100, blank=True, null=True, verbose_name="Страна (для иностранцев)")
+    phone = models.CharField(max_length=50, blank=True, null=True, verbose_name="Телефон (для физлиц)")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-created_at']
+        verbose_name = "Контрагент ОРД"
+        verbose_name_plural = "Контрагенты ОРД"
+
+    def __str__(self):
+        return f"{self.name} ({self.get_role_display()} - {self.inn or 'Без ИНН'})"
+
+
+class OrdContract(models.Model):
+    """
+    Уникальный ОРД-договор между Рекламодателем и Блогером.
+    Защищает от дублирования договоров в ОРД VK.
+    """
+    external_id = models.CharField(max_length=255, unique=True, verbose_name="Внешний ID договора в ОРД")
+    advertiser = models.ForeignKey(SavedContractor, on_delete=models.CASCADE, related_name='contracts_as_adv', verbose_name="Рекламодатель")
+    blogger = models.ForeignKey(SavedContractor, on_delete=models.CASCADE, related_name='contracts_as_blog', verbose_name="Блогер")
+    
+    number = models.CharField("Номер договора", max_length=100)
+    date_sign = models.DateField("Дата заключения договора")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Договор ОРД"
+        verbose_name_plural = "Договоры ОРД"
+        # Уникальная связка: у пары контрагентов может быть только один ОРД-договор в нашей системе
+        unique_together = ('advertiser', 'blogger')
+
+    def __str__(self):
+        return f"Договор ОРД № {self.number} ({self.advertiser.name} -> {self.blogger.name})"
+
+
 class KktuCode(models.Model):
-    code = models.CharField("Код ККТУ", max_length=50, unique=True) # Например: "10.20"
-    name = models.CharField("Название категории", max_length=500)   # Например: "Переработка рыбы"
+    """Справочник кодов ККТУ ОРД"""
+    code = models.CharField("Код ККТУ", max_length=50, unique=True) 
+    name = models.CharField("Название категории", max_length=500)   
     parent_code = models.CharField("Код родителя", max_length=50, blank=True, null=True)
     is_active = models.BooleanField(default=True)
 
@@ -421,3 +452,33 @@ class KktuCode(models.Model):
 
     def __str__(self):
         return f"{self.code} — {self.name}"
+
+
+class EridIntegration(models.Model):
+    """Выпущенные маркеры (ERID) и интеграции"""
+    # Связи для сквозной аналитики и отчетности
+    ord_contract = models.ForeignKey(OrdContract, on_delete=models.CASCADE, related_name='creatives', null=True, blank=True, verbose_name="Договор ОРД")
+    kktu = models.ForeignKey(KktuCode, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Код ККТУ")
+    
+    # Текстовое дублирование для быстрого рендеринга в вашей таблице
+    blogger_name = models.CharField("Блогер", max_length=255)
+    advertiser_name = models.CharField("Рекламодатель", max_length=255)
+    
+    channel_url = models.URLField("Ссылка на площадку")
+    creative_name = models.CharField("Название ролика/креатива", max_length=255)
+    
+    # На старте получения ERID этих данных НЕТ, делаем их необязательными (null=True)
+    invoice_number = models.CharField("Номер акта/счета", max_length=100, blank=True, null=True)
+    invoice_date = models.DateField("Дата акта/счета", blank=True, null=True)
+    invoice_amount = models.DecimalField("Сумма по акту", max_digits=10, decimal_places=2, blank=True, null=True)
+    
+    erid = models.CharField("Токен (ERID)", max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Интеграция ОРД (ERID)"
+        verbose_name_plural = "Интеграции ОРД (ERID)"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.creative_name} ({self.erid})"

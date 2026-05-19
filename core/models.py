@@ -21,13 +21,12 @@ class User(AbstractUser):
     # Поле для привязки Telegram (чтобы знать, кому слать уведомления)
 
 
-    telegram_handle = models.CharField(
-        "Ник в Telegram", 
-        max_length=100, 
-        blank=True, 
-        null=True,
-        help_text="Ник пользователя без символа @"
-    )
+    telegram = models.CharField("Telegram (username/link)", max_length=255, blank=True, null=True)
+    whatsapp = models.CharField("WhatsApp (номер/link)", max_length=255, blank=True, null=True)
+    vk = models.URLField("ВКонтакте (ссылка)", blank=True, null=True)
+    ok = models.URLField("Одноклассники (ссылка)", blank=True, null=True)
+    phone = models.CharField("Телефон", max_length=20, blank=True, null=True)
+    other = models.TextField("Другое (дополнительно)", blank=True, null=True)
 
     # Оставляем ваш существующий tg_chat_id для уведомлений бота
     tg_chat_id = models.BigIntegerField(null=True, blank=True)
@@ -399,6 +398,13 @@ class SavedContractor(models.Model):
     name = models.CharField(max_length=255, verbose_name="Название / ФИО")
     inn = models.CharField(max_length=12, blank=True, null=True, verbose_name="ИНН")
     role = models.CharField(max_length=50, choices=ROLE_CHOICES, verbose_name="Роль в интеграции")
+    channel_url = models.URLField(
+        "Ссылка на основной канал", 
+        max_length=500, 
+        blank=True, 
+        null=True, 
+        help_text="Основная площадка блогера"
+    )
     
     # Дополнительные поля для полной синхронизации
     contractor_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='ur', verbose_name="Тип контрагента")
@@ -459,7 +465,7 @@ class EridIntegration(models.Model):
     # Связи для сквозной аналитики и отчетности
     ord_contract = models.ForeignKey(OrdContract, on_delete=models.CASCADE, related_name='creatives', null=True, blank=True, verbose_name="Договор ОРД")
     kktu = models.ForeignKey(KktuCode, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Код ККТУ")
-    
+    video_url = models.URLField("Ссылка на опубликованное видео", blank=True, null=True)
     # Текстовое дублирование для быстрого рендеринга в вашей таблице
     blogger_name = models.CharField("Блогер", max_length=255)
     advertiser_name = models.CharField("Рекламодатель", max_length=255)

@@ -378,45 +378,59 @@
         toggleTypeFields(prefix);
     }
 
-    function toggleTypeFields(prefix) {
-        const select = document.getElementById(prefix + 'Select');
-        if (select && select.value !== 'new') return; 
+    function updatePartyFields(prefix) {
+    const select = document.getElementById(prefix + 'Select');
+    const box = document.getElementById(prefix + 'NewBox');
+    
+    // 1. Логика скрытия/показа всего блока (ваша исходная задача)
+    const isNew = (select && select.value === 'new');
+    if (!isNew) {
+        box.classList.add('d-none');
+        // Отключаем все поля внутри, чтобы они не ушли в POST
+        box.querySelectorAll('input, select').forEach(i => i.disabled = true);
+        return;
+    }
+    
+    // Если выбрали 'new', показываем блок и включаем поля
+    box.classList.remove('d-none');
+    box.querySelectorAll('input, select').forEach(i => i.disabled = false);
 
-        const type = document.getElementById(prefix + '_type').value;
-        const isForeign = document.getElementById(prefix + '_foreign').checked;
-        
-        const innInput = document.getElementById(prefix + '_inn');
-        const nameInput = document.getElementById(prefix + '_name');
-        const phoneInput = document.getElementById(prefix + '_phone');
+    // 2. ВАША ЛОГИКА ТИПОВ (вынесенная в отдельную функцию или блок)
+    const type = document.getElementById(prefix + '_type').value;
+    const isForeign = document.getElementById(prefix + '_foreign').checked;
+    
+    const innInput = document.getElementById(prefix + '_inn');
+    const nameInput = document.getElementById(prefix + '_name');
+    const phoneInput = document.getElementById(prefix + '_phone');
 
-        if (type === 'ur') {
-            nameInput.placeholder = "Название компании (ООО '...')";
-            innInput.placeholder = isForeign ? "Tax ID / Код" : "ИНН организации (10 цифр)";
-            phoneInput.classList.add('d-none');
-            phoneInput.required = false;
+    if (type === 'ur') {
+        nameInput.placeholder = "Название компании (ООО '...')";
+        innInput.placeholder = isForeign ? "Tax ID / Код" : "ИНН организации (10 цифр)";
+        phoneInput.classList.add('d-none');
+        phoneInput.required = false;
+        innInput.classList.remove('d-none');
+        innInput.required = !isForeign; 
+    } else if (type === 'fiz') {
+        nameInput.placeholder = "ФИО полностью";
+        phoneInput.classList.remove('d-none');
+        phoneInput.required = true;
+        if (isForeign) {
+            innInput.classList.add('d-none');
+            innInput.required = false;
+        } else {
             innInput.classList.remove('d-none');
-            innInput.required = !isForeign; 
-        } else if (type === 'fiz') {
-            nameInput.placeholder = "ФИО полностью";
-            phoneInput.classList.remove('d-none');
-            phoneInput.required = true;
-            if (isForeign) {
-                innInput.classList.add('d-none');
-                innInput.required = false;
-            } else {
-                innInput.classList.remove('d-none');
-                innInput.placeholder = "ИНН физлица (12 цифр)";
-                innInput.required = true;
-            }
-        } else if (type === 'ip') {
-            nameInput.placeholder = "ИП Фамилия Имя Отчество";
-            innInput.placeholder = "ИНН ИП (12 цифр)";
-            phoneInput.classList.add('d-none');
-            phoneInput.required = false;
-            innInput.classList.remove('d-none');
+            innInput.placeholder = "ИНН физлица (12 цифр)";
             innInput.required = true;
         }
+    } else if (type === 'ip') {
+        nameInput.placeholder = "ИП Фамилия Имя Отчество";
+        innInput.placeholder = "ИНН ИП (12 цифр)";
+        phoneInput.classList.add('d-none');
+        phoneInput.required = false;
+        innInput.classList.remove('d-none');
+        innInput.required = true;
     }
+}
 
     // Асинхронное удаление контрагентов
     function deleteSavedContractor(prefix) {

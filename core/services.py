@@ -111,7 +111,18 @@ class VKORDService:
         """Регистрация и финализация акта выполненных работ (v4)"""
         invoice_ext_id = f"inv_{uuid.uuid4().hex[:10]}"
         
-        # 1. Используем v4 для создания (PUT)
+        total = float(amount) 
+        vat_rate = 20 # или другой ваш НДС
+        
+        if is_vat:
+            excluding_vat = round(total / (1 + vat_rate / 100), 2)
+            vat = round(total - excluding_vat, 2)
+        else:
+            excluding_vat = total
+            vat = 0
+            vat_rate = 0
+        # -----------------------------
+
         url_put = f"{self.BASE_URL}/v4/invoice/{invoice_ext_id}"
         
         # ... (логика расчета НДС остается прежней) ...

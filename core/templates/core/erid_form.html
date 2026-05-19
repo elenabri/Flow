@@ -183,7 +183,17 @@
                             <label class="form-label small fw-bold text-muted">Что рекламируем (Товар)</label>
                             <input type="text" class="form-control form-control-sm" name="product_name" required placeholder="Например: Термос Вкусневич 1л">
                         </div>
-                        
+                        <div style="background: yellow; color: black; padding: 20px; border: 2px solid red;">
+    <h3>Отладка данных (Context Check):</h3>
+    <p>Всего ККТУ в контексте: {{ kktu_codes|length }}</p>
+    <pre>
+        {% for k in kktu_codes %}
+            {{ k.code }} - {{ k.name }}
+        {% empty %}
+            Пустой список!
+        {% endfor %}
+    </pre>
+</div>
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-muted">Категория товара (ККТУ)</label>
                             <select class="form-select form-select-sm form-select-custom" name="kktu_code" id="kktuSelect" required>

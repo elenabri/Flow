@@ -84,28 +84,38 @@ class VKORDService:
         return pad_ext_id
 
     def upload_media(self, video_file):
-        """Загрузка медиафайла (креатива) по спецификации v1"""
+        """Загрузка медиафайла согласно документации API"""
         media_external_id = f"med_{uuid.uuid4().hex[:10]}"
         url = f"{self.BASE_URL}/v1/media/{media_external_id}"
-        logger.info(f"Синхронная загрузка медиафайла в ОРД VK v1: {url}")
         
-        # СОЗДАЕМ КОПИЮ заголовков БЕЗ Content-Type
-        headers = {k: v for k, v in self.session.headers.items() if k.lower() != 'content-type'}
+        # 1. Создаем заголовки только с авторизацией
+        # Удаляем Content-Type, чтобы requests сам вычислил boundary для multipart
+        headers = {"Authorization": self.session.headers["Authorization"]}
         
         try:
             video_file.seek(0)
+            # В документации ключ: 'media_file'
             files = {
                 'media_file': (video_file.name, video_file.read(), 'video/mp4')
             }
-            # Передаем headers без Content-Type
-            response = self.session.put(url, files=files, headers=headers, timeout=60)
+            
+            # 2. Выполняем запрос БЕЗ использования session.headers, 
+            # чтобы не передать лишний application/json
+            response = requests.put(
+                url, 
+                files=files, 
+                headers=headers, 
+                timeout=60
+            )
             
             if response.status_code in [200, 201]:
-                logger.info(f"Медиафайл успешно загружен в v1. ID: {media_external_id}")
+                logger.info(f"Медиафайл успешно загружен. ID: {media_external_id}")
                 return media_external_id
-            raise Exception(f"Ошибка ОРД VK v1 при загрузке медиа ({response.status_code}): {response.text}")
+            
+            raise Exception(f"Ошибка ОРД ({response.status_code}): {response.text}")
+            
         except requests.RequestException as e:
-            raise Exception(f"Сетевая ошибка при отправке видео в ОРД: {e}")
+            raise Exception(f"Сетевая ошибка при отправке файла: {e}")
 
     def create_creative(self, creative_ext_id, payload):
         """Регистрация креатива и получение ERID по спецификации v3"""

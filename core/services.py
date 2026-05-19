@@ -68,18 +68,20 @@ class VKORDService:
             raise Exception(f"Ошибка ОРД VK v1 при создании договора ({response.status_code}): {response.text}")
         except requests.RequestException as e:
             raise Exception(f"Сетевая ошибка при создании договора в ОРД: {e}")
-    
     def create_pad(self, pad_ext_id, person_ext_id, name, url):
-    payload = {
-        "person_external_id": person_ext_id,
-        "is_owner": True, # Обычно блогер является владельцем своего канала
-        "type": "web",    # Для YouTube в VK ОРД используется 'web'
-        "name": name,
-        "url": url
-    }
-    response = self.session.put(f"{self.base_url}/v1/pad/{pad_ext_id}", json=payload)
-    response.raise_for_status()
-    return pad_ext_id
+        # Весь этот блок должен быть сдвинут на 4 пробела относительно def
+        payload = {
+            "person_external_id": person_ext_id,
+            "is_owner": True,
+            "type": "web",
+            "name": name,
+            "url": url
+        }
+        response = self.session.put(f"{self.base_url}/v1/pad/{pad_ext_id}", json=payload)
+        response.raise_for_status()
+        return pad_ext_id
+    
+
 
     def upload_media(self, video_file):
         """Загрузка медиафайла (креатива) по спецификации v3"""

@@ -108,22 +108,12 @@ class VKORDService:
             raise Exception(f"Сетевая ошибка при генерации ERID: {e}")
 
     def create_invoice(self, contract_ext_id, invoice_number, invoice_date, period_start, period_end, amount, allocated_amount, is_vat=True):
-        """Регистрация и финализация акта выполненных работ (v4)"""
         invoice_ext_id = f"inv_{uuid.uuid4().hex[:10]}"
         
-        # 1. Точный расчет (округление до 2 знаков)
         total = float(amount)
         vat_rate = 20 if is_vat else 0
-        
-        if is_vat:
-            excluding_vat = round(total / 1.20, 2)
-            vat = round(total - excluding_vat, 2)
-            # Важно: корректируем total, чтобы он точно был равен сумме частей после округления
-            total = excluding_vat + vat
-        else:
-            excluding_vat = total
-            vat = 0.0
-            total = excluding_vat
+        excluding_vat = round(total / 1.20, 2) if is_vat else total
+        vat = round(total - excluding_vat, 2) if is_vat else 0.0
 
         url_put = f"{self.BASE_URL}/v4/invoice/{invoice_ext_id}"
         
@@ -131,18 +121,31 @@ class VKORDService:
             "contract_external_id": contract_ext_id,
             "client_role": "advertiser",
             "contractor_role": "agency",
-            "date": invoice_date.isoformat() if hasattr(invoice_date, 'isoformat') else str(invoice_date),
+            "date": invoice_date.isoformat(),
             "serial": str(invoice_number),
-            "date_start": period_start.isoformat() if hasattr(period_start, 'isoformat') else str(period_start),
-            "date_end": period_end.isoformat() if hasattr(period_end, 'isoformat') else str(period_end),
+            "date_start": period_start.isoformat(),
+            "date_end": period_end.isoformat(),
             "amount": {
                 "services": {
                     "including_vat": f"{total:.2f}",
-                    "vat_rate": str(vat_rate),  # Обязательно строка!
+                    "vat_rate": str(vat_rate),
                     "excluding_vat": f"{excluding_vat:.2f}",
                     "vat": f"{vat:.2f}"
                 }
-            }
+            },
+            # ДОБАВЛЕНО: Обязательный блок items
+            "items": [
+                {
+                    "contract_external_id": contract_ext_id,
+                    "name": "Рекламные услуги",
+                    "amount": {
+                        "including_vat": f"{total:.2f}",
+                        "vat_rate": str(vat_rate),
+                        "excluding_vat": f"{excluding_vat:.2f}",
+                        "vat": f"{vat:.2f}"
+                    }
+                }
+            ]
         }
 
         try:

@@ -1,5 +1,17 @@
 from django.contrib import admin
-from .models import User, BloggerProfile, AdvertiserProfile, ProductAd, Message
+from .models import (
+    User, 
+    BloggerProfile, 
+    AdvertiserProfile, 
+    ProductAd, 
+    Message, 
+    SupportTicket, 
+    AdIntegration,
+    SavedContractor,  # <--- Вот этого импорта вам не хватало
+    OrdContract, 
+    KktuCode, 
+    EridIntegration
+)
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):

@@ -1474,3 +1474,16 @@ class EridManagementView(View):
                 'today_date': timezone.now().date().isoformat()
             }
             return render(request, self.template_name, context)
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from core.models import Contractor # Замените на имя вашей модели контрагента / блогера
+
+@require_POST
+def delete_contractor(request, external_id):
+    try:
+        # Ищем и удаляем объект у текущего пользователя или глобально
+        contractor = Contractor.objects.get(external_id=external_id)
+        contractor.delete()
+        return JsonResponse({'status': 'success'}, status=200)
+    except Contractor.DoesNotExist:
+        return JsonResponse({'error': 'Объект не найден'}, status=404)

@@ -94,7 +94,7 @@
                     <div class="form-section-title">1. Рекламодатель</div>
                     <div class="mb-3">
                         <div class="d-flex gap-2 mb-2">
-                            <select class="form-select form-select-custom shadow-sm flex-grow-1" id="advSelect" name="advertiser_select" onchange="togglePartyFields('adv')">
+                            <select class="form-select form-select-custom shadow-sm flex-grow-1" id="advSelect" name="advertiser_select" onchange="updatePartyFields('adv')">
                                 <option value="new" selected>+ Добавить нового рекламодателя</option>
                                 {% for adv in advertisers %}
                                     <option value="{{ adv.external_id }}">{{ adv.name }} (ИНН: {{ adv.inn|default:"-" }})</option>
@@ -108,17 +108,17 @@
                         <div id="advNewBox" class="p-3 bg-custom-light rounded border">
                             <div class="mb-2">
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="adv_citizenship" id="adv_rf" value="rf" checked onchange="toggleCitizenship('adv')">
+                                    <input class="form-check-input" type="radio" name="adv_citizenship" id="adv_rf" value="rf" checked onchange="updatePartyFields('adv')">
                                     <label class="form-check-label small fw-medium" for="adv_rf">Гражданин РФ</label>
                                 </div>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="adv_citizenship" id="adv_foreign" value="foreign" onchange="toggleCitizenship('adv')">
+                                    <input class="form-check-input" type="radio" name="adv_citizenship" id="adv_foreign" value="foreign" onchange="updatePartyFields('adv')">
                                     <label class="form-check-label small fw-medium" for="adv_foreign">Иностранец</label>
                                 </div>
                             </div>
 
                             <div class="mb-2">
-                                <select class="form-select form-select-sm form-select-custom" name="adv_type" id="adv_type" onchange="toggleTypeFields('adv')">
+                                <select class="form-select form-select-sm form-select-custom" name="adv_type" id="adv_type" onchange="updatePartyFields('adv')">
                                     <option value="ur">Юридическое лицо</option>
                                     <option value="fiz">Физическое лицо</option>
                                     <option value="ip" id="adv_ip_option">Индивидуальный предприниматель (ИП)</option>
@@ -135,7 +135,7 @@
                     <div class="form-section-title">2. Блогер и Площадка</div>
                     <div class="mb-3">
                         <div class="d-flex gap-2 mb-2">
-                            <select class="form-select form-select-custom shadow-sm flex-grow-1" id="bloggerSelect" name="blogger_select" onchange="togglePartyFields('blog')">
+                            <select class="form-select form-select-custom shadow-sm flex-grow-1" id="blogSelect" name="blogger_select" onchange="updatePartyFields('blog')">
                                 <option value="new" selected>+ Добавить нового блогера</option>
                                 {% for blogger in bloggers %}
                                     <option value="{{ blogger.external_id }}">{{ blogger.name }}</option>
@@ -149,17 +149,17 @@
                         <div id="blogNewBox" class="p-3 bg-custom-light rounded border">
                             <div class="mb-2">
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="blog_citizenship" id="blog_rf" value="rf" checked onchange="toggleCitizenship('blog')">
+                                    <input class="form-check-input" type="radio" name="blog_citizenship" id="blog_rf" value="rf" checked onchange="updatePartyFields('blog')">
                                     <label class="form-check-label small fw-medium" for="blog_rf">Гражданин РФ</label>
                                 </div>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="blog_citizenship" id="blog_foreign" value="foreign" onchange="toggleCitizenship('blog')">
+                                    <input class="form-check-input" type="radio" name="blog_citizenship" id="blog_foreign" value="foreign" onchange="updatePartyFields('blog')">
                                     <label class="form-check-label small fw-medium" for="blog_foreign">Иностранец</label>
                                 </div>
                             </div>
 
                             <div class="mb-2">
-                                <select class="form-select form-select-sm form-select-custom" name="blog_type" id="blog_type" onchange="toggleTypeFields('blog')">
+                                <select class="form-select form-select-sm form-select-custom" name="blog_type" id="blog_type" onchange="updatePartyFields('blog')">
                                     <option value="ur">Юридическое лицо</option>
                                     <option value="fiz">Физическое лицо</option>
                                     <option value="ip" id="blog_ip_option">Индивидуальный предприниматель (ИП)</option>
@@ -178,59 +178,60 @@
                     </div>
 
                     <div class="form-section-title">3. Данные Креатива (Ролика)</div>
-<div class="p-3 bg-white rounded border mb-4">
-    <div class="mb-3">
-        <label class="form-label small fw-bold text-muted">Что рекламируем (Товар)</label>
-        <input type="text" class="form-control form-control-sm" name="product_name" required placeholder="Например: Термос Вкусневич 1л">
-    </div>
+                    <div class="p-3 bg-white rounded border mb-4">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Что рекламируем (Товар)</label>
+                            <input type="text" class="form-control form-control-sm" name="product_name" required placeholder="Например: Термос Вкусневич 1л">
+                        </div>
 
-    <div class="mb-3">
-        <label class="form-label small fw-bold text-muted">Категория товара (ККТУ)</label>
-        <select class="form-select form-select-sm form-select-custom" name="kktu_code" id="kktuSelect" required>
-            <option value="">-- Начните вводить код или название --</option>
-            {% for kktu in kktu_codes %}
-                <option value="{{ kktu.code }}">[{{ kktu.code }}] {{ kktu.name }}</option>
-            {% endfor %}
-        </select>
-    </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Категория товара (ККТУ)</label>
+                            <select class="form-select form-select-sm form-select-custom" name="kktu_code" id="kktuSelect" required>
+                                <option value="">-- Начните вводить код или название --</option>
+                                {% for kktu in kktu_codes %}
+                                    <option value="{{ kktu.code }}">[{{ kktu.code }}] {{ kktu.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-    <div class="mb-3">
-        <label class="form-label small fw-bold text-muted">Период размещения</label>
-        <div class="row g-2">
-            <div class="col">
-                <input type="date" class="form-control form-control-sm" name="date_start" id="date_start" value="{{ today_date }}">
-            </div>
-            <div class="col">
-                <select class="form-select form-select-sm form-select-custom" name="date_end_type" id="dateEndType" onchange="if(this.value==='date'){document.getElementById('dateEndInput').classList.remove('d-none')}else{document.getElementById('dateEndInput').classList.add('d-none')}">
-                    <option value="infinity">Бессрочно</option>
-                    <option value="date">Указать дату окончания</option>
-                </select>
-                <input type="date" class="form-control form-control-sm mt-1 d-none" id="dateEndInput" name="date_end">
-            </div>
-        </div>
-    </div>
-    
-    <div class="mb-3">
-        <label class="form-label small fw-bold text-muted">Ссылки на товары (необязательно)</label>
-        <textarea class="form-control form-control-sm" name="target_urls" rows="2" placeholder="Каждая ссылка с новой строки"></textarea>
-    </div>
-    
-    <div class="mb-2">
-        <label class="form-label small fw-bold text-muted">Файл видео рекламы</label>
-        <input type="file" class="form-control form-control-sm" name="video_file" accept="video/*" required>
-    </div>
-</div>
-<div class="form-section-title">4. Данные для отчетности (Акт)</div>
-<div class="p-3 bg-white rounded border mb-4">
-    <div class="mb-2">
-        <label class="form-label small fw-bold text-muted">Номер счета/акта</label>
-        <input type="text" class="form-control form-control-sm" name="invoice_number" placeholder="Например: INV-12345" required>
-    </div>
-    <div class="mb-2">
-        <label class="form-label small fw-bold text-muted">Сумма акта</label>
-        <input type="number" step="0.01" class="form-control form-control-sm" name="invoice_amount" value="0.00" required>
-    </div>
-</div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Период размещения</label>
+                            <div class="row g-2">
+                                <div class="col">
+                                    <input type="date" class="form-control form-control-sm" name="date_start" id="date_start" value="{{ today_date }}">
+                                </div>
+                                <div class="col">
+                                    <select class="form-select form-select-sm form-select-custom" name="date_end_type" id="dateEndType" onchange="if(this.value==='date'){document.getElementById('dateEndInput').classList.remove('d-none')}else{document.getElementById('dateEndInput').classList.add('d-none')}">
+                                        <option value="infinity">Бессрочно</option>
+                                        <option value="date">Указать дату окончания</option>
+                                    </select>
+                                    <input type="date" class="form-control form-control-sm mt-1 d-none" id="dateEndInput" name="date_end">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Ссылки на товары (необязательно)</label>
+                            <textarea class="form-control form-control-sm" name="target_urls" rows="2" placeholder="Каждая ссылка с новой строки"></textarea>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold text-muted">Файл видео рекламы</label>
+                            <input type="file" class="form-control form-control-sm" name="video_file" accept="video/*" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section-title">4. Данные для отчетности (Акт)</div>
+                    <div class="p-3 bg-white rounded border mb-4">
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold text-muted">Номер счета/акта</label>
+                            <input type="text" class="form-control form-control-sm" name="invoice_number" placeholder="Например: INV-12345" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold text-muted">Сумма акта</label>
+                            <input type="number" step="0.01" class="form-control form-control-sm" name="invoice_amount" value="0.00" required>
+                        </div>
+                    </div>
                     <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm" style="border-radius: 8px;">
                         <i class="bi bi-cloud-arrow-up-fill me-2"></i>Сгенерировать ERID
                     </button>
@@ -318,7 +319,7 @@
             dateStartInput.value = new Date().toISOString().split('T')[0];
         }
 
-        // Инициализируем оба блока
+        // Инициализируем состояние полей
         updatePartyFields('adv');
         updatePartyFields('blog');
     });
@@ -331,15 +332,20 @@
 
         const isNew = (select.value === 'new');
         
-        // 1. Базовая видимость блока
+        // 1. Базовая видимость и состояние
         if (!isNew) {
             box.classList.add('d-none');
-            box.querySelectorAll('input, select').forEach(i => i.disabled = true);
+            box.querySelectorAll('input, select').forEach(i => {
+                i.disabled = true;
+                i.required = false; 
+            });
             return;
         }
 
         box.classList.remove('d-none');
-        box.querySelectorAll('input, select').forEach(i => i.disabled = false);
+        box.querySelectorAll('input, select').forEach(i => {
+            i.disabled = false;
+        });
 
         // 2. Логика типов и гражданства
         const type = document.getElementById(prefix + '_type').value;
@@ -382,7 +388,7 @@
         } else if (type === 'ip') {
             nameInput.placeholder = "ИП Фамилия Имя Отчество";
             innInput.placeholder = "ИНН ИП (12 цифр)";
-            phoneInput.classList.remove('d-none'); phoneInput.required = false; // или true, если нужно
+            phoneInput.classList.remove('d-none'); phoneInput.required = false;
             innInput.classList.remove('d-none'); innInput.required = true;
         }
     }

@@ -10,7 +10,6 @@ def send_telegram_message(recipient_tg_id, title, text):
     token = getattr(settings, "TELEGRAM_BOT_TOKEN", None)
     if not token:
         logger.error("Отмена отправки TG: Токен TELEGRAM_BOT_TOKEN не обнаружен в settings.py")
-        # Как мудрый коллега замечу: не забудьте прописать токен в вашем .env
         return None
         
     url = f"https://api.telegram.org/bot{token}/sendMessage"
@@ -45,18 +44,14 @@ class VKORDService:
         """Регистрация контрагента по спецификации v3 (метод PUT)"""
         external_id = data.pop("external_id", None) or f"per_{uuid.uuid4().hex[:10]}"
         url = f"{self.BASE_URL}/v3/person/{external_id}"
-        
-        # В API v3 роли контрагента ("roles") отправляются плоским массивом в корне
-        # Убедимся, что juridical_details содержит корректные типы
         logger.info(f"Синхронный PUT контрагента в ОРД VK v3: {url}")
 
         try:
             response = requests.put(url, json=data, headers=self.headers, timeout=15)
-            if response.status in [200, 201]:
+            if response.status_code in [200, 201]:
                 logger.info(f"Контрагент успешно сохранен в ОРД VK v3. ID: {external_id}")
                 return external_id
-            
-            raise Exception(f"Ошибка ОРД VK v3 ({response.status}): {response.text}")
+            raise Exception(f"Ошибка ОРД VK v3 ({response.status_code}): {response.text}")
         except requests.RequestException as e:
             raise Exception(f"Сетевая ошибка при создании контрагента в ОРД: {e}")
 
@@ -67,11 +62,10 @@ class VKORDService:
 
         try:
             response = requests.put(url, json=payload, headers=self.headers, timeout=15)
-            if response.status in [200, 201]:
+            if response.status_code in [200, 201]:
                 logger.info(f"Договор успешно зарегистрирован в v3. ID: {contract_ext_id}")
                 return contract_ext_id
-            
-            raise Exception(f"Ошибка ОРД VK v3 при создании договора ({response.status}): {response.text}")
+            raise Exception(f"Ошибка ОРД VK v3 при создании договора ({response.status_code}): {response.text}")
         except requests.RequestException as e:
             raise Exception(f"Сетевая ошибка при создании договора в ОРД: {e}")
 
@@ -81,21 +75,18 @@ class VKORDService:
         url = f"{self.BASE_URL}/v3/media/{media_external_id}"
         logger.info(f"Синхронная загрузка медиафайла в ОРД VK v3: {url}")
         
-        # Для загрузки файлов убираем заголовок Content-Type, requests выставит multipart/form-data сам
         upload_headers = {k: v for k, v in self.headers.items() if k.lower() != 'content-type'}
         
         try:
-            video_file.seek(0)  # Сбрасываем указатель файла в начало перед чтением
+            video_file.seek(0)
             files = {
                 'media_file': (video_file.name, video_file.read(), 'video/mp4')
             }
-            
             response = requests.put(url, files=files, headers=upload_headers, timeout=60)
-            if response.status in [200, 201]:
+            if response.status_code in [200, 201]:
                 logger.info(f"Медиафайл успешно загружен в v3. ID: {media_external_id}")
                 return media_external_id
-            
-            raise Exception(f"Ошибка ОРД VK v3 при загрузке медиа ({response.status}): {response.text}")
+            raise Exception(f"Ошибка ОРД VK v3 при загрузке медиа ({response.status_code}): {response.text}")
         except requests.RequestException as e:
             raise Exception(f"Сетевая ошибка при отправке видео в ОРД: {e}")
 
@@ -106,33 +97,27 @@ class VKORDService:
 
         try:
             response = requests.put(url, json=payload, headers=self.headers, timeout=20)
-            if response.status in [200, 201]:
+            if response.status_code in [200, 201]:
                 data = response.json()
                 erid = data.get("erid")
                 if erid:
                     return erid
-                raise Exception(f"ОРД вернул статус {response.status}, но поле 'erid' отсутствует: {response.text}")
-            
-            raise Exception(f"Ошибка ОРД VK v3 при создании креатива ({response.status}): {response.text}")
+                raise Exception(f"ОРД вернул статус {response.status_code}, но поле 'erid' отсутствует: {response.text}")
+            raise Exception(f"Ошибка ОРД VK v3 при создании креатива ({response.status_code}): {response.text}")
         except requests.RequestException as e:
             raise Exception(f"Сетевая ошибка при генерации ERID: {e}")
 
     def create_invoice(self, contract_ext_id, invoice_number, invoice_date, period_start, period_end, amount, allocated_amount, is_vat=True):
-        """
-        Регистрация и финализация акта выполненных работ (v3)
-        Автоматически рассчитывает математику НДС для ЕРИР.
-        """
+        """Регистрация и финализация акта выполненных работ (v3)"""
         invoice_ext_id = f"inv_{uuid.uuid4().hex[:10]}"
         url_put = f"{self.BASE_URL}/v3/invoice/{invoice_ext_id}"
         
-        # Точный расчет копеек для налоговых валидаторов ЕРИР (20% НДС)
         total = float(amount)
         allocated = float(allocated_amount)
         
         if is_vat:
             excluding_vat = round(total / 1.2, 2)
             vat = round(total - excluding_vat, 2)
-            
             alloc_excluding_vat = round(allocated / 1.2, 2)
             alloc_vat = round(allocated - alloc_excluding_vat, 2)
             vat_rate = "20"
@@ -143,7 +128,6 @@ class VKORDService:
             alloc_vat = 0.0
             vat_rate = "0"
 
-        # Структура payload строго адаптирована под иерархию связей v3
         payload = {
             "contract_external_id": contract_ext_id,
             "date": invoice_date.isoformat() if hasattr(invoice_date, 'isoformat') else str(invoice_date),
@@ -159,7 +143,7 @@ class VKORDService:
                 }
             },
             "client_role": "advertiser",
-            "contractor_role": "publisher",  # В связке Рекламодатель -> Блогер, блогер выступает как Исполнитель (publisher)
+            "contractor_role": "publisher",
             "items": [
                 {
                     "contract_external_id": contract_ext_id,
@@ -174,20 +158,30 @@ class VKORDService:
         }
 
         try:
-            # Шаг 1: Регистрация параметров акта в ОРД VK
             response = requests.put(url_put, json=payload, headers=self.headers, timeout=20)
-            if response.status not in [200, 201]:
-                raise Exception(f"Ошибка ОРД VK v3 при сохранении акта ({response.status}): {response.text}")
+            if response.status_code not in [200, 201]:
+                raise Exception(f"Ошибка ОРД VK v3 при сохранении акта ({response.status_code}): {response.text}")
             
-            # Шаг 2: Сигнал завершения редактирования акта (/ready использует сквозной v2 эндпоинт)
             url_ready = f"{self.BASE_URL}/v2/invoice/{invoice_ext_id}/ready"
             response_ready = requests.post(url_ready, headers=self.headers, timeout=15)
             
-            if response_ready.status in [200, 201]:
+            if response_ready.status_code in [200, 201]:
                 logger.info(f"Акт {invoice_ext_id} успешно провалидирован и отправлен в ЕРИР.")
                 return invoice_ext_id
-                
-            raise Exception(f"Акт сохранен, но /ready отклонен ({response_ready.status}): {response_ready.text}")
-            
+            raise Exception(f"Акт сохранен, но /ready отклонен ({response_ready.status_code}): {response_ready.text}")
         except requests.RequestException as e:
             raise Exception(f"Сетевой сбой при отправке бухгалтерской отчетности в ОРД: {e}")
+
+    def get_kktu_catalog(self):
+        """Получение актуального справочника ККТУ по спецификации v1/dict"""
+        # Изменяем эндпоинт в соответствии со Swagger словарей ОРД VK
+        url = f"{self.BASE_URL}/v1/dict/kktu"
+        logger.info(f"Синхронный GET запроса справочника ККТУ v1: {url}")
+        try:
+            # Делаем запрос без лимитов, чтобы выкачать полный каталог для БД
+            response = requests.get(url, headers=self.headers, timeout=25)
+            if response.status_code == 200:
+                return response.json()
+            raise Exception(f"Ошибка при получении ККТУ ({response.status_code}): {response.text}")
+        except requests.RequestException as e:
+            raise Exception(f"Сетевая ошибка при запросе ККТУ: {e}")

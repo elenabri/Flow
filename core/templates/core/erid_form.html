@@ -183,6 +183,14 @@
         <label class="form-label small fw-bold text-muted">Что рекламируем (Товар)</label>
         <input type="text" class="form-control form-control-sm" name="product_name" required placeholder="Например: Термос Вкусневич 1л">
     </div>
+    <label>Тестовый список (без стилей):</label>
+<select name="kktu_code" size="5" style="display: block; width: 100%;">
+    {% for kktu in kktu_codes %}
+        <option value="{{ kktu.code }}">{{ kktu.code }} - {{ kktu.name }}</option>
+    {% empty %}
+        <option>Ошибка: данных нет</option>
+    {% endfor %}
+</select>
 
     <div class="mb-3">
         <label class="form-label small fw-bold text-muted">Категория товара (ККТУ)</label>

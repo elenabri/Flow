@@ -51,6 +51,9 @@ core_patterns = ([
     path('api/connect-telegram/', views.connect_telegram_api, name='connect_telegram_api'),
     path('bulk-message-setup/', views.bulk_message_setup, name='bulk_message_setup'),
     path('update-profile/', views.update_profile, name='update_profile'),
+    
+    # Асинхронное удаление сохраненных контрагентов (Рекламодателей/Блогеров)
+    path('delete-contractor/<str:external_id>/', views.delete_contractor, name='delete_contractor'),
 ], 'core')
 
 urlpatterns = [

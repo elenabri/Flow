@@ -190,7 +190,7 @@ class VKORDService:
         payload = {
             "contract_external_id": contract_ext_id,
             "client_role": "advertiser",
-            "contractor_role": "agency",
+            "contractor_role": "publisher",
             "date": invoice_date.isoformat(),
             "serial": str(invoice_number),
             "date_start": period_start.isoformat(),

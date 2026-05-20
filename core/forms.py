@@ -57,7 +57,8 @@ class RegistrationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['username', 'email']
+        # ОБЯЗАТЕЛЬНО: добавляем telegram и role в список полей модели
+        fields = ['username', 'email', 'telegram', 'role']
 
     # Валидация уникальности email
     def clean_email(self):
@@ -75,13 +76,16 @@ class RegistrationForm(forms.ModelForm):
         
         user.username = email
         
+        # [ИСПРАВЛЕНО]: Записываем роль и телеграм напрямую в саму модель User
+        user.role = self.cleaned_data.get('role')
+        user.telegram = self.cleaned_data.get('telegram')
+        
         # Автоматически генерируем случайный пароль
-        #random_password = User.objects.make_random_password()
         random_password = secrets.token_urlsafe(16)
         user.password = make_password(random_password)
         
         if commit:
-            user.save()  # Сохраняем пользователя
+            user.save()  # Теперь юзер сохранится со своей ролью и телеграмом!
             
             # Отправляем сгенерированный пароль на email
             send_mail(
@@ -95,10 +99,11 @@ class RegistrationForm(forms.ModelForm):
             role = self.cleaned_data.get('role')
             telegram_data = self.cleaned_data.get('telegram')
             
+            # Профили по-прежнему создаются и подтягивают тот же ТГ (для совместимости)
             if role == 'blogger':
                 BloggerProfile.objects.create(
                     user=user,  
-                    telegram=telegram_data,  # Сохраняем телеграм в профиль блогера
+                    telegram=telegram_data,  
                     channel_link=self.cleaned_data.get('channel_link'),
                     price_start=self.cleaned_data.get('price_start'),
                     price_middle=self.cleaned_data.get('price_middle'),
@@ -109,7 +114,7 @@ class RegistrationForm(forms.ModelForm):
             elif role == 'advertiser':
                 AdvertiserProfile.objects.create(
                     user=user,  
-                    telegram=telegram_data,  # Сохраняем телеграм в профиль рекламодателя
+                    telegram=telegram_data,  
                     company_name=self.cleaned_data.get('company_name'),
                     product_title=self.cleaned_data.get('product_title'),
                     product_link=self.cleaned_data.get('product_link'),

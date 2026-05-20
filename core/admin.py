@@ -15,9 +15,9 @@ from .models import (
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('username', 'email', 'role', 'is_staff')
+    list_display = ('username', 'email', 'telegram','role', 'is_staff')
     list_filter = ('role',)
-    search_fields = ('username', 'email')
+    search_fields = ('username','telegram', 'email')
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):

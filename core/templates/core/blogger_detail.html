@@ -60,43 +60,59 @@
                     <th style="text-align: right; padding: 0 20px;">CPV (Прогноз)</th>
                 </tr>
             </thead>
-            <tbody>
+           <tbody>
+                <!-- Преролл (Начало ролика) -->
                 <tr style="background: #fafafa;">
                     <td style="padding: 20px; border-radius: 16px 0 0 16px;">
                         <b>Начало ролика (Преролл)</b>
                     </td>
                     <td style="text-align: center; font-weight: 700;">{{ blogger.median_views }}</td>
-                    <td style="text-align: center; font-size: 18px; font-weight: 800;">{{ p_pre|floatformat:0 }} ₽</td>
+                    <td style="text-align: center; font-size: 18px; font-weight: 800;">
+                        {% if blogger.price_start %}{{ blogger.price_start|floatformat:0 }} ₽{% else %}Не указана{% endif %}
+                    </td>
                     <td style="text-align: right; padding: 20px; border-radius: 0 16px 16px 0; color: #5856d6; font-weight: 700;">
-                        {% if blogger.median_views > 0 %}{{ cpv_pre }} ₽{% else %} — {% endif %}
+                        {% if blogger.median_views > 0 and blogger.price_start %}{{ cpv_pre }} ₽{% else %} — {% endif %}
                     </td>
                 </tr>
 
+                <!-- Мидролл (Середина ролика) -->
                 <tr style="background: #f1f8ff; border: 2px solid #007aff;">
                     <td style="padding: 20px; border-radius: 16px 0 0 16px;">
-                        <b style="color: #007aff;">Середина ролика(Мидролл)</b>
+                        <b style="color: #007aff;">Середина ролика (Мидролл)</b>
                     </td>
                     <td style="text-align: center; font-weight: 700;">{{ blogger.median_views }}</td>
-                    <td style="text-align: center; font-size: 18px; font-weight: 800; color: #007aff;">{{ p_mid|floatformat:0 }} ₽</td>
-                    <td style="text-align: right; padding: 20px; border-radius: 0 16px 16px 0; color: #007aff; font-weight: 800;">{{ cpv_long }} ₽</td>
+                    <td style="text-align: center; font-size: 18px; font-weight: 800; color: #007aff;">
+                        {% if blogger.price_middle %}{{ blogger.price_middle|floatformat:0 }} ₽{% else %}Не указана{% endif %}
+                    </td>
+                    <td style="text-align: right; padding: 20px; border-radius: 0 16px 16px 0; color: #007aff; font-weight: 800;">
+                        {% if blogger.median_views > 0 and blogger.price_middle %}{{ cpv_long }} ₽{% else %} — {% endif %}
+                    </td>
                 </tr>
 
+                <!-- Постролл (Конец ролика) -->
                 <tr style="background: #fafafa;">
                     <td style="padding: 20px; border-radius: 16px 0 0 16px;">
                         <b>Конец ролика (Постролл)</b>
                     </td>
                     <td style="text-align: center; font-weight: 700;">{{ blogger.median_views }}</td>
-                    <td style="text-align: center; font-size: 18px; font-weight: 800;">{{ p_end|floatformat:0 }} ₽</td>
+                    <td style="text-align: center; font-size: 18px; font-weight: 800;">
+                        {% if blogger.price_end %}{{ blogger.price_end|floatformat:0 }} ₽{% else %}Не указана{% endif %}
+                    </td>
                     <td style="text-align: right; padding: 20px; border-radius: 0 16px 16px 0; color: #8e8e93; font-weight: 700;">—</td>
                 </tr>
 
+                <!-- Shorts -->
                 <tr style="background: #f1f8ff;">
                     <td style="padding: 20px; border-radius: 16px 0 0 16px;">
                         <b style="color: #ff2d55;">YouTube Shorts</b>
                     </td>
                     <td style="text-align: center; font-weight: 700;">{{ blogger.median_views_shorts }}</td>
-                    <td style="text-align: center; font-size: 18px; font-weight: 800; color: #ff2d55;">{{ p_shorts|floatformat:0 }} ₽</td>
-                    <td style="text-align: right; padding: 20px; border-radius: 0 16px 16px 0; color: #ff2d55; font-weight: 800;">{{ cpv_shorts }} ₽</td>
+                    <td style="text-align: center; font-size: 18px; font-weight: 800; color: #ff2d55;">
+                        {% if blogger.price_shorts %}{{ blogger.price_shorts|floatformat:0 }} ₽{% else %}Не указана{% endif %}
+                    </td>
+                    <td style="text-align: right; padding: 20px; border-radius: 0 16px 16px 0; color: #ff2d55; font-weight: 800;">
+                        {% if blogger.median_views_shorts > 0 and blogger.price_shorts %}{{ cpv_shorts }} ₽{% else %} — {% endif %}
+                    </td>
                 </tr>
             </tbody>
         </table>

@@ -116,6 +116,22 @@
 
         <form method="post" id="reg-form" enctype="multipart/form-data">
             {% csrf_token %}
+            {# Блок для вывода скрытых ошибок #}
+    {% if form.errors %}
+        <div style="color: red; background: #fee; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
+            <strong>Пожалуйста, исправьте ошибки:</strong>
+            <ul>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
             <!-- Скрытые поля для данных из API -->
             <input type="hidden" name="api_channel_name" id="id_api_name">
             <input type="hidden" name="api_subs" id="id_api_subs">

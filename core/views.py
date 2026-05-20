@@ -1295,8 +1295,8 @@ logger = logging.getLogger(__name__)
 
 import logging
 import uuid
-import os      # <-- ДОБАВЛЕНО: импорт os для работы с путями
-import json    # <-- ДОБАВЛЕНО: импорт json для парсинга стран
+import os
+import json
 from django.conf import settings
 from django.contrib import messages
 from django.db import transaction
@@ -1306,7 +1306,6 @@ from django.utils import timezone
 from django.views import View
 from django.views.decorators.http import require_POST
 
-# Импорты ваших моделей и сервисов
 from core.models import SavedContractor, OrdContract, KktuCode, EridIntegration
 from .services import VKORDService
 
@@ -1314,16 +1313,17 @@ logger = logging.getLogger(__name__)
 
 class EridManagementView(View):
     template_name = 'erid_form.html'
-    countries_path = os.path.join(settings.BASE_DIR, 'countries.json')
-    countries_data = []
-    
-    # Считываем файл один раз при загрузке модуля
-    if os.path.exists(countries_path):
-        try:
-            with open(countries_path, 'r', encoding='utf-8') as f:
-                countries_data = json.load(f)
-        except Exception as e:
-            logger.error(f"Ошибка чтения countries.json: {e}")
+
+    def load_countries_data(self):
+        """Безопасное динамическое чтение стран из файла."""
+        countries_path = os.path.join(settings.BASE_DIR, 'countries.json')
+        if os.path.exists(countries_path):
+            try:
+                with open(countries_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.error(f"Ошибка чтения countries.json: {e}")
+        return []
 
     @property
     def ord_token(self):
@@ -1335,22 +1335,30 @@ class EridManagementView(View):
     def get(self, request):
         kktu_queryset = KktuCode.objects.filter(is_active=True)
         
-        # ОТЛАДКА: Выведет количество и состав в консоль сервера
+        # ОТЛАДКА
         print(f"DEBUG: Количество ККТУ в базе: {kktu_queryset.count()}")
-        for item in kktu_queryset:
-            print(f"DEBUG: {item.code} | {item.name}")
 
         context = {
             'advertisers': SavedContractor.objects.filter(role='advertiser'),
             'bloggers': SavedContractor.objects.filter(role='blogger'),
             'integrations': EridIntegration.objects.select_related('ord_contract', 'kktu').all(),
             'kktu_codes': kktu_queryset,
-            'countries': self.countries_data,  # <-- ИСПРАВЛЕНО: Передаем список стран из класса в контекст шаблона
+            'countries': self.load_countries_data(),  # <-- ИСПРАВЛЕНО: Читаем динамически при GET-запросе
             'today_date': timezone.now().date().isoformat()
         }
         return render(request, self.template_name, context)
 
     def post(self, request):
+        # 0. РАННЯЯ ВАЛИДАЦИЯ (Защита от мусорных данных в ОРД)
+        kktu_code = request.POST.get('kktu_code', '30.15.1')
+        kktu_obj = KktuCode.objects.filter(code=kktu_code).first()
+        if not kktu_obj:
+            return render(request, self.template_name, {'error_message': f"Переданный код ККТУ {kktu_code} не найден в базе данных."})
+
+        video_file = request.FILES.get('video_file')
+        if not video_file:
+            return render(request, self.template_name, {'error_message': "Файл рекламного видео обязателен."})
+
         ord_service = VKORDService(token=self.ord_token)
         channel_url = request.POST.get('channel_url', '').strip() or "https://youtube.com"
 
@@ -1368,7 +1376,6 @@ class EridManagementView(View):
                 raw_phone = request.POST.get('adv_phone', '').strip() or "+79991234567"
                 inn = "".join([c for c in request.POST.get('adv_inn', '') if c.isdigit()])
                 
-                # Собираем тип для ОРД с учетом гражданства
                 adv_ord_type = "foreign_physical" if request.POST.get('adv_citizenship') == 'foreign' else ord_type
                 
                 adv_payload = {
@@ -1382,13 +1389,11 @@ class EridManagementView(View):
                     }
                 }
                 
-                # Передаем код страны в ОРД, если контрагент — иностранец
                 if request.POST.get('adv_citizenship') == 'foreign' and request.POST.get('adv_country'):
                     adv_payload["juridical_details"]["oksm_code"] = request.POST.get('adv_country')
 
                 adv_api_id = ord_service.create_person(adv_payload)
                 
-                # Создаем объект в памяти для последующей записи в БД
                 advertiser = SavedContractor(
                     external_id=adv_api_id, name=adv_payload["name"], inn=inn, 
                     role='advertiser', contractor_type=web_type, 
@@ -1407,7 +1412,6 @@ class EridManagementView(View):
                 raw_phone = request.POST.get('blog_phone', '').strip() or "+79991234567"
                 inn = "".join([c for c in request.POST.get('blog_inn', '') if c.isdigit()])
                 
-                # Собираем тип для ОРД с учетом гражданства
                 blog_ord_type = "foreign_physical" if request.POST.get('blog_citizenship') == 'foreign' else ord_type
                 
                 blog_payload = {
@@ -1421,13 +1425,11 @@ class EridManagementView(View):
                     }
                 }
                 
-                # Передаем код страны в ОРД, если блогер — иностранец
                 if request.POST.get('blog_citizenship') == 'foreign' and request.POST.get('blog_country'):
                     blog_payload["juridical_details"]["oksm_code"] = request.POST.get('blog_country')
 
                 blog_api_id = ord_service.create_person(blog_payload)
                 
-                # Регистрируем площадку в ОРД
                 pad_ext_id = f"pad_{uuid.uuid4().hex[:10]}"
                 ord_service.create_pad(
                     pad_ext_id=pad_ext_id, 
@@ -1436,7 +1438,6 @@ class EridManagementView(View):
                     url=channel_url
                 )
                 
-                # Создаем объект в памяти
                 blogger = SavedContractor(
                     external_id=blog_api_id, name=blog_payload["name"], inn=inn, 
                     role='blogger', contractor_type=web_type, 
@@ -1466,15 +1467,11 @@ class EridManagementView(View):
                 contract_api_id = ord_service.create_contract(contract_api_id, contract_payload)
 
             # --- Работа с креативом и медиа ---
-            video_file = request.FILES.get('video_file')
-            if not video_file:
-                raise ValueError("Файл рекламного видео обязателен.")
-            
             media_external_id = ord_service.upload_media(video_file)
             creative_ext_id = f"crv_{uuid.uuid4().hex[:10]}"
             creative_payload = {
                 "contract_external_ids": [contract_api_id],
-                "kktus": [request.POST.get('kktu_code', '30.15.1')],
+                "kktus": [kktu_code],
                 "name": f"Интеграция у блогера",
                 "brand": advertiser.name,
                 "category": f"Реклама {request.POST.get('product_name', 'Продукт')}",
@@ -1487,33 +1484,59 @@ class EridManagementView(View):
             erid = ord_service.create_creative(creative_ext_id, creative_payload)
 
             # --- Инвойс ---
-            ord_service.create_invoice(contract_api_id, request.POST.get('invoice_number', f"INV-{uuid.uuid4().hex[:5].upper()}"),
-                                       timezone.now().date(), timezone.now().date(), timezone.now().date(),
-                                       float(request.POST.get('invoice_amount', 0)), float(request.POST.get('allocated_amount', 0)),
-                                       'is_vat' in request.POST)
+            ord_service.create_invoice(
+                contract_api_id, request.POST.get('invoice_number', f"INV-{uuid.uuid4().hex[:5].upper()}"),
+                timezone.now().date(), timezone.now().date(), timezone.now().date(),
+                float(request.POST.get('invoice_amount', 0)), float(request.POST.get('allocated_amount', 0)),
+                'is_vat' in request.POST
+            )
 
-            # 2. ЗАПИСЬ В БД (транзакция)
+            # 2. ЗАПИСЬ В БД (Атомарная транзакция)
             with transaction.atomic():
                 if adv_select == 'new': advertiser.save()
                 if blog_select == 'new': blogger.save()
                 
                 if not ord_contract:
-                    ord_contract = OrdContract.objects.create(external_id=contract_api_id, advertiser=advertiser, 
-                                                              blogger=blogger, number=contract_payload["serial"], 
-                                                              date_sign=timezone.now().date())
+                    ord_contract = OrdContract.objects.create(
+                        external_id=contract_api_id, advertiser=advertiser, 
+                        blogger=blogger, number=contract_payload["serial"], 
+                        date_sign=timezone.now().date()
+                    )
 
-                kktu_obj = KktuCode.objects.filter(code=creative_payload["kktus"][0]).first()
-                if not kktu_obj: raise ValueError("ККТУ не найдено")
-
-                EridIntegration.objects.create(ord_contract=ord_contract, kktu=kktu_obj, blogger_name=blogger.name, 
-                                               advertiser_name=advertiser.name, channel_url=channel_url, 
-                                               creative_name=f"{blogger.name} YouTube", erid=erid,
-                                               invoice_number=request.POST.get('invoice_number'),
-                                               invoice_amount=request.POST.get('invoice_amount'))
+                EridIntegration.objects.create(
+                    ord_contract=ord_contract, kktu=kktu_obj, blogger_name=blogger.name, 
+                    advertiser_name=advertiser.name, channel_url=channel_url, 
+                    creative_name=f"{blogger.name} YouTube", erid=erid,
+                    invoice_number=request.POST.get('invoice_number'),
+                    invoice_amount=request.POST.get('invoice_amount')
+                )
 
             messages.success(request, f"Токен {erid} получен!")
             return redirect(request.path_info)
 
         except Exception as e:
-            logger.error(f"Ошибка: {str(e)}", exc_info=True)
-            return render(request, self.template_name, {'error_message': str(e)})
+            logger.error(f"Ошибка выполнения ОРД-процесса: {str(e)}", exc_info=True)
+            return render(request, self.template_name, {'error_message': f"Произошла ошибка при регистрации маркировки: {str(e)}"})
+
+@require_POST
+def delete_contractor(request, external_id):
+    """
+    Асинхронное (fetch) удаление сохраненного контрагента по его external_id.
+    """
+    try:
+        # Ищем контрагента в вашей модели SavedContractor
+        contractor = SavedContractor.objects.filter(external_id=external_id).first()
+        
+        if not contractor:
+            return JsonResponse({'error': 'Контрагент не найден в базе данных.'}, status=404)
+        
+        # Удаляем его из локальной БД
+        contractor_name = contractor.name
+        contractor.delete()
+        
+        logger.info(f"Контрагент {contractor_name} (ID: {external_id}) успешно удален.")
+        return JsonResponse({'success': True})
+        
+    except Exception as e:
+        logger.error(f"Ошибка при удалении контрагента {external_id}: {str(e)}", exc_info=True)
+        return JsonResponse({'error': f'Ошибка сервера при удалении: {str(e)}'}, status=500)

@@ -47,17 +47,32 @@ class VKORDService:
         """Регистрация контрагента по спецификации v1 (метод PUT)"""
         external_id = data.pop("external_id", None) or f"per_{uuid.uuid4().hex[:10]}"
         url = f"{self.BASE_URL}/v1/person/{external_id}"
-        logger.info(f"Синхронный PUT контрагента в ОРД VK v1: {url}")
 
+        # 1. Функция для удаления пустых полей (рекурсивно)
+        def clean_dict(d):
+            return {k: (clean_dict(v) if isinstance(v, dict) else v) 
+                    for k, v in d.items() if v is not None and v != ""}
+
+        # 2. Очищаем данные
+        clean_data = clean_dict(data)
+
+        # 3. Принудительное удаление проблемных полей для иностранцев
+        if 'juridical_details' in clean_data:
+            clean_data['juridical_details'].pop('foreign_registration_number', None)
+            
+            # Если передаем иностранный ИНН, перекладываем в 'inn', если он пуст
+            if 'foreign_inn' in clean_data['juridical_details'] and 'inn' not in clean_data['juridical_details']:
+                 clean_data['juridical_details']['inn'] = clean_data['juridical_details'].pop('foreign_inn')
+
+        logger.info(f"PUT контрагента в ОРД VK: {url}")
+        
         try:
-            logger.debug(f"Payload контрагента: {json.dumps(data)}")
-            response = self.session.put(url, json=data, timeout=15)
+            response = self.session.put(url, json=clean_data, timeout=15)
             if response.status_code in [200, 201]:
-                logger.info(f"Контрагент успешно сохранен в ОРД VK v1. ID: {external_id}")
                 return external_id
-            raise Exception(f"Ошибка ОРД VK v1 ({response.status_code}): {response.text}")
+            raise Exception(f"Ошибка ОРД VK ({response.status_code}): {response.text}")
         except requests.RequestException as e:
-            raise Exception(f"Сетевая ошибка при создании контрагента: {e}")
+            raise Exception(f"Сетевая ошибка: {e}")
 
     def create_contract(self, contract_ext_id, payload):
         """Регистрация договора по спецификации v1 (метод PUT)"""
@@ -191,7 +206,7 @@ class VKORDService:
     def get_kktu_catalog(self, limit=100, offset=0, search=None):
         url = f"{self.BASE_URL}/v1/dict/kktu"
         params = {"limit": limit, "offset": offset, "search": search}
-        logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
+        logger.debug(f"Запрос каталога ККТУ: {params}")
         response = self.session.get(url, params=params)
         response.raise_for_status()
         return response.json()

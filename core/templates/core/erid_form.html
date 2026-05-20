@@ -67,6 +67,10 @@
     .delete-item-btn:hover {
         transform: scale(1.15);
     }
+    /* Стилизация выпадающего списка TomSelect для скроллинга большого объема ККТУ */
+    .ts-dropdown .dropdown-content {
+        max-height: 350px !important;
+    }
 </style>
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 {% endblock %}
@@ -125,7 +129,14 @@
                                 </select>
                             </div>
 
-                            <input type="text" class="form-control form-control-sm mb-2 d-none" id="adv_country" name="adv_country" placeholder="Страна (например, USA)">
+                            <!-- ИСПРАВЛЕНО: Текстовый инпут заменен на динамический выпадающий список стран -->
+                            <select class="form-select form-select-sm form-select-custom mb-2 d-none" id="adv_country" name="adv_country">
+                                <option value="">-- Выберите страну --</option>
+                                {% for country in countries %}
+                                    <option value="{{ country.code }}">{{ country.name }} ({{ country.alpha3 }})</option>
+                                {% endfor %}
+                            </select>
+
                             <input type="text" class="form-control form-control-sm mb-2" id="adv_name" name="adv_name" placeholder="Название компании или ФИО" required>
                             <input type="text" class="form-control form-control-sm mb-2" id="adv_inn" name="adv_inn" placeholder="ИНН">
                             <input type="text" class="form-control form-control-sm" id="adv_phone" name="adv_phone" placeholder="Номер телефона">
@@ -166,15 +177,20 @@
                                 </select>
                             </div>
 
-                            <input type="text" class="form-control form-control-sm mb-2 d-none" id="blog_country" name="blog_country" placeholder="Страна">
+                            <!-- ИСПРАВЛЕНО: Текстовый инпут заменен на выпадающий список стран -->
+                            <select class="form-select form-select-sm form-select-custom mb-2 d-none" id="blog_country" name="blog_country">
+                                <option value="">-- Выберите страну --</option>
+                                {% for country in countries %}
+                                    <option value="{{ country.code }}">{{ country.name }} ({{ country.alpha3 }})</option>
+                                {% endfor %}
+                            </select>
+
                             <input type="text" class="form-control form-control-sm mb-2" id="blog_name" name="blog_name" placeholder="Название компании или ФИО" required>
                             <input type="text" class="form-control form-control-sm mb-2" id="blog_inn" name="blog_inn" placeholder="ИНН">
                             <input type="text" class="form-control form-control-sm mb-2" id="blog_phone" name="blog_phone" placeholder="Номер телефона">
 
                             <input type="url" class="form-control form-control-sm" name="channel_url" required placeholder="Ссылка на YouTube-канал блогера">
                         </div>
-                        
-
                     </div>
 
                     <div class="form-section-title">3. Данные Креатива (Ролика)</div>
@@ -303,13 +319,34 @@
 
 <script>
     let kktuSelectInstance = null;
+    let advCountrySelectInstance = null;
+    let blogCountrySelectInstance = null;
 
     document.addEventListener('DOMContentLoaded', function() {
+        // ИСПРАВЛЕНО: Убран лимит maxOptions для вывода ПОЛНОГО списка ККТУ (по умолчанию лимит 50 позиций)
         if (document.getElementById('kktuSelect')) {
             kktuSelectInstance = new TomSelect('#kktuSelect', {
-                create: false, maxItems: 1,
+                create: false, 
+                maxItems: 1,
+                maxOptions: null, // <-- ОТМЕНЯЕТ ОГРАНИЧЕНИЕ ВЫВОДА СТРОК
                 placeholder: '-- Начните вводить код или название --',
                 sortField: { field: "text", direction: "asc" },
+                dropdownParent: 'body'
+            });
+        }
+
+        // Подключаем автокомплит TomSelect к выпадающим спискам стран для быстрого поиска
+        if (document.getElementById('adv_country')) {
+            advCountrySelectInstance = new TomSelect('#adv_country', {
+                create: false, maxItems: 1, maxOptions: null,
+                placeholder: '-- Выберите страну --',
+                dropdownParent: 'body'
+            });
+        }
+        if (document.getElementById('blog_country')) {
+            blogCountrySelectInstance = new TomSelect('#blog_country', {
+                create: false, maxItems: 1, maxOptions: null,
+                placeholder: '-- Выберите страну --',
                 dropdownParent: 'body'
             });
         }
@@ -339,12 +376,18 @@
                 i.disabled = true;
                 i.required = false; 
             });
+            // Если используются кастомные селекты стран внутри контейнера, отключаем и их обертки
+            const tsInstance = prefix === 'adv' ? advCountrySelectInstance : blogCountrySelectInstance;
+            if (tsInstance) tsInstance.disable();
             return;
         }
 
         box.classList.remove('d-none');
         box.querySelectorAll('input, select').forEach(i => {
-            i.disabled = false;
+            // Исключаем элементы TomSelect, управляемые отдельно через JS API
+            if(!i.classList.contains('tomselected')) {
+                i.disabled = false;
+            }
         });
 
         // 2. Логика типов и гражданства
@@ -354,25 +397,35 @@
         const innInput = document.getElementById(prefix + '_inn');
         const nameInput = document.getElementById(prefix + '_name');
         const phoneInput = document.getElementById(prefix + '_phone');
-        const countryInput = document.getElementById(prefix + '_country');
         const ipOption = document.getElementById(prefix + '_ip_option');
+        
+        // Получаем доступ к TomSelect инстансу текущей страны
+        const countrySelectInstance = prefix === 'adv' ? advCountrySelectInstance : blogCountrySelectInstance;
 
-        // Страна
+        // Логика отображения блока выбора Страны
         if (isForeign) {
-            countryInput.classList.remove('d-none');
-            countryInput.required = true;
+            if (countrySelectInstance) {
+                countrySelectInstance.enable();
+                countrySelectInstance.wrapper.classList.remove('d-none');
+                // Делаем оригинальный скрытый селект обязательным для нативной валидации HTML5
+                document.getElementById(prefix + '_country').required = true;
+            }
             if (ipOption) ipOption.classList.add('d-none');
             if (type === 'ip') document.getElementById(prefix + '_type').value = 'ur';
         } else {
-            countryInput.classList.add('d-none');
-            countryInput.required = false;
+            if (countrySelectInstance) {
+                countrySelectInstance.clear();
+                countrySelectInstance.disable();
+                countrySelectInstance.wrapper.classList.add('d-none');
+                document.getElementById(prefix + '_country').required = false;
+            }
             if (ipOption) ipOption.classList.remove('d-none');
         }
 
-        // Поля в зависимости от типа
+        // Поля в зависимости от типа контрагента
         if (type === 'ur') {
             nameInput.placeholder = "Название компании (ООО '...')";
-            innInput.placeholder = isForeign ? "Tax ID / Код" : "ИНН организации (10 цифр)";
+            innInput.placeholder = isForeign ? "Tax ID / Рег. код" : "ИНН организации (10 цифр)";
             phoneInput.classList.add('d-none'); phoneInput.required = false;
             innInput.classList.remove('d-none'); innInput.required = !isForeign;
         } else if (type === 'fiz') {
@@ -394,45 +447,42 @@
     }
 
     async function deleteSavedContractor(prefix) {
-    const select = document.getElementById(prefix + 'Select');
-    const selectedId = select.value;
-    
-    if (!selectedId || selectedId === 'new') {
-        alert('Пожалуйста, выберите сохраненного контрагента для удаления.');
-        return;
-    }
-    
-    const typeName = prefix === 'adv' ? 'рекламодателя' : 'блогера';
-    if (!confirm(`Вы уверены, что хотите удалить ${typeName}?`)) return;
-
-    try {
-        const response = await fetch("{% url 'core:delete_contractor' '0' %}".replace('0', selectedId), {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            // Удаляем опцию из select
-            const option = select.querySelector(`option[value="${selectedId}"]`);
-            if (option) option.remove();
-            
-            // Сбрасываем выбор
-            select.value = 'new';
-            updatePartyFields(prefix);
-            alert('Контрагент успешно удален.');
-        } else {
-            // Выводим ошибку от сервера, если есть
-            alert('Ошибка: ' + (data.error || 'Не удалось удалить контрагента.'));
+        const select = document.getElementById(prefix + 'Select');
+        const selectedId = select.value;
+        
+        if (!selectedId || selectedId === 'new') {
+            alert('Пожалуйста, выберите сохраненного контрагента для удаления.');
+            return;
         }
-    } catch (error) {
-        console.error('Network error:', error);
-        alert('Произошла ошибка сети. Попробуйте снова.');
+        
+        const typeName = prefix === 'adv' ? 'рекламодателя' : 'блогера';
+        if (!confirm(`Вы уверены, что хотите удалить ${typeName}?`)) return;
+
+        try {
+            const response = await fetch("{% url 'core:delete_contractor' '0' %}".replace('0', selectedId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                const option = select.querySelector(`option[value="${selectedId}"]`);
+                if (option) option.remove();
+                
+                select.value = 'new';
+                updatePartyFields(prefix);
+                alert('Контрагент успешно удален.');
+            } else {
+                alert('Ошибка: ' + (data.error || 'Не удалось удалить контрагента.'));
+            }
+        } catch (error) {
+            console.error('Network error:', error);
+            alert('Произошла ошибка сети. Попробуйте снова.');
+        }
     }
-}
 </script>
 {% endblock %}

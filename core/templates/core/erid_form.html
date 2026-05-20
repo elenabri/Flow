@@ -141,6 +141,8 @@
 
                             <input type="text" class="form-control form-control-sm mb-2" id="adv_name" name="adv_name" placeholder="Название компании или ФИО" required>
                             <input type="text" class="form-control form-control-sm mb-2" id="adv_inn" name="adv_inn" placeholder="ИНН">
+                            <input type="text" class="form-control form-control-sm mb-2 d-none" 
+       id="adv_reg_number" name="adv_reg_number" placeholder="Регистрационный номер / Tax ID">
                             <input type="text" class="form-control form-control-sm" id="adv_phone" name="adv_phone" placeholder="Номер телефона">
                         </div>
                     </div>
@@ -191,6 +193,8 @@
 
                             <input type="text" class="form-control form-control-sm mb-2" id="blog_name" name="blog_name" placeholder="Название компании или ФИО" required>
                             <input type="text" class="form-control form-control-sm mb-2" id="blog_inn" name="blog_inn" placeholder="ИНН">
+                            <input type="text" class="form-control form-control-sm mb-2 d-none" 
+       id="blog_reg_number" name="blog_reg_number" placeholder="Регистрационный номер / Tax ID">
                             <input type="text" class="form-control form-control-sm mb-2" id="blog_phone" name="blog_phone" placeholder="Номер телефона">
 
                             <input type="url" class="form-control form-control-sm" name="channel_url" required placeholder="Ссылка на YouTube-канал блогера">
@@ -404,12 +408,18 @@
         const isForeign = document.getElementById(prefix + '_foreign').checked;
         
         const innInput = document.getElementById(prefix + '_inn');
+        const regInput = document.getElementById(prefix + '_reg_number')
         const nameInput = document.getElementById(prefix + '_name');
         const phoneInput = document.getElementById(prefix + '_phone');
         const ipOption = document.getElementById(prefix + '_ip_option');
         const countryWrapper = document.getElementById(prefix + '_country_wrapper');
 
         if (isForeign) {
+            innInput.classList.add('d-none');
+    innInput.required = false;
+    
+    regInput.classList.remove('d-none');
+    regInput.required = true;
             // Сначала показываем обертку, чтобы элемент получил размеры в DOM
             if (countryWrapper) countryWrapper.classList.remove('d-none');
             
@@ -425,6 +435,11 @@
             if (ipOption) ipOption.classList.add('d-none');
             if (type === 'ip') document.getElementById(prefix + '_type').value = 'ur';
         } else {
+            innInput.classList.remove('d-none');
+    innInput.required = (type !== 'fiz'); // Или ваша логика обязательности
+    
+    regInput.classList.add('d-none');
+    regInput.required = false;
             const tsInstance = prefix === 'adv' ? advCountrySelectInstance : blogCountrySelectInstance;
             if (tsInstance) {
                 tsInstance.clear();

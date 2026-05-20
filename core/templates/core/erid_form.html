@@ -129,13 +129,15 @@
                                 </select>
                             </div>
 
-                            <!-- ИСПРАВЛЕНО: Текстовый инпут заменен на динамический выпадающий список стран -->
-                            <select class="form-select form-select-sm form-select-custom mb-2 d-none" id="adv_country" name="adv_country">
-                                <option value="">-- Выберите страну --</option>
-                                {% for country in countries %}
-                                    <option value="{{ country.code }}">{{ country.name }} ({{ country.alpha3 }})</option>
-                                {% endfor %}
-                            </select>
+                            <!-- Обертка для корректного скрытия/показа TomSelect -->
+                            <div id="adv_country_wrapper" class="mb-2 d-none">
+                                <select class="form-select form-select-sm form-select-custom" id="adv_country" name="adv_country">
+                                    <option value="">-- Выберите страну --</option>
+                                    {% for country in countries %}
+                                        <option value="{{ country.code }}">{{ country.name }} ({{ country.alpha3 }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
 
                             <input type="text" class="form-control form-control-sm mb-2" id="adv_name" name="adv_name" placeholder="Название компании или ФИО" required>
                             <input type="text" class="form-control form-control-sm mb-2" id="adv_inn" name="adv_inn" placeholder="ИНН">
@@ -177,13 +179,15 @@
                                 </select>
                             </div>
 
-                            <!-- ИСПРАВЛЕНО: Текстовый инпут заменен на выпадающий список стран -->
-                            <select class="form-select form-select-sm form-select-custom mb-2 d-none" id="blog_country" name="blog_country">
-                                <option value="">-- Выберите страну --</option>
-                                {% for country in countries %}
-                                    <option value="{{ country.code }}">{{ country.name }} ({{ country.alpha3 }})</option>
-                                {% endfor %}
-                            </select>
+                            <!-- Обертка для корректного скрытия/показа TomSelect -->
+                            <div id="blog_country_wrapper" class="mb-2 d-none">
+                                <select class="form-select form-select-sm form-select-custom" id="blog_country" name="blog_country">
+                                    <option value="">-- Выберите страну --</option>
+                                    {% for country in countries %}
+                                        <option value="{{ country.code }}">{{ country.name }} ({{ country.alpha3 }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
 
                             <input type="text" class="form-control form-control-sm mb-2" id="blog_name" name="blog_name" placeholder="Название компании или ФИО" required>
                             <input type="text" class="form-control form-control-sm mb-2" id="blog_inn" name="blog_inn" placeholder="ИНН">
@@ -323,29 +327,29 @@
     let blogCountrySelectInstance = null;
 
     document.addEventListener('DOMContentLoaded', function() {
-        // ИСПРАВЛЕНО: Убран лимит maxOptions для вывода ПОЛНОГО списка ККТУ (по умолчанию лимит 50 позиций)
+        // ИСПРАВЛЕНО: Задано явное числовое ограничение maxOptions вместо null для надежного рендеринга больших списков
         if (document.getElementById('kktuSelect')) {
             kktuSelectInstance = new TomSelect('#kktuSelect', {
                 create: false, 
                 maxItems: 1,
-                maxOptions: null, // <-- ОТМЕНЯЕТ ОГРАНИЧЕНИЕ ВЫВОДА СТРОК
+                maxOptions: 1500, // Высокий лимит для ККТУ
                 placeholder: '-- Начните вводить код или название --',
                 sortField: { field: "text", direction: "asc" },
                 dropdownParent: 'body'
             });
         }
 
-        // Подключаем автокомплит TomSelect к выпадающим спискам стран для быстрого поиска
+        // Инициализируем селекты стран
         if (document.getElementById('adv_country')) {
             advCountrySelectInstance = new TomSelect('#adv_country', {
-                create: false, maxItems: 1, maxOptions: null,
+                create: false, maxItems: 1, maxOptions: 300,
                 placeholder: '-- Выберите страну --',
                 dropdownParent: 'body'
             });
         }
         if (document.getElementById('blog_country')) {
             blogCountrySelectInstance = new TomSelect('#blog_country', {
-                create: false, maxItems: 1, maxOptions: null,
+                create: false, maxItems: 1, maxOptions: 300,
                 placeholder: '-- Выберите страну --',
                 dropdownParent: 'body'
             });
@@ -356,12 +360,11 @@
             dateStartInput.value = new Date().toISOString().split('T')[0];
         }
 
-        // Инициализируем состояние полей
+        // Переключаем дефолтные состояния
         updatePartyFields('adv');
         updatePartyFields('blog');
     });
 
-    // Единая функция управления полями
     function updatePartyFields(prefix) {
         const select = document.getElementById(prefix + 'Select');
         const box = document.getElementById(prefix + 'NewBox');
@@ -369,14 +372,12 @@
 
         const isNew = (select.value === 'new');
         
-        // 1. Базовая видимость и состояние
         if (!isNew) {
             box.classList.add('d-none');
             box.querySelectorAll('input, select').forEach(i => {
                 i.disabled = true;
                 i.required = false; 
             });
-            // Если используются кастомные селекты стран внутри контейнера, отключаем и их обертки
             const tsInstance = prefix === 'adv' ? advCountrySelectInstance : blogCountrySelectInstance;
             if (tsInstance) tsInstance.disable();
             return;
@@ -384,13 +385,11 @@
 
         box.classList.remove('d-none');
         box.querySelectorAll('input, select').forEach(i => {
-            // Исключаем элементы TomSelect, управляемые отдельно через JS API
             if(!i.classList.contains('tomselected')) {
                 i.disabled = false;
             }
         });
 
-        // 2. Логика типов и гражданства
         const type = document.getElementById(prefix + '_type').value;
         const isForeign = document.getElementById(prefix + '_foreign').checked;
         
@@ -399,15 +398,14 @@
         const phoneInput = document.getElementById(prefix + '_phone');
         const ipOption = document.getElementById(prefix + '_ip_option');
         
-        // Получаем доступ к TomSelect инстансу текущей страны
         const countrySelectInstance = prefix === 'adv' ? advCountrySelectInstance : blogCountrySelectInstance;
+        const countryWrapper = document.getElementById(prefix + '_country_wrapper');
 
-        // Логика отображения блока выбора Страны
+        // ИСПРАВЛЕНО: Управление видимостью осуществляется через специально созданный оберточный контейнер wrapper
         if (isForeign) {
             if (countrySelectInstance) {
                 countrySelectInstance.enable();
-                countrySelectInstance.wrapper.classList.remove('d-none');
-                // Делаем оригинальный скрытый селект обязательным для нативной валидации HTML5
+                if (countryWrapper) countryWrapper.classList.remove('d-none');
                 document.getElementById(prefix + '_country').required = true;
             }
             if (ipOption) ipOption.classList.add('d-none');
@@ -416,7 +414,7 @@
             if (countrySelectInstance) {
                 countrySelectInstance.clear();
                 countrySelectInstance.disable();
-                countrySelectInstance.wrapper.classList.add('d-none');
+                if (countryWrapper) countryWrapper.classList.add('d-none');
                 document.getElementById(prefix + '_country').required = false;
             }
             if (ipOption) ipOption.classList.remove('d-none');

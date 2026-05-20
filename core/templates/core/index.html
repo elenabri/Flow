@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
     :root {
@@ -10,9 +10,11 @@
         --dark: #1d1d1f;
         --gray: #86868b;
         --bg: #f5f5f7;
+        --secondary-btn: #f5f5f7;
+        --tg-color: #24A1DE;
     }
 
-    /* Убираем прокрутку и фиксируем высоту под экран устройства */
+    /* Идеальная фиксация под высоту экрана iPhone без прокрутки */
     html, body {
         margin: 0;
         padding: 0;
@@ -20,12 +22,13 @@
         overflow: hidden; 
         font-family: 'Inter', -apple-system, sans-serif;
         background: #fff;
+        -webkit-font-smoothing: antialiased;
     }
 
     .wrapper {
         display: flex;
         flex-direction: column;
-        height: 100vh; /* Ровно высота экрана */
+        height: 100vh;
         width: 100vw;
         box-sizing: border-box;
     }
@@ -36,7 +39,7 @@
         justify-content: space-between;
         align-items: center;
         padding: 0 20px;
-        height: 50px; /* Уменьшили высоту */
+        height: 50px;
         flex-shrink: 0;
         border-bottom: 1px solid rgba(0,0,0,0.05);
     }
@@ -61,96 +64,134 @@
         font-size: 10px;
     }
 
-    /* --- HERO (Центрированный контент) --- */
+    /* --- HERO --- */
     .hero {
-        flex-grow: 1; /* Занимает всё свободное место */
+        flex-grow: 1;
         display: flex;
         flex-direction: column;
-        justify-content: center; /* Центровка по вертикали */
+        justify-content: center;
         align-items: center;
         text-align: center;
-        padding: 0 20px;
+        padding: 0 24px;
         background: radial-gradient(circle at 50% 0%, #f5faff 0%, #ffffff 100%);
     }
 
     .hero h1 {
-        font-size: clamp(24px, 7vw, 42px); /* Уменьшили размер */
+        font-size: clamp(26px, 7.5vw, 42px);
         font-weight: 800;
-        line-height: 1.1;
-        letter-spacing: -1px;
-        margin: 0 0 10px 0;
+        line-height: 1.15;
+        letter-spacing: -1.2px;
+        margin: 0 0 8px 0;
+        color: var(--dark);
     }
 
     .hero p {
-        font-size: clamp(14px, 3.5vw, 16px);
+        font-size: clamp(13px, 3.5vw, 15px);
         color: var(--gray);
-        max-width: 320px;
-        margin: 0 auto 25px auto;
+        max-width: 300px;
+        margin: 0 auto 20px auto;
     }
 
-    /* --- GRID --- */
-    .features-grid {
+    /* --- iOS STYLE ADVANTAGES --- */
+    .features-list {
         display: flex;
         flex-direction: column;
-        gap: 12px;
         width: 100%;
-        max-width: 340px; /* Ограничили ширину, чтобы не ехало влево */
+        max-width: 340px;
+        background: #f5f5f7;
+        border-radius: 16px;
+        padding: 4px 0;
         margin-bottom: 25px;
     }
 
-    .card {
-        background: #fff;
-        padding: 15px 20px;
-        border-radius: 18px;
-        border: 1px solid #f0f0f2;
-        text-align: left;
+    .feature-item {
         display: flex;
         align-items: center;
-        gap: 15px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        gap: 14px;
+        padding: 14px 16px;
     }
 
-    .card i {
-        color: var(--primary);
-        font-size: 18px;
-        width: 25px;
-        text-align: center;
+    .feature-item:not(:last-child) {
+        border-bottom: 1px solid #e5e5ea;
     }
 
-    .card div h3 {
-        font-size: 15px;
-        margin: 0;
-        font-weight: 700;
+    .feature-icon-wrapper {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 13px;
+        flex-shrink: 0;
     }
 
-    .card div p {
-        font-size: 12px;
-        color: var(--gray);
-        margin: 0;
+    /* Нативные цвета иконок в стиле iOS */
+    .bg-blue { background-color: #007afc; }
+    .bg-green { background-color: #34c759; }
+    .bg-purple { background-color: #5856d6; }
+
+    .feature-text {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--dark);
+        text-align: left;
+        line-height: 1.3;
     }
 
-    /* --- CTA --- */
+    /* --- CTA BUTTONS (Кнопки управления) --- */
     .cta-container {
         width: 100%;
         max-width: 340px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
     }
 
-    .btn-dark {
+    .btn-ios {
         display: block;
-        background: var(--dark);
-        color: #fff;
         padding: 14px;
         border-radius: 14px;
         text-decoration: none;
         font-weight: 600;
-        font-size: 14px;
-        transition: 0.2s;
+        font-size: 15px;
+        text-align: center;
+        transition: background-color 0.2s, transform 0.1s;
+        box-sizing: border-box;
     }
 
-    /* Устранение смещения влево на iPhone */
+    .btn-ios:active {
+        transform: scale(0.98);
+    }
+
+    .btn-ios-primary {
+        background: var(--primary);
+        color: #fff;
+    }
+
+    .btn-ios-secondary {
+        background: var(--secondary-btn);
+        color: var(--primary);
+    }
+
+    .btn-ios-support {
+        background: #fff;
+        color: #4f5b66;
+        border: 1px solid #e5e5ea;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-ios-support i {
+        color: var(--tg-color);
+    }
+
     @media (max-width: 600px) {
-        .hero { padding: 0 20px; }
-        .features-grid, .cta-container {
+        .features-list, .cta-container {
             margin-left: auto;
             margin-right: auto;
         }
@@ -158,45 +199,62 @@
 </style>
 
 <div class="wrapper">
+    <!-- Навигация -->
     <nav class="nav-custom">
         <div class="logo">
             <div class="logo-icon"><i class="fas fa-play"></i></div>
             Tube<span style="color: var(--primary)">Flow</span>
         </div>
-        <div style="display: flex; gap: 10px;">
-            {% if not user.is_authenticated %}
-                <a href="{% url 'login' %}" style="text-decoration: none; color: var(--dark); font-size: 13px; font-weight: 600; padding: 8px;">Войти</a>
-            {% else %}
-                <a href="{% url 'core:ad_list' %}" style="text-decoration: none; color: var(--primary); font-size: 13px; font-weight: 600;">Личный кабинет</a>
+        <div>
+            {% if user.is_authenticated %}
+                <a href="{% url 'core:ad_list' %}" style="text-decoration: none; color: var(--primary); font-size: 14px; font-weight: 600;">В кабинет</a>
             {% endif %}
         </div>
     </nav>
 
+    <!-- Главный экран -->
     <section class="hero">
-        <h1>Прозрачные<br>интеграции.</h1>
-        <p>Маркировка рекламы и прямая статистика YouTube в одном приложении.</p>
+        <h1>TubeFlow</h1>
+        <p>Умная автоматизация рекламы и аналитики для инфлюенс-маркетинга</p>
 
-        <div class="features-grid">
-            <div class="card">
-                <i class="fas fa-chart-bar"></i>
-                <div>
-                    <h3>Авто-аналитика</h3>
-                    <p>Данные напрямую из YouTube API.</p>
+        <!-- Список достоинств "в лоб" -->
+        <div class="features-list">
+            <div class="feature-item">
+                <div class="feature-icon-wrapper bg-blue">
+                    <i class="fas fa-link"></i>
                 </div>
+                <div class="feature-text">Соединяет блогеров и рекламодателей</div>
             </div>
-            <div class="card">
-                <i class="fas fa-check-circle"></i>
-                <div>
-                    <h3>Маркировка</h3>
-                    <p>Авто-отчеты в ОРД и ERID.</p>
+            <div class="feature-item">
+                <div class="feature-icon-wrapper bg-green">
+                    <i class="fas fa-gift"></i>
                 </div>
+                <div class="feature-text">erid бесплатно</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon-wrapper bg-purple">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="feature-text">Автоматическая подача статистики</div>
             </div>
         </div>
 
+        <!-- Кнопки действий -->
         <div class="cta-container">
-            <a href="{% url 'core:register' %}" class="btn-dark">Начать работу</a>
+            {% if not user.is_authenticated %}
+                <!-- Если гость: Регистрация и Вход -->
+                <a href="{% url 'core:register' %}" class="btn-ios btn-ios-primary">Регистрация</a>
+                <a href="{% url 'login' %}" class="btn-ios btn-ios-secondary">Войти</a>
+            {% else %}
+                <!-- Если авторизован: Быстрый переход в систему -->
+                <a href="{% url 'core:ad_list' %}" class="btn-ios btn-ios-primary">Перейти в панель</a>
+            {% endif %}
+            
+            <!-- Кнопка Поддержки (доступна всегда) -->
+            <a href="https://t.me/lena_bri" target="_blank" class="btn-ios btn-ios-support">
+                <i class="fab fa-telegram-plane"></i> Поддержка
+            </a>
         </div>
     </section>
 </div>
-
 {% endblock %}

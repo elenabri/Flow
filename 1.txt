@@ -1,1 +1,4 @@
-
+# Если вы используете Shell в интерфейсе Render:
+python manage.py makemigrations
+python manage.py migrate
+cat core/migrations/0023_savedcontractor_foreign_reg_number.py

@@ -1380,6 +1380,7 @@ class EridManagementView(View):
                 ord_type = "juridical" if web_type == "ur" else ("ip" if web_type == "ip" else "physical")
             
             inn = "".join([c for c in request_data.get(f'{prefix}_inn', '') if c.isdigit()])
+            
             payload = {
                 "external_id": f"{prefix}_{uuid.uuid4().hex[:10]}",
                 "name": request_data.get(f'{prefix}_name'),
@@ -1390,9 +1391,23 @@ class EridManagementView(View):
                     "phone": request_data.get(f'{prefix}_phone', '').strip() or "+79991234567"
                 }
             }
-            # ИСПРАВЛЕНИЕ: Используем ключ foreign_oksm_country_code
-            if is_foreign and request_data.get(f'{prefix}_country'):
+
+            if is_foreign:
+                # ВАЖНО: Получаем номер регистрации или ИНН из формы
+                reg_number = request_data.get(f'{prefix}_reg_number', '').strip()
+                
+                # Добавляем обязательные поля для иностранца
                 payload["juridical_details"]["foreign_oksm_country_code"] = request_data.get(f'{prefix}_country')
+                
+                # ОРД требует хотя бы одно из этих полей:
+                if reg_number:
+                    payload["juridical_details"]["foreign_registration_number"] = reg_number
+                elif inn:
+                    payload["juridical_details"]["foreign_inn"] = inn
+                else:
+                    # Если данных нет, бросаем ошибку, иначе ОРД вернет 400
+                    raise ValueError(f"Для иностранного контрагента {request_data.get(f'{prefix}_name')} обязателен ИНН или номер регистрации.")
+
             return payload, inn
 
         try:

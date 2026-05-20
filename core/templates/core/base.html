@@ -138,7 +138,18 @@
 </head>
 <body>
 
-
+{% if messages %}
+  <div class="container mt-3" style="position: fixed; top: 20px; right: 20px; z-index: 1050; max-width: 400px;">
+    {% for message in messages %}
+      <div class="alert alert-success alert-dismissible fade show shadow-lg" role="alert">
+        <!-- Иконка (по желанию, можно убрать) -->
+        <strong>🎉 Успешно!</strong> {{ message }}
+        <!-- Кнопка-крестик для закрытия -->
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
 <!-- Навигация -->
 <nav class="navbar navbar-expand-lg sticky-top">
     <div class="container-fluid px-lg-5">

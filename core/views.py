@@ -1316,11 +1316,16 @@ class EridManagementView(View):
 
     def load_countries_data(self):
         """Безопасное динамическое чтение стран из файла."""
-        countries_path = os.path.join(settings.BASE_DIR, 'countries.json')
+        # Корректируем путь: если файл лежит в папке Flow, то: 'Flow', 'countries.json'
+        # Если лежит прямо в корне проекта рядом с manage.py, оставляем как есть.
+        countries_path = os.path.join(settings.BASE_DIR, 'countries.json') 
+        
         if os.path.exists(countries_path):
             try:
                 with open(countries_path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    # ИСПРАВЛЕНО: Возвращаем именно список из ключа 'countries', а не весь словарь
+                    return data.get('countries', [])
             except Exception as e:
                 logger.error(f"Ошибка чтения countries.json: {e}")
         return []
@@ -1333,17 +1338,15 @@ class EridManagementView(View):
         return token
 
     def get(self, request):
-        kktu_queryset = KktuCode.objects.filter(is_active=True)
+        # ОПТИМИЗАЦИЯ: Загружаем только необходимые поля для 300 кодов ККТУ
+        kktu_queryset = KktuCode.objects.filter(is_active=True).only('code', 'name')
         
-        # ОТЛАДКА
-        print(f"DEBUG: Количество ККТУ в базе: {kktu_queryset.count()}")
-
         context = {
             'advertisers': SavedContractor.objects.filter(role='advertiser'),
             'bloggers': SavedContractor.objects.filter(role='blogger'),
             'integrations': EridIntegration.objects.select_related('ord_contract', 'kktu').all(),
             'kktu_codes': kktu_queryset,
-            'countries': self.load_countries_data(),  # <-- ИСПРАВЛЕНО: Читаем динамически при GET-запросе
+            'countries': self.load_countries_data(),  
             'today_date': timezone.now().date().isoformat()
         }
         return render(request, self.template_name, context)

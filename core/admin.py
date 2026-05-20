@@ -13,11 +13,15 @@ from .models import (
     EridIntegration
 )
 
-@admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('username', 'email', 'role', 'is_staff')
+    # Добавили 'telegram' в список колонок
+    list_display = ('username', 'email', 'telegram', 'role', 'is_staff')
+    
+    # Добавили фильтрацию по роли
     list_filter = ('role',)
-    search_fields = ('username', 'email')
+    
+    # Теперь по введённому нику в поиске тоже можно искать пользователя
+    search_fields = ('username', 'email', 'telegram')
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):

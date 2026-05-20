@@ -317,13 +317,10 @@
                             <a href="{% url 'core:integration_list' %}" class="nav-link {% if 'integration' in url_name %}active{% endif %}">Моя реклама</a>
                         </li>
                         <li class="nav-item">
-                            <a href="{% url 'core:chat_list' %}" class="nav-link {% if 'chat' in url_name %}active{% endif %}">
-                                Сообщения
-                                {% if unread_messages_count > 0 %}
-                                    <span class="badge rounded-pill badge-msg">{{ unread_messages_count }}</span>
-                                {% endif %}
-                            </a>
-                        </li>
+    <a href="https://t.me/lena_bri" target="_blank" class="nav-link">
+        <i class="fab fa-telegram me-1" style="color: var(--tg-color);"></i>Поддержка
+    </a>
+</li>
                     {% endif %}
                 </ul>
 

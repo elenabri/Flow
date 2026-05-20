@@ -4,6 +4,7 @@ from django.contrib.auth.hashers import make_password
 from django.core.mail import send_mail  
 from .models import User, BloggerProfile, AdvertiserProfile  
 from .constants import TOPIC_CHOICES
+import secrets
 
 class RegistrationForm(forms.ModelForm):
     # Явно объявляем email
@@ -75,7 +76,8 @@ class RegistrationForm(forms.ModelForm):
         user.username = email
         
         # Автоматически генерируем случайный пароль
-        random_password = User.objects.make_random_password()
+        #random_password = User.objects.make_random_password()
+        random_password = secrets.token_urlsafe(16)
         user.password = make_password(random_password)
         
         if commit:

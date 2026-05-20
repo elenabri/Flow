@@ -102,6 +102,11 @@ def get_youtube_stats(channel_url, api_key):
 
 # --- 2. АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ ---
 
+import logging
+
+# Инициализируем логгер, чтобы видеть ошибки прямо в консоли Render
+logger = logging.getLogger(__name__)
+
 @transaction.atomic
 def register(request):
     if request.method == 'POST':
@@ -123,7 +128,6 @@ def register(request):
                 user.save()
                 
                 if role == 'blogger':
-                    # Используем .get() с default, чтобы избежать ошибок если поля пусты
                     BloggerProfile.objects.create(
                         user=user,
                         channel_name=request.POST.get('api_channel_name') or "YouTube Channel",
@@ -132,7 +136,6 @@ def register(request):
                         median_views=int(request.POST.get('api_long_median') or 0),
                         median_views_shorts=int(request.POST.get('api_shorts_median') or 0),
                         categories=", ".join(request.POST.getlist('topics')),
-                        # Берем цену из формы, если пусто — ставим 0
                         price_start=form.cleaned_data.get('price_start') or 0,
                         avatar_url=request.POST.get('api_avatar'),
                     )
@@ -151,20 +154,26 @@ def register(request):
                             description=request.POST.get('description', ''),
                             category=", ".join(request.POST.getlist('topics')),
                             image=request.FILES.get('product_image'),
-                            link_wb=form.cleaned_data.get('product_link'), # Используем поле из формы
+                            link_wb=form.cleaned_data.get('product_link'),
                             is_active=True
                         )
 
-                # ОТПРАВКА ПИСЬМА: Добавляем request для генерации абсолютных ссылок
+                # ОТПРАВКА ПИСЬМА
                 send_verification_email(user, pwd, request)
                 return redirect('core:registration_success')
 
             except Exception as e:
-                # В случае ошибки внутри транзакции
+                # !!! КРИТИЧЕСКИЙ КРАШ-ТЕСТ ДЛЯ ПОИСКА ОШИБКИ !!!
+                # Выводим ошибку в логи Render
+                logger.error(f"Критическая ошибка при регистрации пользователя: {str(e)}", exc_info=True)
                 messages.error(request, f"Ошибка при создании профиля: {e}")
+                
         else:
-            for error in form.errors.values():
-                messages.error(request, error)
+            # Если сама форма невалидна (например, email уже занят)
+            logger.warning(f"Форма не прошла валидацию: {form.errors.as_json()}")
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{form.fields[field].label or field}: {error}")
     else:
         form = RegistrationForm()
         
@@ -379,7 +388,7 @@ def approve_final_payment(request, contract_id):
     c.save()
     return redirect('integration')
 
-# --- 6. ТЕХНИЧЕСКИЕ (AJAX) ---
+
 
 # --- 6. ТЕХНИЧЕСКИЕ (AJAX) ---
 

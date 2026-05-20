@@ -75,17 +75,28 @@ class VKORDService:
         except requests.RequestException as e:
             raise Exception(f"Сетевая ошибка при создании договора в ОРД: {e}")
 
-    def create_pad(self, pad_ext_id, person_ext_id, name, url):
-        """Регистрация площадки"""
+   def create_pad(self, pad_ext_id, person_ext_id, name, url):
+        # ОРД VK требует уточнения площадки, если это YouTube. 
+        # Добавляем /videos или /about, если это просто youtube.com
+        final_url = url
+        if url.strip('/') == "https://youtube.com":
+            final_url = "https://youtube.com/channel/example_detailed_path"
+            
         payload = {
             "person_external_id": person_ext_id,
             "is_owner": True,
             "type": "web",
             "name": name,
-            "url": url
+            "url": final_url 
         }
         logger.debug(f"Payload площадки: {json.dumps(payload)}")
         response = self.session.put(f"{self.BASE_URL}/v1/pad/{pad_ext_id}", json=payload)
+        
+        if response.status_code != 200:
+            logger.error(f"ОТВЕТ ОРД VK (create_pad): {response.text}")
+            
+        response.raise_for_status()
+        return pad_ext_id
         
         # ЛОГИРОВАНИЕ ОШИБКИ VK
         if response.status_code != 200:

@@ -22,7 +22,7 @@ def send_telegram_message(recipient_tg_id, title, text):
     }
 
     try:
-        logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
+        logger.debug(f"Payload отправляемый в TG: {json.dumps(payload)}")
         response = requests.post(url, json=payload, timeout=10)
         return response.json()
     except Exception as e:
@@ -42,7 +42,6 @@ class VKORDService:
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
         })
-            
 
     def create_person(self, data):
         """Регистрация контрагента по спецификации v1 (метод PUT)"""
@@ -51,33 +50,27 @@ class VKORDService:
         logger.info(f"Синхронный PUT контрагента в ОРД VK v1: {url}")
 
         try:
-            logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
+            logger.debug(f"Payload контрагента: {json.dumps(data)}")
             response = self.session.put(url, json=data, timeout=15)
             if response.status_code in [200, 201]:
                 logger.info(f"Контрагент успешно сохранен в ОРД VK v1. ID: {external_id}")
                 return external_id
             raise Exception(f"Ошибка ОРД VK v1 ({response.status_code}): {response.text}")
         except requests.RequestException as e:
-            raise Exception(f"Сетевая ошибка при создании контрагента в ОРД: {e}")
+            raise Exception(f"Сетевая ошибка при создании контрагента: {e}")
 
     def create_contract(self, contract_ext_id, payload):
         """Регистрация договора по спецификации v1 (метод PUT)"""
         url = f"{self.BASE_URL}/v1/contract/{contract_ext_id}"
-        logger.info(f"Синхронный PUT договора в ОРД VK v1: {url}")
-
         try:
-            logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
+            logger.debug(f"Payload договора: {json.dumps(payload)}")
             response = self.session.put(url, json=payload, timeout=15)
-            if response.status_code in [200, 201]:
-                logger.info(f"Договор успешно зарегистрирован в v1. ID: {contract_ext_id}")
-                return contract_ext_id
-            raise Exception(f"Ошибка ОРД VK v1 при создании договора ({response.status_code}): {response.text}")
+            response.raise_for_status()
+            return contract_ext_id
         except requests.RequestException as e:
-            raise Exception(f"Сетевая ошибка при создании договора в ОРД: {e}")
+            raise Exception(f"Сетевая ошибка при создании договора: {e}")
 
-   def create_pad(self, pad_ext_id, person_ext_id, name, url):
-        # ОРД VK требует уточнения площадки, если это YouTube. 
-        # Добавляем /videos или /about, если это просто youtube.com
+    def create_pad(self, pad_ext_id, person_ext_id, name, url):
         final_url = url
         if url.strip('/') == "https://youtube.com":
             final_url = "https://youtube.com/channel/example_detailed_path"
@@ -97,109 +90,47 @@ class VKORDService:
             
         response.raise_for_status()
         return pad_ext_id
-        
-        # ЛОГИРОВАНИЕ ОШИБКИ VK
-        if response.status_code != 200:
-            logger.error(f"ОТВЕТ ОРД VK (create_pad): {response.text}")
-            
-        response.raise_for_status()
-        return pad_ext_id
 
     def get_pads(self, person_ext_id=None):
-        """Получение списка площадок из ОРД с фильтрацией по контрагенту"""
+        """Получение списка площадок"""
         url = f"{self.BASE_URL}/v1/pad"
-        params = {}
-        if person_ext_id:
-            params["person_external_id"] = person_ext_id
-            
-        try:
-            logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
-            response = self.session.get(url, params=params, timeout=15)
-            response.raise_for_status()
-            # Обычно ОРД возвращает либо массив напрямую, либо объект с ключом 'items'
-            data = response.json()
-            if isinstance(data, dict):
-                return data.get("items", [])
-            return data
-        except Exception as e:
-            logger.error(f"Не удалось получить список площадок из ОРД: {e}")
-            return []
+        params = {"person_external_id": person_ext_id} if person_ext_id else {}
+        response = self.session.get(url, params=params, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("items", data) if isinstance(data, dict) else data
 
     def find_or_create_pad(self, person_ext_id, url):
-        """
-        Ищет площадку по URL у конкретного контрагента.
-        Если находит — возвращает её external_id. Если нет — создает новую.
-        """
         try:
             existing_pads = self.get_pads(person_ext_id=person_ext_id)
             for pad in existing_pads:
-                # Сверяем url, убирая лишние пробелы и слеши на конце для надежности
                 if pad.get('url', '').strip('/') == url.strip('/'):
-                    # Приоритет отдаем external_id, так как вы везде связываете объекты через него
                     return pad.get('external_id') or pad.get('id')
         except Exception as e:
-            logger.warning(f"Ошибка при поиске площадки, переключаемся на создание: {e}")
+            logger.warning(f"Ошибка при поиске площадки: {e}")
 
-        # Если не нашли или упали с ошибкой — генерируем и регистрируем новую
         new_pad_ext_id = f"pad_{uuid.uuid4().hex[:10]}"
-        self.create_pad(
-            pad_ext_id=new_pad_ext_id,
-            person_ext_id=person_ext_id,
-            name="YouTube канал (Авто)",
-            url=url
-        )
+        self.create_pad(new_pad_ext_id, person_ext_id, "YouTube канал (Авто)", url)
         return new_pad_ext_id
 
     def upload_media(self, video_file):
-        """Загрузка медиафайла согласно документации API"""
         media_external_id = f"med_{uuid.uuid4().hex[:10]}"
         url = f"{self.BASE_URL}/v1/media/{media_external_id}"
-        
-        # 1. Создаем заголовки только с авторизацией
-        # Удаляем Content-Type, чтобы requests сам вычислил boundary для multipart
         headers = {"Authorization": self.session.headers["Authorization"]}
         
-        try:
-            video_file.seek(0)
-            files = {
-                'media_file': (video_file.name, video_file.read(), 'video/mp4')
-            }
-            
-            # 2. Выполняем запрос БЕЗ использования session.headers
-            logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
-            response = requests.put(
-                url, 
-                files=files, 
-                headers=headers, 
-                timeout=60
-            )
-            
-            if response.status_code in [200, 201]:
-                logger.info(f"Медиафайл успешно загружен. ID: {media_external_id}")
-                return media_external_id
-            
-            raise Exception(f"Ошибка ОРД ({response.status_code}): {response.text}")
-            
-        except requests.RequestException as e:
-            raise Exception(f"Сетевая ошибка при отправке файла: {e}")
+        video_file.seek(0)
+        files = {'media_file': (video_file.name, video_file.read(), 'video/mp4')}
+        
+        response = requests.put(url, files=files, headers=headers, timeout=60)
+        response.raise_for_status()
+        return media_external_id
 
     def create_creative(self, creative_ext_id, payload):
-        """Регистрация креатива и получение ERID по спецификации v3"""
         url = f"{self.BASE_URL}/v3/creative/{creative_ext_id}"
-        logger.info(f"Синхронный PUT креатива в ОРД VK v3: {url}")
-
-        try:
-            logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
-            response = self.session.put(url, json=payload, timeout=20)
-            if response.status_code in [200, 201]:
-                data = response.json()
-                erid = data.get("erid")
-                if erid:
-                    return erid
-                raise Exception(f"ОРД вернул статус {response.status_code}, но поле 'erid' отсутствует: {response.text}")
-            raise Exception(f"Ошибка ОРД VK v3 при создании креатива ({response.status_code}): {response.text}")
-        except requests.RequestException as e:
-            raise Exception(f"Сетевая ошибка при генерации ERID: {e}")
+        logger.debug(f"Payload креатива: {json.dumps(payload)}")
+        response = self.session.put(url, json=payload, timeout=20)
+        response.raise_for_status()
+        return response.json().get("erid")
 
     def create_invoice(self, contract_ext_id, invoice_number, invoice_date, period_start, period_end, amount, allocated_amount, is_vat=True):
         invoice_ext_id = f"inv_{uuid.uuid4().hex[:10]}"

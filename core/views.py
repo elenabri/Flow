@@ -1336,8 +1336,8 @@ class EridManagementView(View):
         if not token:
             raise ValueError("КРИТИЧЕСКАЯ ОШИБКА: VK_ORD_TOKEN не настроен in settings.py")
         return token
-
-def get(self, request):
+        
+    def get(self, request):
         # ОПТИМИЗАЦИЯ: Загружаем только необходимые поля для 300 кодов ККТУ
         kktu_queryset = KktuCode.objects.filter(is_active=True).only('code', 'name')
         
@@ -1350,6 +1350,8 @@ def get(self, request):
             'today_date': timezone.now().date().isoformat()
         }
         return render(request, self.template_name, context)
+
+
 
     def post(self, request):
         # 0. РАННЯЯ ВАЛИДАЦИЯ

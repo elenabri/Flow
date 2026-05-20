@@ -2,6 +2,7 @@ import logging
 import uuid
 import requests
 from django.conf import settings
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ def send_telegram_message(recipient_tg_id, title, text):
     }
 
     try:
+        logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
         response = requests.post(url, json=payload, timeout=10)
         return response.json()
     except Exception as e:
@@ -49,6 +51,7 @@ class VKORDService:
         logger.info(f"Синхронный PUT контрагента в ОРД VK v1: {url}")
 
         try:
+            logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
             response = self.session.put(url, json=data, timeout=15)
             if response.status_code in [200, 201]:
                 logger.info(f"Контрагент успешно сохранен в ОРД VK v1. ID: {external_id}")
@@ -63,6 +66,7 @@ class VKORDService:
         logger.info(f"Синхронный PUT договора в ОРД VK v1: {url}")
 
         try:
+            logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
             response = self.session.put(url, json=payload, timeout=15)
             if response.status_code in [200, 201]:
                 logger.info(f"Договор успешно зарегистрирован в v1. ID: {contract_ext_id}")
@@ -80,7 +84,13 @@ class VKORDService:
             "name": name,
             "url": url
         }
+        logger.debug(f"Payload площадки: {json.dumps(payload)}")
         response = self.session.put(f"{self.BASE_URL}/v1/pad/{pad_ext_id}", json=payload)
+        
+        # ЛОГИРОВАНИЕ ОШИБКИ VK
+        if response.status_code != 200:
+            logger.error(f"ОТВЕТ ОРД VK (create_pad): {response.text}")
+            
         response.raise_for_status()
         return pad_ext_id
 
@@ -92,6 +102,7 @@ class VKORDService:
             params["person_external_id"] = person_ext_id
             
         try:
+            logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
             response = self.session.get(url, params=params, timeout=15)
             response.raise_for_status()
             # Обычно ОРД возвращает либо массив напрямую, либо объект с ключом 'items'
@@ -144,6 +155,7 @@ class VKORDService:
             }
             
             # 2. Выполняем запрос БЕЗ использования session.headers
+            logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
             response = requests.put(
                 url, 
                 files=files, 
@@ -166,6 +178,7 @@ class VKORDService:
         logger.info(f"Синхронный PUT креатива в ОРД VK v3: {url}")
 
         try:
+            logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
             response = self.session.put(url, json=payload, timeout=20)
             if response.status_code in [200, 201]:
                 data = response.json()
@@ -218,6 +231,7 @@ class VKORDService:
         }
 
         try:
+            logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
             response = self.session.put(url_put, json=payload, timeout=20)
             if response.status_code not in [200, 201]:
                 raise Exception(f"Ошибка v4 при создании акта: {response.text}")
@@ -235,6 +249,7 @@ class VKORDService:
     def get_kktu_catalog(self, limit=100, offset=0, search=None):
         url = f"{self.BASE_URL}/v1/dict/kktu"
         params = {"limit": limit, "offset": offset, "search": search}
+        logger.debug(f"Payload отправляемый в ОРД: {json.dumps(payload)}")
         response = self.session.get(url, params=params)
         response.raise_for_status()
         return response.json()

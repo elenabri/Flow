@@ -137,6 +137,9 @@ def register(request):
                         median_views_shorts=int(request.POST.get('api_shorts_median') or 0),
                         categories=", ".join(request.POST.getlist('topics')),
                         price_start=form.cleaned_data.get('price_start') or 0,
+                        price_middle=form.cleaned_data.get('price_middle') or 0,
+                        price_end=form.cleaned_data.get('price_end') or 0,
+                        price_shorts=form.cleaned_data.get('price_shorts') or 0,
                         avatar_url=request.POST.get('api_avatar'),
                     )
                 
@@ -151,7 +154,7 @@ def register(request):
                         ProductAd.objects.create(
                             advertiser=adv, 
                             name=product_title,
-                            description=request.POST.get('description', ''),
+                            short_desc = request.POST.get('short_description', '')
                             category=", ".join(request.POST.getlist('topics')),
                             image=request.FILES.get('product_image'),
                             link_wb=form.cleaned_data.get('product_link'),

@@ -405,6 +405,12 @@ class SavedContractor(models.Model):
         null=True, 
         help_text="Основная площадка блогера"
     )
+    foreign_reg_number = models.CharField(
+        max_length=50, 
+        blank=True, 
+        null=True, 
+        verbose_name="Рег. номер иностранного лица"
+    )
     
     # Дополнительные поля для полной синхронизации
     contractor_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='ur', verbose_name="Тип контрагента")

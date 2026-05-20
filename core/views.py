@@ -1289,20 +1289,53 @@ from .services import VKORDService
 
 logger = logging.getLogger(__name__)
 
+# =====================================================================
+# --- БЛОК ОРД: УПРАВЛЕНИЕ МАРКИРОВКОЙ И ERID ---
+# =====================================================================
+
+import logging
+import uuid
+import os      # <-- ДОБАВЛЕНО: импорт os для работы с путями
+import json    # <-- ДОБАВЛЕНО: импорт json для парсинга стран
+from django.conf import settings
+from django.contrib import messages
+from django.db import transaction
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
+from django.utils import timezone
+from django.views import View
+from django.views.decorators.http import require_POST
+
+# Импорты ваших моделей и сервисов
+from core.models import SavedContractor, OrdContract, KktuCode, EridIntegration
+from .services import VKORDService
+
+logger = logging.getLogger(__name__)
+
 class EridManagementView(View):
     template_name = 'erid_form.html'
+    countries_path = os.path.join(settings.BASE_DIR, 'countries.json')
+    countries_data = []
+    
+    # Считываем файл один раз при загрузке модуля
+    if os.path.exists(countries_path):
+        try:
+            with open(countries_path, 'r', encoding='utf-8') as f:
+                countries_data = json.load(f)
+        except Exception as e:
+            logger.error(f"Ошибка чтения countries.json: {e}")
 
     @property
     def ord_token(self):
         token = getattr(settings, 'VK_ORD_TOKEN', None)
         if not token:
-            raise ValueError("КРИТИЧЕСКАЯ ОШИБКА: VK_ORD_TOKEN не настроен в settings.py")
+            raise ValueError("КРИТИЧЕСКАЯ ОШИБКА: VK_ORD_TOKEN не настроен in settings.py")
         return token
 
     def get(self, request):
         kktu_queryset = KktuCode.objects.filter(is_active=True)
         
-        # ОТЛАДКА: Выведет количество и состав в консоль сервера (где запущен runserver)
+        # ОТЛАДКА: Выведет количество и состав в консоль сервера
         print(f"DEBUG: Количество ККТУ в базе: {kktu_queryset.count()}")
         for item in kktu_queryset:
             print(f"DEBUG: {item.code} | {item.name}")
@@ -1312,6 +1345,7 @@ class EridManagementView(View):
             'bloggers': SavedContractor.objects.filter(role='blogger'),
             'integrations': EridIntegration.objects.select_related('ord_contract', 'kktu').all(),
             'kktu_codes': kktu_queryset,
+            'countries': self.countries_data,  # <-- ИСПРАВЛЕНО: Передаем список стран из класса в контекст шаблона
             'today_date': timezone.now().date().isoformat()
         }
         return render(request, self.template_name, context)
@@ -1334,22 +1368,33 @@ class EridManagementView(View):
                 raw_phone = request.POST.get('adv_phone', '').strip() or "+79991234567"
                 inn = "".join([c for c in request.POST.get('adv_inn', '') if c.isdigit()])
                 
+                # Собираем тип для ОРД с учетом гражданства
+                adv_ord_type = "foreign_physical" if request.POST.get('adv_citizenship') == 'foreign' else ord_type
+                
                 adv_payload = {
                     "external_id": adv_ext_id,
                     "name": request.POST.get('adv_name'),
                     "roles": ["advertiser"],
                     "juridical_details": {
-                        "type": "foreign_physical" if request.POST.get('adv_citizenship') == 'foreign' else ord_type,
+                        "type": adv_ord_type,
                         "inn": inn if inn else None,
                         "phone": raw_phone
                     }
                 }
+                
+                # Передаем код страны в ОРД, если контрагент — иностранец
+                if request.POST.get('adv_citizenship') == 'foreign' and request.POST.get('adv_country'):
+                    adv_payload["juridical_details"]["oksm_code"] = request.POST.get('adv_country')
+
                 adv_api_id = ord_service.create_person(adv_payload)
+                
                 # Создаем объект в памяти для последующей записи в БД
-                advertiser = SavedContractor(external_id=adv_api_id, name=adv_payload["name"], inn=inn, 
-                                             role='advertiser', contractor_type=web_type, 
-                                             citizenship=request.POST.get('adv_citizenship', 'rf'),
-                                             country=request.POST.get('adv_country'), phone=raw_phone)
+                advertiser = SavedContractor(
+                    external_id=adv_api_id, name=adv_payload["name"], inn=inn, 
+                    role='advertiser', contractor_type=web_type, 
+                    citizenship=request.POST.get('adv_citizenship', 'rf'),
+                    country=request.POST.get('adv_country'), phone=raw_phone
+                )
             else:
                 advertiser = SavedContractor.objects.get(external_id=adv_select)
                 adv_api_id = advertiser.external_id
@@ -1362,31 +1407,42 @@ class EridManagementView(View):
                 raw_phone = request.POST.get('blog_phone', '').strip() or "+79991234567"
                 inn = "".join([c for c in request.POST.get('blog_inn', '') if c.isdigit()])
                 
+                # Собираем тип для ОРД с учетом гражданства
+                blog_ord_type = "foreign_physical" if request.POST.get('blog_citizenship') == 'foreign' else ord_type
+                
                 blog_payload = {
                     "external_id": blog_ext_id,
                     "name": request.POST.get('blog_name'),
                     "roles": ["publisher"],
                     "juridical_details": {
-                        "type": "foreign_physical" if request.POST.get('blog_citizenship') == 'foreign' else ord_type,
+                        "type": blog_ord_type,
                         "inn": inn if inn else None,
                         "phone": raw_phone
                     }
                 }
+                
+                # Передаем код страны в ОРД, если блогер — иностранец
+                if request.POST.get('blog_citizenship') == 'foreign' and request.POST.get('blog_country'):
+                    blog_payload["juridical_details"]["oksm_code"] = request.POST.get('blog_country')
+
                 blog_api_id = ord_service.create_person(blog_payload)
+                
                 # Регистрируем площадку в ОРД
                 pad_ext_id = f"pad_{uuid.uuid4().hex[:10]}"
                 ord_service.create_pad(
                     pad_ext_id=pad_ext_id, 
-                    person_ext_id=blog_api_id, # Привязываем к блогеру
+                    person_ext_id=blog_api_id, 
                     name=f"YouTube канал: {blog_payload['name']}",
                     url=channel_url
                 )
                 
                 # Создаем объект в памяти
-                blogger = SavedContractor(external_id=blog_api_id, name=blog_payload["name"], inn=inn, 
-                                          role='blogger', contractor_type=web_type, 
-                                          citizenship=request.POST.get('blog_citizenship', 'rf'),
-                                          country=request.POST.get('blog_country'), phone=raw_phone)
+                blogger = SavedContractor(
+                    external_id=blog_api_id, name=blog_payload["name"], inn=inn, 
+                    role='blogger', contractor_type=web_type, 
+                    citizenship=request.POST.get('blog_citizenship', 'rf'),
+                    country=request.POST.get('blog_country'), phone=raw_phone
+                )
             else:
                 blogger = SavedContractor.objects.get(external_id=blog_select)
                 blog_api_id = blogger.external_id
@@ -1461,32 +1517,3 @@ class EridManagementView(View):
         except Exception as e:
             logger.error(f"Ошибка: {str(e)}", exc_info=True)
             return render(request, self.template_name, {'error_message': str(e)})
-
-from django.db import DatabaseError
-
-@require_POST
-def delete_contractor(request, external_id):
-    try:
-        # Пытаемся получить объект
-        contractor = SavedContractor.objects.get(external_id=external_id)
-        
-        # Проверка связей (защита от удаления)
-        if OrdContract.objects.filter(advertiser=contractor).exists() or \
-           OrdContract.objects.filter(blogger=contractor).exists():
-            return JsonResponse({'error': 'Нельзя удалить: у контрагента есть связанные договоры.'}, status=400)
-        
-        contractor.delete()
-        return JsonResponse({'status': 'success'})
-
-    except SavedContractor.DoesNotExist:
-        return JsonResponse({'error': 'Контрагент не найден.'}, status=404)
-    
-    except DatabaseError as e:
-        # Ловим ошибки базы данных (например, проблемы с блокировкой или соединением)
-        logger.error(f"Ошибка БД при удалении контрагента {external_id}: {e}")
-        return JsonResponse({'error': 'Ошибка при работе с базой данных.'}, status=500)
-    
-    except Exception as e:
-        # Ловим любые другие непредвиденные ошибки
-        logger.error(f"Непредвиденная ошибка при удалении: {e}")
-        return JsonResponse({'error': 'Внутренняя ошибка сервера.'}, status=500)

@@ -107,31 +107,32 @@
             <h2>Регистрация</h2>
             <p id="header-desc">Создайте аккаунт в TubeFlow</p>
             {% if form.errors %}
-    <div style="color: red; background: #ffeeee; padding: 10px; border-radius: 8px; margin-bottom: 20px;">
-        <strong>Пожалуйста, исправьте следующие ошибки:</strong>
-        {{ form.errors }}
-    </div>
-{% endif %}
+            <div style="color: red; background: #ffeeee; padding: 10px; border-radius: 8px; margin-bottom: 20px;">
+                <strong>Пожалуйста, исправьте следующие ошибки:</strong>
+                {{ form.errors }}
+            </div>
+            {% endif %}
         </div>
 
         <form method="post" id="reg-form" enctype="multipart/form-data">
             {% csrf_token %}
-            {# Блок для вывода скрытых ошибок #}
-    {% if form.errors %}
-        <div style="color: red; background: #fee; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
-            <strong>Пожалуйста, исправьте ошибки:</strong>
-            <ul>
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <li>{{ field.label }}: {{ error }}</li>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-    {% endif %}
+            
+            {% if form.errors %}
+                <div style="color: red; background: #fee; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
+                    <strong>Пожалуйста, исправьте ошибки:</strong>
+                    <ul>
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            
             <!-- Скрытые поля для данных из API -->
             <input type="hidden" name="api_channel_name" id="id_api_name">
             <input type="hidden" name="api_subs" id="id_api_subs">
@@ -159,27 +160,26 @@
                     <input type="email" name="email" placeholder="mail@example.com" required>
                 </div>
                 <div class="form-group">
-    <label>Ник в Telegram</label>
-    <div style="position: relative;">
-        <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-label); font-weight: 600;">@</span>
-        <input type="text" name="telegram" placeholder="username" style="padding-left: 35px;" required>
-    </div>
-    <div class="info-bubble" style="margin-top: 10px; margin-bottom: 0; background: #f0f7ff; font-size: 12px; border: 1px solid #e1efff;">
-        <i class="bi bi-info-circle"></i> 
-        <b>Зачем это нужно?</b> Телеграм необходим для быстрой связи между вами и партнером.
-    </div>
-</div>
+                    <label>Ник в Telegram</label>
+                    <div style="position: relative;">
+                        <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-label); font-weight: 600;">@</span>
+                        <input type="text" name="telegram" placeholder="username" style="padding-left: 35px;" required>
+                    </div>
+                    <div class="info-bubble" style="margin-top: 10px; margin-bottom: 0; background: #f0f7ff; font-size: 12px; border: 1px solid #e1efff;">
+                        <b style="font-weight: 700;">Зачем это нужно?</b> Телеграм необходим для быстрой связи между вами и партнером.
+                    </div>
+                </div>
 
                 <!-- БЛОГЕР -->
                 <div id="blogger-fields">
                     <div class="form-group">
                         <label>YouTube канал</label>
-                        <input type="text" name="channel_link" placeholder="@channel_name" required>
+                        <input type="text" name="channel_link" placeholder="@channel_name">
                     </div>
 
                     <label class="section-label">Стоимость вашей рекламы</label>
                     <div class="info-bubble">
-                        <b>Зачем указывать стоимость?</b> Это позволит брендам сразу видеть ваши условия. Указанные суммы являются ориентировочными.
+                        <b style="font-weight: 700;">Зачем указывать стоимость?</b> Это позволит брендам сразу видеть ваши условия. Указанные суммы являются ориентировочными.
                     </div>
 
                     <div class="price-container">
@@ -245,7 +245,7 @@
                     </div>
 
                     <div id="barter-info" class="info-bubble" style="display: none; background: #eef7ff; border: 1px solid #cce5ff; margin-top: -10px;">
-                        <strong>Что это значит?</strong> Рекламная кампания будет проводиться без денежной оплаты. Вы предоставляете блогеру товар, а он выпускает ролик.
+                        <strong style="font-weight: 700;">Что это значит?</strong> Рекламная кампания будет проводиться без денежной оплаты. Вы предоставляете блогеру товар, а он выпускает ролик.
                     </div>
                 </div>
 
@@ -260,9 +260,10 @@
                     {% endfor %}
                 </div>
 
-                <!--<div id="sub-area" class="sub-topics-container">
+                <!-- РАСКОММЕНТИРОВАНО: Блок подкатегорий теперь работает -->
+                <div id="sub-area" class="sub-topics-container">
                     <div id="sub-grid" class="sub-grid"></div>
-                </div>-->
+                </div>
 
                 <div id="api-status"></div>
                 <button type="button" id="submit-handler" class="btn-submit">Создать профиль</button>
@@ -272,7 +273,6 @@
 </div>
 
 <script>
-    // 1. Карта подкатегорий
     const subTopicsMap = {
         'tech': ['Обзоры смартфонов', 'Гаджеты', 'Нейросети', 'Программирование'],
         'beauty': ['Макияж', 'Уход за кожей', 'Прически', 'Парфюм'],
@@ -298,9 +298,10 @@
         document.getElementById('blogger-fields').style.display = isBlogger ? 'block' : 'none';
         document.getElementById('advertiser-fields').style.display = isBlogger ? 'none' : 'block';
         
-        // Настройка обязательности полей
-        document.querySelectorAll('#blogger-fields input').forEach(el => el.required = isBlogger);
-        document.querySelectorAll('#advertiser-fields input:not([type="checkbox"]), #advertiser-fields textarea').forEach(el => {
+        // Переключаем обязательность полей программно
+        document.querySelector('input[name="channel_link"]').required = isBlogger;
+        
+        document.querySelectorAll('#advertiser-fields input:not([type="checkbox"]):not([type="file"]), #advertiser-fields textarea').forEach(el => {
             el.required = !isBlogger;
         });
     }
@@ -310,6 +311,8 @@
         const subGrid = document.getElementById('sub-grid');
         const subArea = document.getElementById('sub-area');
         
+        if (!subGrid || !subArea) return;
+        
         subGrid.innerHTML = '';
         if (checked.length === 0) { 
             subArea.style.display = 'none'; 
@@ -318,9 +321,10 @@
             return; 
         }
         
-        subArea.style.display = 'block';
+        let hasSubTopics = false;
         checked.forEach(cat => {
             if (subTopicsMap[cat]) {
+                hasSubTopics = true;
                 subTopicsMap[cat].forEach(sub => {
                     const tag = document.createElement('div');
                     tag.className = `sub-tag ${selectedSubTopics.has(sub) ? 'active' : ''}`;
@@ -334,6 +338,8 @@
                 });
             }
         });
+        
+        subArea.style.display = hasSubTopics ? 'block' : 'none';
     }
 
     document.querySelectorAll('.role-radio').forEach(r => r.addEventListener('change', () => toggleRole(r.value)));
@@ -344,13 +350,22 @@
         const submitBtn = document.getElementById('submit-handler');
         const apiStatus = document.getElementById('api-status');
 
-        // Валидация
+        // ИСПРАВЛЕНО: Валидация проверяет реальную видимость полей на экране через offsetParent
         let isValid = true;
-        const visibleRequired = document.querySelectorAll(`input[required]:not([style*="display:none"]), textarea[required]:not([style*="display:none"])`);
+        const allRequired = document.querySelectorAll('input[required], textarea[required]');
         
-        visibleRequired.forEach(f => {
-            if (!f.value.trim()) { f.classList.add('invalid'); isValid = false; }
-            else { f.classList.remove('invalid'); }
+        allRequired.forEach(f => {
+            // Если у элемента или его родителей display: none, то f.offsetParent будет null
+            if (f.offsetParent !== null) { 
+                if (!f.value.trim()) { 
+                    f.classList.add('invalid'); 
+                    isValid = false; 
+                } else { 
+                    f.classList.remove('invalid'); 
+                }
+            } else {
+                f.classList.remove('invalid'); // Скрытые поля игнорируем
+            }
         });
 
         if (!isValid) { alert("Заполните обязательные поля"); return; }
@@ -389,7 +404,7 @@
         }
     });
 
-    // Инициализация
+    // Инициализация при первой загрузке
     toggleRole('blogger');
 </script>
 </body>

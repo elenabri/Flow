@@ -40,6 +40,7 @@ class VKORDService:
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
         })
+            
 
     def create_person(self, data):
         """Регистрация контрагента по спецификации v1 (метод PUT)"""
@@ -83,6 +84,50 @@ class VKORDService:
         response.raise_for_status()
         return pad_ext_id
 
+    def get_pads(self, person_ext_id=None):
+        """Получение списка площадок из ОРД с фильтрацией по контрагенту"""
+        url = f"{self.BASE_URL}/v1/pad"
+        params = {}
+        if person_ext_id:
+            params["person_external_id"] = person_ext_id
+            
+        try:
+            response = self.session.get(url, params=params, timeout=15)
+            response.raise_for_status()
+            # Обычно ОРД возвращает либо массив напрямую, либо объект с ключом 'items'
+            data = response.json()
+            if isinstance(data, dict):
+                return data.get("items", [])
+            return data
+        except Exception as e:
+            logger.error(f"Не удалось получить список площадок из ОРД: {e}")
+            return []
+
+    def find_or_create_pad(self, person_ext_id, url):
+        """
+        Ищет площадку по URL у конкретного контрагента.
+        Если находит — возвращает её external_id. Если нет — создает новую.
+        """
+        try:
+            existing_pads = self.get_pads(person_ext_id=person_ext_id)
+            for pad in existing_pads:
+                # Сверяем url, убирая лишние пробелы и слеши на конце для надежности
+                if pad.get('url', '').strip('/') == url.strip('/'):
+                    # Приоритет отдаем external_id, так как вы везде связываете объекты через него
+                    return pad.get('external_id') or pad.get('id')
+        except Exception as e:
+            logger.warning(f"Ошибка при поиске площадки, переключаемся на создание: {e}")
+
+        # Если не нашли или упали с ошибкой — генерируем и регистрируем новую
+        new_pad_ext_id = f"pad_{uuid.uuid4().hex[:10]}"
+        self.create_pad(
+            pad_ext_id=new_pad_ext_id,
+            person_ext_id=person_ext_id,
+            name="YouTube канал (Авто)",
+            url=url
+        )
+        return new_pad_ext_id
+
     def upload_media(self, video_file):
         """Загрузка медиафайла согласно документации API"""
         media_external_id = f"med_{uuid.uuid4().hex[:10]}"
@@ -94,13 +139,11 @@ class VKORDService:
         
         try:
             video_file.seek(0)
-            # В документации ключ: 'media_file'
             files = {
                 'media_file': (video_file.name, video_file.read(), 'video/mp4')
             }
             
-            # 2. Выполняем запрос БЕЗ использования session.headers, 
-            # чтобы не передать лишний application/json
+            # 2. Выполняем запрос БЕЗ использования session.headers
             response = requests.put(
                 url, 
                 files=files, 

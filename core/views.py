@@ -1401,9 +1401,9 @@ class EridManagementView(View):
                 
                 # ОРД требует хотя бы одно из этих полей:
                 if reg_number:
-                    payload["juridical_details"]["foreign_registration_number"] = reg_number
+                    payload["juridical_details"]["inn"] = reg_number
                 elif inn:
-                    payload["juridical_details"]["foreign_inn"] = inn
+                    payload["juridical_details"]["inn"] = inn
                 else:
                     # Если данных нет, бросаем ошибку, иначе ОРД вернет 400
                     raise ValueError(f"Для иностранного контрагента {request_data.get(f'{prefix}_name')} обязателен ИНН или номер регистрации.")

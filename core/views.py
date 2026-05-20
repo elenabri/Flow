@@ -1324,10 +1324,12 @@ class EridManagementView(View):
             citizenship = request_data.get(f'{prefix}_citizenship')
             is_foreign = (citizenship == 'foreign')
             web_type = request_data.get(f'{prefix}_type', 'legal')
-            ord_type = "foreign_juridical" if is_foreign and web_type == "ur" else ("foreign_physical" if is_foreign else ("juridical" if web_type == "ur" else ("ip" if web_type == "ip" else "physical")))
             
-            inn = "".join([c for c in request_data.get(f'{prefix}_inn', '') if c.isdigit()])
-            reg_number = request_data.get(f'{prefix}_reg_number', '').strip()
+            # Определение типа для ОРД
+            if is_foreign:
+                ord_type = "foreign_juridical" if web_type == "ur" else "foreign_physical"
+            else:
+                ord_type = "juridical" if web_type == "ur" else ("ip" if web_type == "ip" else "physical")
 
             payload = {
                 "external_id": f"{prefix}_{uuid.uuid4().hex[:10]}",
@@ -1335,14 +1337,25 @@ class EridManagementView(View):
                 "roles": [role],
                 "juridical_details": {
                     "type": ord_type,
-                    "inn": (reg_number if is_foreign and reg_number else (inn if inn else None)),
                     "phone": request_data.get(f'{prefix}_phone', '').strip() or "+79991234567"
                 }
             }
+
             if is_foreign:
                 payload["juridical_details"]["foreign_oksm_country_code"] = request_data.get(f'{prefix}_country')
-            
-            return payload, inn
+                if ord_type == "foreign_physical":
+                    payload["juridical_details"]["foreign_inn"] = request_data.get(f'{prefix}_reg_number', '').strip()
+                else:
+                    payload["juridical_details"]["foreign_registration_number"] = request_data.get(f'{prefix}_reg_number', '').strip()
+                
+                payment = request_data.get(f'{prefix}_epayment')
+                if payment:
+                    payload["juridical_details"]["foreign_epayment_method"] = payment
+            else:
+                inn = "".join([c for c in request_data.get(f'{prefix}_inn', '') if c.isdigit()])
+                payload["juridical_details"]["inn"] = inn
+
+            return payload, request_data.get(f'{prefix}_inn', '')
 
         try:
             adv_select = request.POST.get('advertiser_select')

@@ -327,31 +327,21 @@
     let blogCountrySelectInstance = null;
 
     document.addEventListener('DOMContentLoaded', function() {
-        // ИСПРАВЛЕНО: Задано явное числовое ограничение maxOptions вместо null для надежного рендеринга больших списков
+        // РЕШЕНИЕ ДЛЯ ККТУ: используем максимальный лимит рендеринга
         if (document.getElementById('kktuSelect')) {
             kktuSelectInstance = new TomSelect('#kktuSelect', {
                 create: false, 
                 maxItems: 1,
-                maxOptions: 1500, // Высокий лимит для ККТУ
+                maxOptions: 5000, // Поднимаем лимит выше общего количества строк в ККТУ
                 placeholder: '-- Начните вводить код или название --',
                 sortField: { field: "text", direction: "asc" },
-                dropdownParent: 'body'
-            });
-        }
-
-        // Инициализируем селекты стран
-        if (document.getElementById('adv_country')) {
-            advCountrySelectInstance = new TomSelect('#adv_country', {
-                create: false, maxItems: 1, maxOptions: 300,
-                placeholder: '-- Выберите страну --',
-                dropdownParent: 'body'
-            });
-        }
-        if (document.getElementById('blog_country')) {
-            blogCountrySelectInstance = new TomSelect('#blog_country', {
-                create: false, maxItems: 1, maxOptions: 300,
-                placeholder: '-- Выберите страну --',
-                dropdownParent: 'body'
+                dropdownParent: 'body',
+                // Отключаем внутреннее ограничение на отрисовку
+                render: {
+                    option: function(data, escape) {
+                        return '<div>' + escape(data.text) + '</div>';
+                    }
+                }
             });
         }
         
@@ -360,10 +350,30 @@
             dateStartInput.value = new Date().toISOString().split('T')[0];
         }
 
-        // Переключаем дефолтные состояния
+        // Запускаем первичную настройку полей
         updatePartyFields('adv');
         updatePartyFields('blog');
     });
+
+    // Функция безопасной инициализации TomSelect для стран при показе блока
+    function initCountrySelect(prefix) {
+        const selectId = '#' + prefix + '_country';
+        const selectEl = document.getElementById(prefix + '_country');
+        
+        // Если уже инициализирован, ничего не делаем
+        if (selectEl.classList.contains('tomselected')) return;
+
+        const instance = new TomSelect(selectId, {
+            create: false,
+            maxItems: 1,
+            maxOptions: 300,
+            placeholder: '-- Выберите страну --',
+            dropdownParent: 'body'
+        });
+
+        if (prefix === 'adv') advCountrySelectInstance = instance;
+        if (prefix === 'blog') blogCountrySelectInstance = instance;
+    }
 
     function updatePartyFields(prefix) {
         const select = document.getElementById(prefix + 'Select');
@@ -397,26 +407,31 @@
         const nameInput = document.getElementById(prefix + '_name');
         const phoneInput = document.getElementById(prefix + '_phone');
         const ipOption = document.getElementById(prefix + '_ip_option');
-        
-        const countrySelectInstance = prefix === 'adv' ? advCountrySelectInstance : blogCountrySelectInstance;
         const countryWrapper = document.getElementById(prefix + '_country_wrapper');
 
-        // ИСПРАВЛЕНО: Управление видимостью осуществляется через специально созданный оберточный контейнер wrapper
         if (isForeign) {
-            if (countrySelectInstance) {
-                countrySelectInstance.enable();
-                if (countryWrapper) countryWrapper.classList.remove('d-none');
-                document.getElementById(prefix + '_country').required = true;
+            // Сначала показываем обертку, чтобы элемент получил размеры в DOM
+            if (countryWrapper) countryWrapper.classList.remove('d-none');
+            
+            // И ТОЛЬКО ТЕПЕРЬ инициализируем TomSelect на видимом элементе
+            initCountrySelect(prefix);
+            
+            const tsInstance = prefix === 'adv' ? advCountrySelectInstance : blogCountrySelectInstance;
+            if (tsInstance) {
+                tsInstance.enable();
             }
+            document.getElementById(prefix + '_country').required = true;
+            
             if (ipOption) ipOption.classList.add('d-none');
             if (type === 'ip') document.getElementById(prefix + '_type').value = 'ur';
         } else {
-            if (countrySelectInstance) {
-                countrySelectInstance.clear();
-                countrySelectInstance.disable();
-                if (countryWrapper) countryWrapper.classList.add('d-none');
-                document.getElementById(prefix + '_country').required = false;
+            const tsInstance = prefix === 'adv' ? advCountrySelectInstance : blogCountrySelectInstance;
+            if (tsInstance) {
+                tsInstance.clear();
+                tsInstance.disable();
             }
+            if (countryWrapper) countryWrapper.classList.add('d-none');
+            document.getElementById(prefix + '_country').required = false;
             if (ipOption) ipOption.classList.remove('d-none');
         }
 

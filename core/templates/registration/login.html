@@ -119,12 +119,16 @@
             text-align: center;
             border: 1px solid #feb2b2;
         }
+        .btn-back { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 15px; font-weight: 500; padding: 0; }
     </style>
 </head>
 <body>
 
 <div class="login-wrapper">
     <div class="login-card">
+        <nav class="back-nav">
+        <button onclick="window.history.back()" class="btn-back">← Назад</button>
+    </nav>
         <div class="login-header">
             <h2>С возвращением!</h2>
             <p>Войдите в личный кабинет</p>

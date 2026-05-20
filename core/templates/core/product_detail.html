@@ -145,9 +145,7 @@
 <div class="fixed-action-bar">
     {% if user.is_authenticated %}
         {% if user != ad.advertiser.user %}
-            <a href="{% url 'core:chat_detail' user_id=ad.advertiser.user.id %}" class="action-btn">
-                <i class="bi bi-chat-dots-fill me-2"></i> Обсудить сотрудничество
-            </a>
+            <a href="https://t.me/{{ ad.advertiser.user.telegram|cut:'@' }}" target="_blank" class="action-btn" style="background: #24A1DE; box-shadow: 0 10px 25px rgba(36, 161, 222, 0.3);">
         {% else %}
             <div style="color: #8e8e93; font-size: 14px; font-weight: 600;">Это ваше объявление</div>
         {% endif %}

@@ -6,8 +6,8 @@
 <style>
     :root {
         --soft-blue: #f0f4f8;
-        --accent-color: #4361ee; /* Мягкий синий вместо агрессивного красного */
-        --deep-slate: #1e293b;   /* Глубокий графит вместо чисто черного */
+        --accent-color: #4361ee; 
+        --deep-slate: #1e293b;   
         --glass-border: rgba(0,0,0,0.08);
     }
 
@@ -43,20 +43,25 @@
     }
 
     .stat-box.shorts {
-        background: #fdf2f8; /* Очень нежный розовый, почти белый */
+        background: #fdf2f8; 
     }
 
     .tooltip-icon {
-        cursor: help;
+        cursor: pointer; 
         color: #94a3b8;
         font-size: 0.85rem;
         margin-left: 4px;
+        display: inline-flex;
+        -webkit-tap-highlight-color: transparent; 
     }
 
     .metric-label {
         font-size: 0.8rem;
         color: #64748b;
         margin-bottom: 2px;
+        display: inline-flex;
+        align-items: center;
+        white-space: nowrap; 
     }
 
     .metric-value {
@@ -141,20 +146,42 @@
                                 <i class="bi bi-film me-1"></i> Длинные ролики
                             </div>
                             
-                            <div class="mb-2">
-                                <div class="metric-label">Средние просмотры
-                                    <i class="bi bi-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Рассчитано на основе последних 20 видео"></i>
+                            <div class="mb-2 d-flex align-items-center justify-content-between flex-wrap" style="gap: 5px;">
+                                <div class="metric-label">
+                                    Просмотры 
+                                    <i class="bi bi-info-circle tooltip-icon" 
+                                       onclick="" 
+                                       data-bs-toggle="tooltip" 
+                                       title="Медианное значение на основе последних 20 видео"></i>
                                 </div>
-                                <div class="metric-value">{{ blogger.median_views|default:"0" }}</div>
+                                <div class="metric-value">
+                                    {% if blogger.median_views and blogger.median_views != 0 and blogger.median_views != "0" %}
+                                        {{ blogger.median_views }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </div>
                             </div>
 
                             {% if user.role == 'advertiser' or user.is_staff %}
                                 <div class="mt-3 pt-3 border-top border-white">
                                     <div class="metric-label">Стоимость ролика от:</div>
-                                    <div class="price-text mb-2">{{ blogger.price_middle|default:"—" }} ₽</div>
+                                    <div class="price-text mb-2">
+                                        {% if blogger.price_middle and blogger.price_middle != 0 and blogger.price_middle != "0" %}
+                                            {{ blogger.price_middle }} ₽
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </div>
                                     <div class="cpv-badge d-inline-block">
-    Цена за 1 просмотр: <b>{{ blogger.display_cpv_long|default:"0"|floatformat:1 }} ₽</b>
-</div>
+                                        Цена за 1 просмотр: <b>
+                                            {% if blogger.display_cpv_long and blogger.display_cpv_long != 0 and blogger.display_cpv_long != 0.0 %}
+                                                {{ blogger.display_cpv_long|floatformat:1 }} ₽
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </b>
+                                    </div>
                                 </div>
                             {% else %}
                                 <div class="text-muted small mt-2"><i class="bi bi-lock-fill me-1"></i> Цены скрыты</div>
@@ -169,20 +196,42 @@
                                 <i class="bi bi-lightning-charge-fill me-1"></i> Shorts
                             </div>
                             
-                            <div class="mb-2">
-                                <div class="metric-label">Средние просмотры
-                                    <i class="bi bi-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Медианное значение для последних 20 Shorts"></i>
+                            <div class="mb-2 d-flex align-items-center justify-content-between flex-wrap" style="gap: 5px;">
+                                <div class="metric-label">
+                                    Просмотры 
+                                    <i class="bi bi-info-circle tooltip-icon" 
+                                       onclick="" 
+                                       data-bs-toggle="tooltip" 
+                                       title="Медианное значение для последних 20 Shorts"></i>
                                 </div>
-                                <div class="metric-value">{{ blogger.median_views_shorts|default:"0" }}</div>
+                                <div class="metric-value">
+                                    {% if blogger.median_views_shorts and blogger.median_views_shorts != 0 and blogger.median_views_shorts != "0" %}
+                                        {{ blogger.median_views_shorts }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </div>
                             </div>
 
                             {% if user.role == 'advertiser' or user.is_staff %}
                                 <div class="mt-3 pt-3 border-top border-white">
                                     <div class="metric-label">Стоимость ролика от:</div>
-                                    <div class="price-text mb-2" style="color: #db2777;">{{ blogger.price_shorts|default:"—" }} ₽</div>
+                                    <div class="price-text mb-2" style="color: #db2777;">
+                                        {% if blogger.price_shorts and blogger.price_shorts != 0 and blogger.price_shorts != "0" %}
+                                            {{ blogger.price_shorts }} ₽
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </div>
                                     <div class="cpv-badge d-inline-block">
-    Цена за 1 просмотр: <b>{{ blogger.display_cpv_shorts|default:"0"|floatformat:1 }} ₽</b>
-</div>
+                                        Цена за 1 просмотр: <b>
+                                            {% if blogger.display_cpv_shorts and blogger.display_cpv_shorts != 0 and blogger.display_cpv_shorts != 0.0 %}
+                                                {{ blogger.display_cpv_shorts|floatformat:1 }} ₽
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </b>
+                                    </div>
                                 </div>
                             {% else %}
                                 <div class="text-muted small mt-2"><i class="bi bi-lock-fill me-1"></i> Цены скрыты</div>
@@ -207,10 +256,11 @@
 </div>
 
 <script>
-    // Инициализация подсказок (tooltip)
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-      return new bootstrap.Tooltip(tooltipTriggerEl)
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            trigger: 'hover focus click' 
+        })
     })
 </script>
 {% endblock %}

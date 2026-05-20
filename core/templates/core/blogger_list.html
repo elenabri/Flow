@@ -189,9 +189,8 @@
     <div class="row row-cols-1 row-cols-lg-2 g-4">
         {% for blogger in bloggers %}
         <div class="col">
-            <!-- Если пользователь блогер, добавляем класс restricted-card и триггер модального окна -->
-            <div class="blogger-card {% if user.role == 'blogger' %}restricted-card{% endif %}"
-                 {% if user.role == 'blogger' %} data-bs-toggle="modal" data-bs-target="#restrictedAccessModal" {% endif %}>
+            <!-- Чистая карточка: никаких дата-атрибутов и событий клика на самом контейнере -->
+            <div class="blogger-card">
                 
                 <!-- Шапка карточки -->
                 <div class="d-flex align-items-center mb-4">
@@ -202,8 +201,7 @@
                             <span class="text-muted small">
                                 <i class="bi bi-people me-1"></i> {{ blogger.subscribers_count }} подп.
                             </span>
-                            <!-- Переход на ютуб оставляем рабочим, останавливая всплытие события (stopPropagation) для блогеров -->
-                            <a href="{{ blogger.channel_link }}" target="_blank" style="color: #ff0000; text-decoration: none;" {% if user.role == 'blogger' %} onclick="event.stopPropagation();" {% endif %}>
+                            <a href="{{ blogger.channel_link }}" target="_blank" style="color: #ff0000; text-decoration: none;">
                                 <i class="bi bi-youtube fs-5"></i>
                             </a>
                         </div>
@@ -224,7 +222,7 @@
                                 <div class="metric-row">
                                     <div class="metric-label">
                                         Просмотры 
-                                        <span class="custom-tooltip" tabindex="0" data-hint="Медианное значение на основе последних 20 видео" {% if user.role == 'blogger' %} onclick="event.stopPropagation();" {% endif %}>
+                                        <span class="custom-tooltip" tabindex="0" data-hint="Медианное значение на основе последних 20 видео">
                                             <i class="bi bi-info-circle"></i>
                                         </span>
                                     </div>
@@ -275,7 +273,7 @@
                                 <div class="metric-row">
                                     <div class="metric-label">
                                         Просмотры 
-                                        <span class="custom-tooltip" tabindex="0" data-hint="Медианное значение для последних 20 Shorts" {% if user.role == 'blogger' %} onclick="event.stopPropagation();" {% endif %}>
+                                        <span class="custom-tooltip" tabindex="0" data-hint="Медианное значение для последних 20 Shorts">
                                             <i class="bi bi-info-circle"></i>
                                         </span>
                                     </div>
@@ -316,13 +314,17 @@
                     </div>
                 </div>
 
-                <!-- Кнопки в зависимости от роли -->
+                <!-- Кнопки: только здесь решается, куда пойдёт клик -->
                 {% if user.role == 'advertiser' or user.is_staff %}
                     <a href="{% url 'core:blogger_detail' blogger.id %}" class="btn btn-details w-100 border-0">
                         Посмотреть профиль и статистику
                     </a>
                 {% else %}
-                    <button type="button" class="btn btn-details w-100 border-0 bg-secondary">
+                    <!-- Дата-атрибуты модалки находятся СТРОГО на кнопке -->
+                    <button type="button" 
+                            class="btn btn-details w-100 border-0 bg-secondary"
+                            data-bs-toggle="modal" 
+                            data-bs-target="#restrictedAccessModal">
                         Подробнее
                     </button>
                 {% endif %}
@@ -334,7 +336,6 @@
         </div>
         {% endfor %}
     </div>
-</div>
 
 <!-- Красивое модальное окно уведомления (показывается только если роль пользователя 'blogger') -->
 {% if user.role == 'blogger' %}

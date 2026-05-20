@@ -28,6 +28,11 @@
         flex-direction: column;
     }
 
+    /* Стиль кликабельной карточки для блогеров */
+    .blogger-card.restricted-card {
+        cursor: pointer;
+    }
+
     .blogger-card:hover {
         transform: translateY(-8px);
         box-shadow: 0 20px 40px rgba(0,0,0,0.04) !important;
@@ -40,25 +45,26 @@
         height: 100%;
         background: var(--soft-blue);
         border: 1px solid transparent;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between; 
     }
 
     .stat-box.shorts {
         background: #fdf2f8; 
     }
 
-    .tooltip-icon {
-        cursor: pointer; 
-        color: #94a3b8;
-        font-size: 0.85rem;
-        margin-left: 4px;
-        display: inline-flex;
-        -webkit-tap-highlight-color: transparent; 
+    .metric-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        height: 24px; 
     }
 
     .metric-label {
         font-size: 0.8rem;
         color: #64748b;
-        margin-bottom: 2px;
         display: inline-flex;
         align-items: center;
         white-space: nowrap; 
@@ -67,12 +73,16 @@
     .metric-value {
         font-weight: 700;
         color: var(--deep-slate);
+        white-space: nowrap;
     }
 
     .price-text {
         color: var(--accent-color);
         font-weight: 800;
         font-size: 1.1rem;
+        height: 27px; 
+        display: flex;
+        align-items: center;
     }
 
     .cpv-badge {
@@ -82,6 +92,8 @@
         padding: 4px 10px;
         font-size: 0.75rem;
         color: #475569;
+        display: inline-block;
+        white-space: nowrap;
     }
 
     .btn-details {
@@ -96,6 +108,65 @@
     .btn-details:hover {
         background: #0f172a;
         color: white;
+    }
+
+    /* Кастомные CSS подсказки */
+    .custom-tooltip {
+        position: relative;
+        cursor: pointer;
+        color: #94a3b8;
+        font-size: 0.85rem;
+        margin-left: 5px;
+        display: inline-flex;
+        align-items: center;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .custom-tooltip::after {
+        content: attr(data-hint);
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%) scale(0.9);
+        background: #1e293b;
+        color: #ffffff;
+        padding: 8px 12px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        white-space: normal;
+        width: 180px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.2s ease;
+        z-index: 10;
+    }
+
+    .custom-tooltip:hover::after,
+    .custom-tooltip:focus::after,
+    .custom-tooltip:active::after {
+        opacity: 1;
+        transform: translateX(-50%) scale(1);
+    }
+
+    /* Стилизация красивого модального окна */
+    .modal-content-custom {
+        border-radius: 28px;
+        border: none;
+        padding: 20px;
+    }
+    .lock-icon-box {
+        width: 70px;
+        height: 70px;
+        background: #fef2f2;
+        color: #ef4444;
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px auto;
+        font-size: 1.8rem;
     }
 </style>
 
@@ -118,7 +189,9 @@
     <div class="row row-cols-1 row-cols-lg-2 g-4">
         {% for blogger in bloggers %}
         <div class="col">
-            <div class="blogger-card">
+            <!-- Если пользователь блогер, добавляем класс restricted-card и триггер модального окна -->
+            <div class="blogger-card {% if user.role == 'blogger' %}restricted-card{% endif %}"
+                 {% if user.role == 'blogger' %} data-bs-toggle="modal" data-bs-target="#restrictedAccessModal" {% endif %}>
                 
                 <!-- Шапка карточки -->
                 <div class="d-flex align-items-center mb-4">
@@ -129,7 +202,8 @@
                             <span class="text-muted small">
                                 <i class="bi bi-people me-1"></i> {{ blogger.subscribers_count }} подп.
                             </span>
-                            <a href="{{ blogger.channel_link }}" target="_blank" style="color: #ff0000; text-decoration: none;">
+                            <!-- Переход на ютуб оставляем рабочим, останавливая всплытие события (stopPropagation) для блогеров -->
+                            <a href="{{ blogger.channel_link }}" target="_blank" style="color: #ff0000; text-decoration: none;" {% if user.role == 'blogger' %} onclick="event.stopPropagation();" {% endif %}>
                                 <i class="bi bi-youtube fs-5"></i>
                             </a>
                         </div>
@@ -142,30 +216,31 @@
                     <!-- Длинные видео -->
                     <div class="col-sm-6">
                         <div class="stat-box">
-                            <div class="fw-bold mb-3 small text-uppercase" style="color: var(--accent-color); letter-spacing: 0.5px;">
-                                <i class="bi bi-film me-1"></i> Длинные ролики
-                            </div>
-                            
-                            <div class="mb-2 d-flex align-items-center justify-content-between flex-wrap" style="gap: 5px;">
-                                <div class="metric-label">
-                                    Просмотры 
-                                    <i class="bi bi-info-circle tooltip-icon" 
-                                       onclick="" 
-                                       data-bs-toggle="tooltip" 
-                                       title="Медианное значение на основе последних 20 видео"></i>
+                            <div>
+                                <div class="fw-bold mb-3 small text-uppercase" style="color: var(--accent-color); letter-spacing: 0.5px;">
+                                    <i class="bi bi-film me-1"></i> Длинные ролики
                                 </div>
-                                <div class="metric-value">
-                                    {% if blogger.median_views and blogger.median_views != 0 and blogger.median_views != "0" %}
-                                        {{ blogger.median_views }}
-                                    {% else %}
-                                        —
-                                    {% endif %}
+                                
+                                <div class="metric-row">
+                                    <div class="metric-label">
+                                        Просмотры 
+                                        <span class="custom-tooltip" tabindex="0" data-hint="Медианное значение на основе последних 20 видео" {% if user.role == 'blogger' %} onclick="event.stopPropagation();" {% endif %}>
+                                            <i class="bi bi-info-circle"></i>
+                                        </span>
+                                    </div>
+                                    <div class="metric-value">
+                                        {% if blogger.median_views and blogger.median_views != 0 and blogger.median_views != "0" %}
+                                            {{ blogger.median_views }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
 
                             {% if user.role == 'advertiser' or user.is_staff %}
                                 <div class="mt-3 pt-3 border-top border-white">
-                                    <div class="metric-label">Стоимость ролика от:</div>
+                                    <div class="metric-label mb-1">Стоимость ролика от:</div>
                                     <div class="price-text mb-2">
                                         {% if blogger.price_middle and blogger.price_middle != 0 and blogger.price_middle != "0" %}
                                             {{ blogger.price_middle }} ₽
@@ -173,7 +248,7 @@
                                             —
                                         {% endif %}
                                     </div>
-                                    <div class="cpv-badge d-inline-block">
+                                    <div class="cpv-badge">
                                         Цена за 1 просмотр: <b>
                                             {% if blogger.display_cpv_long and blogger.display_cpv_long != 0 and blogger.display_cpv_long != 0.0 %}
                                                 {{ blogger.display_cpv_long|floatformat:1 }} ₽
@@ -184,7 +259,7 @@
                                     </div>
                                 </div>
                             {% else %}
-                                <div class="text-muted small mt-2"><i class="bi bi-lock-fill me-1"></i> Цены скрыты</div>
+                                <div class="text-muted small mt-3 pt-3 border-top border-white"><i class="bi bi-lock-fill me-1"></i> Цены скрыты</div>
                             {% endif %}
                         </div>
                     </div>
@@ -192,30 +267,31 @@
                     <!-- Shorts -->
                     <div class="col-sm-6">
                         <div class="stat-box shorts">
-                            <div class="fw-bold mb-3 small text-uppercase" style="color: #db2777; letter-spacing: 0.5px;">
-                                <i class="bi bi-lightning-charge-fill me-1"></i> Shorts
-                            </div>
-                            
-                            <div class="mb-2 d-flex align-items-center justify-content-between flex-wrap" style="gap: 5px;">
-                                <div class="metric-label">
-                                    Просмотры 
-                                    <i class="bi bi-info-circle tooltip-icon" 
-                                       onclick="" 
-                                       data-bs-toggle="tooltip" 
-                                       title="Медианное значение для последних 20 Shorts"></i>
+                            <div>
+                                <div class="fw-bold mb-3 small text-uppercase" style="color: #db2777; letter-spacing: 0.5px;">
+                                    <i class="bi bi-lightning-charge-fill me-1"></i> Shorts
                                 </div>
-                                <div class="metric-value">
-                                    {% if blogger.median_views_shorts and blogger.median_views_shorts != 0 and blogger.median_views_shorts != "0" %}
-                                        {{ blogger.median_views_shorts }}
-                                    {% else %}
-                                        —
-                                    {% endif %}
+                                
+                                <div class="metric-row">
+                                    <div class="metric-label">
+                                        Просмотры 
+                                        <span class="custom-tooltip" tabindex="0" data-hint="Медианное значение для последних 20 Shorts" {% if user.role == 'blogger' %} onclick="event.stopPropagation();" {% endif %}>
+                                            <i class="bi bi-info-circle"></i>
+                                        </span>
+                                    </div>
+                                    <div class="metric-value">
+                                        {% if blogger.median_views_shorts and blogger.median_views_shorts != 0 and blogger.median_views_shorts != "0" %}
+                                            {{ blogger.median_views_shorts }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
 
                             {% if user.role == 'advertiser' or user.is_staff %}
                                 <div class="mt-3 pt-3 border-top border-white">
-                                    <div class="metric-label">Стоимость ролика от:</div>
+                                    <div class="metric-label mb-1">Стоимость ролика от:</div>
                                     <div class="price-text mb-2" style="color: #db2777;">
                                         {% if blogger.price_shorts and blogger.price_shorts != 0 and blogger.price_shorts != "0" %}
                                             {{ blogger.price_shorts }} ₽
@@ -223,7 +299,7 @@
                                             —
                                         {% endif %}
                                     </div>
-                                    <div class="cpv-badge d-inline-block">
+                                    <div class="cpv-badge">
                                         Цена за 1 просмотр: <b>
                                             {% if blogger.display_cpv_shorts and blogger.display_cpv_shorts != 0 and blogger.display_cpv_shorts != 0.0 %}
                                                 {{ blogger.display_cpv_shorts|floatformat:1 }} ₽
@@ -234,16 +310,21 @@
                                     </div>
                                 </div>
                             {% else %}
-                                <div class="text-muted small mt-2"><i class="bi bi-lock-fill me-1"></i> Цены скрыты</div>
+                                <div class="text-muted small mt-3 pt-3 border-top border-white"><i class="bi bi-lock-fill me-1"></i> Цены скрыты</div>
                             {% endif %}
                         </div>
                     </div>
                 </div>
 
+                <!-- Кнопки в зависимости от роли -->
                 {% if user.role == 'advertiser' or user.is_staff %}
                     <a href="{% url 'core:blogger_detail' blogger.id %}" class="btn btn-details w-100 border-0">
                         Посмотреть профиль и статистику
                     </a>
+                {% else %}
+                    <button type="button" class="btn btn-details w-100 border-0 bg-secondary">
+                        Подробнее
+                    </button>
                 {% endif %}
             </div>
         </div>
@@ -255,12 +336,26 @@
     </div>
 </div>
 
-<script>
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl, {
-            trigger: 'hover focus click' 
-        })
-    })
-</script>
+<!-- Красивое модальное окно уведомления (показывается только если роль пользователя 'blogger') -->
+{% if user.role == 'blogger' %}
+<div class="modal fade" id="restrictedAccessModal" tabindex="-1" aria-labelledby="restrictedAccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-custom text-center shadow-lg">
+            <div class="modal-body pt-4">
+                <div class="lock-icon-box">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <h4 class="fw-bold mb-3" style="color: var(--deep-slate);">Доступ ограничен</h4>
+                <p class="text-muted px-3 mb-4">
+                    Подробная статистика, прайс-листы и контактные данные авторов скрыты из соображений конфиденциальности. Данная информация доступна исключительно <b>проверенным рекламодателям</b> платформы.
+                </p>
+                <button type="button" class="btn py-3 px-5 fw-600 rounded-pill btn-details w-100 border-0" data-bs-dismiss="modal">
+                    Понятно
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}

@@ -154,7 +154,7 @@ def register(request):
                         ProductAd.objects.create(
                             advertiser=adv, 
                             name=product_title,
-                            short_desc = request.POST.get('short_description', '')
+                            short_desc = request.POST.get('short_description', ''),
                             category=", ".join(request.POST.getlist('topics')),
                             image=request.FILES.get('product_image'),
                             link_wb=form.cleaned_data.get('product_link'),

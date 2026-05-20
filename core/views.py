@@ -589,23 +589,30 @@ def check_channel(request):
 
 @login_required
 def edit_blogger_profile(request):
-    """Редактирование данных блогера (цена, категории, описание)"""
+    """Редактирование данных блогера (все цены, категории, описание)"""
     profile = get_object_or_404(BloggerProfile, user=request.user)
     
     if request.method == 'POST':
-        profile.price_start = request.POST.get('price_start', profile.price_start)
+        # Принимаем и сохраняем ВСЕ цены из формы (если поле пустое, ставим None или 0)
+        profile.price_start = request.POST.get('price_start') or None
+        profile.price_middle = request.POST.get('price_middle') or None
+        profile.price_end = request.POST.get('price_end') or None
+        profile.price_shorts = request.POST.get('price_shorts') or None
+        
+        # Сохраняем категории
         profile.categories = ", ".join(request.POST.getlist('topics'))
-        # Если есть поле описания в модели:
+        
+        # Если есть поле описания в модели, раскомментируйте:
         # profile.description = request.POST.get('description', profile.description)
+        
         profile.save()
         messages.success(request, "Профиль успешно обновлен!")
         return redirect('dashboard')
         
     return render(request, 'core/edit_profile.html', {
         'profile': profile,
-        'TOPIC_CHOICES': TOPIC_CHOICES
+        'TOPIC_CHOICES': TOPIC_CHOICES  # Убедитесь, что TOPIC_CHOICES импортирован или объявлен выше
     })
-
 @login_required
 def edit_advertiser_profile(request):
     """Редактирование данных рекламодателя (название компании)"""
@@ -709,37 +716,33 @@ def edit_product(request, pk):
 from decimal import Decimal  # Добавьте этот импорт в начало файла
 
 def blogger_detail(request, blogger_id):
+    """Детальная карточка блогера с реальным расчетом CPV на основе его цен"""
     blogger = get_object_or_404(BloggerProfile, id=blogger_id)
-    base_price = blogger.price_start or Decimal('0')
     
-    p_shorts = base_price
-    p_mid = round(base_price * Decimal('2.5'), 0)
-    p_pre = round(base_price * Decimal('1.8'), 0)
-    p_end = round(base_price * Decimal('1.2'), 0)
-    # Цены
+    # Конвертируем просмотры в Decimal для точечных вычислений без плавающей точки
+    views_long = Decimal(str(blogger.median_views)) if blogger.median_views else Decimal('0')
+    views_shorts = Decimal(str(blogger.median_views_shorts)) if blogger.median_views_shorts else Decimal('0')
+    
+    # 1. Расчет CPV для Начала ролика (Преролл)
+    cpv_pre = Decimal('0')
+    if views_long > 0 and blogger.price_start:
+        cpv_pre = round(Decimal(str(blogger.price_start)) / views_long, 2)
 
+    # 2. Расчет CPV для Середины ролика (Мидролл)
+    cpv_long = Decimal('0')
+    if views_long > 0 and blogger.price_middle:
+        cpv_long = round(Decimal(str(blogger.price_middle)) / views_long, 2)
 
-    # Расчеты CPV (Цена / Просмотры)
-    cpv_long = 0
-    cpv_pre = 0
-    if blogger.median_views > 0:
-        views_dec = Decimal(str(blogger.median_views))
-        cpv_long = round(p_mid / views_dec, 2)
-        cpv_pre = round(p_pre / views_dec, 2) # Добавляем это
-
-    cpv_shorts = 0
-    if blogger.median_views_shorts > 0:
-        cpv_shorts = round(p_shorts / Decimal(str(blogger.median_views_shorts)), 2)
+    # 3. Расчет CPV для YouTube Shorts
+    cpv_shorts = Decimal('0')
+    if views_shorts > 0 and blogger.price_shorts:
+        cpv_shorts = round(Decimal(str(blogger.price_shorts)) / views_shorts, 2)
 
     context = {
         'blogger': blogger,
-        'p_shorts': p_shorts,
-        'p_mid': p_mid,
-        'p_pre': p_pre,
-        'p_end': p_end,
-        'cpv_long': cpv_long,
-        'cpv_pre': cpv_pre,      # Передаем в шаблон
-        'cpv_shorts': cpv_shorts,
+        'cpv_pre': cpv_pre,      # Реальный CPV преролла
+        'cpv_long': cpv_long,    # Реальный CPV мидролла
+        'cpv_shorts': cpv_shorts, # Реальный CPV шортсов
     }
     return render(request, 'core/blogger_detail.html', context)
 

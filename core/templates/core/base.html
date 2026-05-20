@@ -81,6 +81,10 @@
         color: var(--mp-accent) !important;
         font-weight: 700;
     }
+    .navbar-toggler-icon {
+    pointer-events: none;
+}
+    
 
     /* Десктопная линия под активным пунктом */
     @media (min-width: 992px) {
@@ -259,23 +263,35 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Сначала правильно подключаем сам Bootstrap -->
+<!-- Сначала правильно подключаем сам Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Отдельный скрипт для логики скрытия меню -->
+    <!-- Отдельный скрипт для логики скрытия меню (адаптирован под iPhone) -->
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         const navbarCollapse = document.getElementById('mainNav');
         const navbarToggler = document.querySelector('.navbar-toggler');
 
         if (navbarCollapse && navbarToggler) {
-            const bsCollapse = new bootstrap.Collapse(navbarCollapse, { toggle: false });
+            // Фикс для iOS Safari: явно разрешаем обработку кликов на иконке и toggler
+            navbarToggler.style.cursor = 'pointer';
+            const togglerIcon = navbarToggler.querySelector('.navbar-toggler-icon');
+            if (togglerIcon) {
+                togglerIcon.style.pointerEvents = 'none';
+            }
 
+            // Добавляем поддержку клика по всему body в iOS
+            document.body.style.cursor = 'pointer';
+
+            // Закрытие меню при клике вне его области
             document.addEventListener('click', function (event) {
                 const isMenuOpen = navbarCollapse.classList.contains('show');
-                const clickedOutsideMenu = !navbarCollapse.contains(event.target) && !navbarToggler.contains(event.target);
+                const clickedInsideMenu = navbarCollapse.contains(event.target);
+                const clickedToggler = navbarToggler.contains(event.target);
 
-                if (isMenuOpen && clickedOutsideMenu) {
+                if (isMenuOpen && !clickedInsideMenu && !clickedToggler) {
+                    // Используем встроенный метод Bootstrap для безопасного закрытия
+                    const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse) || new bootstrap.Collapse(navbarCollapse, { toggle: false });
                     bsCollapse.hide();
                 }
             });

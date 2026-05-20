@@ -32,7 +32,7 @@ def send_verification_email(user, password, request=None):
         text_content = strip_tags(html_content)
 
         msg = EmailMultiAlternatives(
-            "Подтверждение регистрации Vkusnevich",
+            "Подтверждение регистрации",
             text_content,
             settings.DEFAULT_FROM_EMAIL,
             [user.email]

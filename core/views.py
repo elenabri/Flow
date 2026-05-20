@@ -1247,47 +1247,7 @@ def delete_integration(request, item_id):
         integration.delete()
     return redirect('core:integration_list')
 
-import logging
-import uuid
-from decimal import Decimal, InvalidOperation
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.views import View
-from django.utils import timezone
-from django.db import transaction
-from django.db.models import F, ExpressionWrapper, FloatField
-from django.conf import settings
-
-import django_filters
-
-# Импортируем наши новые прокачанные модели
-from .models import AdIntegration, SavedContractor, OrdContract, KktuCode, EridIntegration
-from .services import VKORDService  
-
-logger = logging.getLogger(__name__)
-
-# =====================================================================
-# --- БЛОК ОРД: УПРАВЛЕНИЕ МАРКИРОВКОЙ И ERID ---
-# =====================================================================
-
-import logging
-import uuid
-from django.conf import settings
-from django.contrib import messages
-from django.db import transaction
-from django.http import JsonResponse
-from django.shortcuts import render, redirect
-from django.utils import timezone
-from django.views import View
-from django.views.decorators.http import require_POST
-
-# Импорты ваших моделей и сервисов
-from core.models import SavedContractor, OrdContract, KktuCode, EridIntegration
-from .services import VKORDService
-
-logger = logging.getLogger(__name__)
 
 # =====================================================================
 # --- БЛОК ОРД: УПРАВЛЕНИЕ МАРКИРОВКОЙ И ERID ---
@@ -1299,32 +1259,29 @@ import os
 import json
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 from django.views import View
-from django.views.decorators.http import require_POST
 
 from core.models import SavedContractor, OrdContract, KktuCode, EridIntegration
 from .services import VKORDService
 
 logger = logging.getLogger(__name__)
 
+@method_decorator(login_required, name='dispatch')
 class EridManagementView(View):
     template_name = 'erid_form.html'
 
     def load_countries_data(self):
-        """Безопасное динамическое чтение стран из файла."""
-        # Корректируем путь: если файл лежит в папке Flow, то: 'Flow', 'countries.json'
-        # Если лежит прямо в корне проекта рядом с manage.py, оставляем как есть.
-        countries_path = os.path.join(settings.BASE_DIR, 'countries.json') 
-        
+        countries_path = os.path.join(settings.BASE_DIR, 'countries.json')
         if os.path.exists(countries_path):
             try:
                 with open(countries_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    # ИСПРАВЛЕНО: Возвращаем именно список из ключа 'countries', а не весь словарь
                     return data.get('countries', [])
             except Exception as e:
                 logger.error(f"Ошибка чтения countries.json: {e}")
@@ -1334,80 +1291,57 @@ class EridManagementView(View):
     def ord_token(self):
         token = getattr(settings, 'VK_ORD_TOKEN', None)
         if not token:
-            raise ValueError("КРИТИЧЕСКАЯ ОШИБКА: VK_ORD_TOKEN не настроен in settings.py")
+            raise ValueError("VK_ORD_TOKEN не настроен в settings.py")
         return token
-        
+
     def get(self, request):
-        # ОПТИМИЗАЦИЯ: Загружаем только необходимые поля для 300 кодов ККТУ
         kktu_queryset = KktuCode.objects.filter(is_active=True).only('code', 'name')
-        
         context = {
             'advertisers': SavedContractor.objects.filter(role='advertiser'),
             'bloggers': SavedContractor.objects.filter(role='blogger'),
             'integrations': EridIntegration.objects.select_related('ord_contract', 'kktu').all(),
             'kktu_codes': kktu_queryset,
-            'countries': self.load_countries_data(),  
+            'countries': self.load_countries_data(),
             'today_date': timezone.now().date().isoformat()
         }
         return render(request, self.template_name, context)
 
-
-
     def post(self, request):
-        # 0. РАННЯЯ ВАЛИДАЦИЯ
+        # 0. Валидация
         kktu_code = request.POST.get('kktu_code', '30.15.1')
         kktu_obj = KktuCode.objects.filter(code=kktu_code).first()
-        if not kktu_obj:
-            return render(request, self.template_name, {'error_message': f"Переданный код ККТУ {kktu_code} не найден в базе данных."})
-
         video_file = request.FILES.get('video_file')
+        
+        if not kktu_obj:
+            return render(request, self.template_name, {'error_message': "Код ККТУ не найден."})
         if not video_file:
-            return render(request, self.template_name, {'error_message': "Файл рекламного видео обязателен."})
+            return render(request, self.template_name, {'error_message': "Файл видео обязателен."})
 
         ord_service = VKORDService(token=self.ord_token)
         channel_url = request.POST.get('channel_url', '').strip() or "https://youtube.com"
-        
-        # Вспомогательная функция для формирования контрагента
+
         def get_contractor_payload(prefix, role, request_data):
             citizenship = request_data.get(f'{prefix}_citizenship')
             is_foreign = (citizenship == 'foreign')
             web_type = request_data.get(f'{prefix}_type', 'legal')
-            
-            # Определение типа для API
-            if is_foreign:
-                ord_type = "foreign_juridical" if web_type == "ur" else "foreign_physical"
-            else:
-                ord_type = "juridical" if web_type == "ur" else ("ip" if web_type == "ip" else "physical")
+            ord_type = "foreign_juridical" if is_foreign and web_type == "ur" else ("foreign_physical" if is_foreign else ("juridical" if web_type == "ur" else ("ip" if web_type == "ip" else "physical")))
             
             inn = "".join([c for c in request_data.get(f'{prefix}_inn', '') if c.isdigit()])
-            
+            reg_number = request_data.get(f'{prefix}_reg_number', '').strip()
+
             payload = {
                 "external_id": f"{prefix}_{uuid.uuid4().hex[:10]}",
                 "name": request_data.get(f'{prefix}_name'),
                 "roles": [role],
                 "juridical_details": {
                     "type": ord_type,
-                    "inn": inn if (inn and not is_foreign) else None,
+                    "inn": (reg_number if is_foreign and reg_number else (inn if inn else None)),
                     "phone": request_data.get(f'{prefix}_phone', '').strip() or "+79991234567"
                 }
             }
-
             if is_foreign:
-                # ВАЖНО: Получаем номер регистрации или ИНН из формы
-                reg_number = request_data.get(f'{prefix}_reg_number', '').strip()
-                
-                # Добавляем обязательные поля для иностранца
                 payload["juridical_details"]["foreign_oksm_country_code"] = request_data.get(f'{prefix}_country')
-                
-                # ОРД требует хотя бы одно из этих полей:
-                if reg_number:
-                    payload["juridical_details"]["inn"] = reg_number
-                elif inn:
-                    payload["juridical_details"]["inn"] = inn
-                else:
-                    # Если данных нет, бросаем ошибку, иначе ОРД вернет 400
-                    raise ValueError(f"Для иностранного контрагента {request_data.get(f'{prefix}_name')} обязателен ИНН или номер регистрации.")
-
+            
             return payload, inn
 
         try:

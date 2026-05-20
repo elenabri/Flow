@@ -145,7 +145,8 @@
 <div class="fixed-action-bar">
     {% if user.is_authenticated %}
         {% if user != ad.advertiser.user %}
-            <a href="https://t.me/{{ ad.advertiser.user.telegram|cut:'@' }}" style="background: #24A1DE; color: white; class="action-btn">
+            <!-- Исправленная строка: стили отдельно, класс отдельно -->
+            <a href="https://t.me/{{ ad.advertiser.user.telegram|cut:'@' }}" class="action-btn" style="background: #24A1DE;">
                  <i class="bi bi-telegram"></i> Написать в Telegram
             </a>
         {% else %}

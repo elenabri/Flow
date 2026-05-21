@@ -1307,17 +1307,47 @@ class EridManagementView(View):
         return render(request, self.template_name, context)
 
     def post(self, request):
-        action = request.POST.get('action', 'register_creative')
+        action = request.POST.get('action')
+        # --- БЛОК 2: ОБНОВЛЕНИЕ АКТА (перенесли вверх для безопасности) ---
+        if action == 'update_invoice':
+            integration_id = request.POST.get('integration_id')
+            try:
+                creative = EridIntegration.objects.get(id=integration_id)
+                form = CreativeInvoiceForm(request.POST, instance=creative)
+                
+                if form.is_valid():
+                    updated_creative = form.save()
+                    ord_service = VKORDService(token=self.ord_token)
+                    ord_service.create_invoice(
+                        updated_creative.ord_contract.external_id, 
+                        updated_creative.invoice_number,
+                        updated_creative.invoice_date.isoformat(),
+                        updated_creative.invoice_date.isoformat(), 
+                        updated_creative.invoice_date.isoformat(),
+                        float(updated_creative.invoice_amount), 
+                        float(updated_creative.invoice_amount), 
+                        False
+                    )
+                    messages.success(request, "Данные акта успешно обновлены в ОРД!")
+                    return redirect('core:erid_management')
+                else:
+                    logger.error(f"Форма акта невалидна: {form.errors}")
+                    return render(request, self.template_name, {
+                        'error_message': f"Ошибки заполнения акта: {form.errors.as_text()}"
+                    })
+            except Exception as e:
+                logger.error(f"Ошибка обновления акта: {str(e)}", exc_info=True)
+                return render(request, self.template_name, {'error_message': f"Ошибка: {str(e)}"})
         
         # --- БЛОК 1: РЕГИСТРАЦИЯ КРЕАТИВА ---
-        if action == 'register_creative':
+        ielif action == 'register_creative' or action is None:
             # 0. Валидация
             kktu_code = request.POST.get('kktu_code', '30.15.1')
             kktu_obj = KktuCode.objects.filter(code=kktu_code).first()
             video_file = request.FILES.get('video_file')
             
             if not kktu_obj or not video_file:
-                return render(request, self.template_name, {'error_message': "Код ККТУ или видео не найдены."})
+               return render(request, self.template_name, {'error_message': "Код ККТУ или видео не найдены."})
 
             ord_service = VKORDService(token=self.ord_token)
             channel_url = request.POST.get('channel_url', '').strip() or "https://youtube.com"

@@ -1424,23 +1424,39 @@ class EridManagementView(View):
 
         # --- БЛОК 2: ОБНОВЛЕНИЕ АКТА ---
         elif action == 'update_invoice':
-            erid = request.POST.get('erid')
+            integration_id = request.POST.get('integration_id')
             try:
-                creative = EridIntegration.objects.get(erid=erid)
-                creative.invoice_number = request.POST.get('invoice_number')
-                creative.invoice_date = request.POST.get('invoice_date')
-                creative.invoice_amount = request.POST.get('invoice_amount')
-                creative.save()
+                # 1. Получаем объект через ID
+                creative = EridIntegration.objects.get(id=integration_id)
                 
-                ord_service = VKORDService(token=self.ord_token)
-                ord_service.create_invoice(creative.ord_contract.external_id, creative.invoice_number,
-                    creative.invoice_date, creative.invoice_date, creative.invoice_date,
-                    float(creative.invoice_amount), float(creative.invoice_amount), False)
-                return JsonResponse({'success': True})
+                # 2. Используем вашу форму для валидации данных акта
+                form = CreativeInvoiceForm(request.POST, instance=creative)
+                
+                if form.is_valid():
+                    # Сохраняем в базу данных
+                    updated_creative = form.save()
+                    
+                    # 3. Синхронизируем с ОРД
+                    ord_service = VKORDService(token=self.ord_token)
+                    ord_service.create_invoice(
+                        updated_creative.ord_contract.external_id, 
+                        updated_creative.invoice_number,
+                        updated_creative.invoice_date.isoformat(), # Важно: формат даты
+                        updated_creative.invoice_date.isoformat(), 
+                        updated_creative.invoice_date.isoformat(),
+                        float(updated_creative.invoice_amount), 
+                        float(updated_creative.invoice_amount), 
+                        False
+                    )
+                    
+                    messages.success(request, "Данные акта успешно обновлены в ОРД!")
+                    return redirect('core:erid_management')
+                else:
+                    return render(request, self.template_name, {'error_message': f"Ошибка валидации: {form.errors}"})
+            
             except Exception as e:
-                return JsonResponse({'error': str(e)}, status=400)
-        
-        return HttpResponseBadRequest("Неверное действие")
+                logger.error(f"Ошибка обновления акта: {str(e)}", exc_info=True)
+                return render(request, self.template_name, {'error_message': f"Ошибка: {str(e)}"})
 
 def delete_contractor(request, external_id):
     """

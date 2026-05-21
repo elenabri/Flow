@@ -1340,7 +1340,7 @@ class EridManagementView(View):
                 return render(request, self.template_name, {'error_message': f"Ошибка: {str(e)}"})
         
         # --- БЛОК 1: РЕГИСТРАЦИЯ КРЕАТИВА ---
-        ielif action == 'register_creative' or action is None:
+        elif action == 'register_creative' or action is None:
             # 0. Валидация
             kktu_code = request.POST.get('kktu_code', '30.15.1')
             kktu_obj = KktuCode.objects.filter(code=kktu_code).first()

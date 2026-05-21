@@ -138,3 +138,33 @@ class EmailLoginForm(AuthenticationForm):
             'class': 'form-control'
         })
     )
+from django import forms
+from .models import EridIntegration
+
+class CreativeRegistrationForm(forms.ModelForm):
+    """Форма для создания заявки на получение ERID."""
+    class Meta:
+        model = EridIntegration
+        fields = [
+            'ord_contract', 'kktu', 'blogger_name', 'advertiser_name', 
+            'channel_url', 'creative_name'
+        ]
+        widgets = {
+            'blogger_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'advertiser_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'channel_url': forms.URLInput(attrs={'class': 'form-control'}),
+            'creative_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'ord_contract': forms.Select(attrs={'class': 'form-select'}),
+            'kktu': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+class CreativeInvoiceForm(forms.ModelForm):
+    """Форма для внесения данных акта (дозаполнение существующего креатива)."""
+    class Meta:
+        model = EridIntegration
+        fields = ['invoice_number', 'invoice_date', 'invoice_amount']
+        widgets = {
+            'invoice_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '№ 123'}),
+            'invoice_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'invoice_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        }

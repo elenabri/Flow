@@ -1452,45 +1452,7 @@ class EridManagementView(View):
                 logger.error(f"Ошибка ОРД: {str(e)}", exc_info=True)
                 return render(request, self.template_name, {'error_message': f"Ошибка регистрации: {str(e)}"})
 
-        # --- БЛОК 2: ОБНОВЛЕНИЕ АКТА ---
-        elif action == 'update_invoice':
-            integration_id = request.POST.get('integration_id')
-            print(f"DEBUG: POST DATA for invoice: {request.POST}")
-            try:
-                # 1. Получаем объект через ID
-                creative = EridIntegration.objects.get(id=integration_id)
-                
-                # 2. Используем вашу форму для валидации данных акта
-                form = CreativeInvoiceForm(request.POST, instance=creative)
-                
-                if form.is_valid():
-                    # Сохраняем в базу данных
-                    updated_creative = form.save()
-                    
-                    # 3. Синхронизируем с ОРД
-                    ord_service = VKORDService(token=self.ord_token)
-                    ord_service.create_invoice(
-                        updated_creative.ord_contract.external_id, 
-                        updated_creative.invoice_number,
-                        updated_creative.invoice_date.isoformat(), # Важно: формат даты
-                        updated_creative.invoice_date.isoformat(), 
-                        updated_creative.invoice_date.isoformat(),
-                        float(updated_creative.invoice_amount), 
-                        float(updated_creative.invoice_amount), 
-                        False
-                    )
-                    
-                    messages.success(request, "Данные акта успешно обновлены в ОРД!")
-                    return redirect('core:erid_management')
-                else:
-                    logger.error(f"Форма акта невалидна: {form.errors}")
-                    return render(request, self.template_name, {
-                        'error_message': f"Ошибки заполнения акта: {form.errors.as_text()}"
-                    })
-            
-            except Exception as e:
-                logger.error(f"Ошибка обновления акта: {str(e)}", exc_info=True)
-                return render(request, self.template_name, {'error_message': f"Ошибка: {str(e)}"})
+        
 
 def delete_contractor(request, external_id):
     """

@@ -1325,17 +1325,15 @@ class EridManagementView(View):
             is_foreign = (citizenship == 'foreign')
             web_type = request_data.get(f'{prefix}_type', 'legal')
             
-            # Получаем номер из формы (пробуем разные варианты имен)
-            reg_number = request_data.get(f'{prefix}_reg_number', '').strip()
-            if not reg_number:
-                # Если reg_number пуст, возможно, в форме поле называется иначе
-                reg_number = request_data.get(f'{prefix}_inn', '').strip()
-
-            # Определение типа
+            # Определение типа для ОРД
             if is_foreign:
                 ord_type = "foreign_juridical" if web_type == "ur" else "foreign_physical"
             else:
                 ord_type = "juridical" if web_type == "ur" else ("ip" if web_type == "ip" else "physical")
+
+            # Берем данные в зависимости от гражданства
+            inn = "".join([c for c in request_data.get(f'{prefix}_inn', '') if c.isdigit()])
+            reg_number = request_data.get(f'{prefix}_reg_number', '').strip()
 
             payload = {
                 "external_id": f"{prefix}_{uuid.uuid4().hex[:10]}",
@@ -1348,8 +1346,9 @@ class EridManagementView(View):
             }
 
             if is_foreign:
+                # ВАЖНО: используем именно reg_number для иностранцев
                 if not reg_number:
-                    raise ValueError(f"Для иностранного лица {prefix} не передан регистрационный номер (проверьте поле 'reg_number' в HTML)")
+                     raise ValueError(f"Регистрационный номер для {prefix} не получен!")
                 
                 payload["juridical_details"]["foreign_oksm_country_code"] = request_data.get(f'{prefix}_country')
                 
@@ -1362,10 +1361,9 @@ class EridManagementView(View):
                 if payment:
                     payload["juridical_details"]["foreign_epayment_method"] = payment
             else:
-                inn = "".join([c for c in request_data.get(f'{prefix}_inn', '') if c.isdigit()])
                 payload["juridical_details"]["inn"] = inn
 
-            return payload, request_data.get(f'{prefix}_inn', '')
+            return payload, (reg_number if is_foreign else inn)
 
         try:
             adv_select = request.POST.get('advertiser_select')

@@ -1311,9 +1311,19 @@ class EridManagementView(View):
         # --- БЛОК 2: ОБНОВЛЕНИЕ АКТА (перенесли вверх для безопасности) ---
         if action == 'update_invoice':
             integration_id = request.POST.get('integration_id')
+            integration = EridIntegration.objects.get(id=integration_id)
             try:
                 creative = EridIntegration.objects.get(id=integration_id)
                 form = CreativeInvoiceForm(request.POST, instance=creative)
+                try:
+        creative_in_ord = service.session.get(f"{service.BASE_URL}/v3/creative/{integration.creative_ext_id}").json()
+        
+        # Если ОРД вернул ошибку или пустые поля
+        if not creative_in_ord.get("kktus") or not creative_in_ord.get("contract_external_ids"):
+            return render(request, 'error.html', {'message': "Креатив в ОРД не прошел валидацию (нет ККТУ или договора)."})
+            
+    except Exception as e:
+        return render(request, 'error.html', {'message': "Ошибка связи с ОРД при проверке креатива."})
                 
                 if form.is_valid():
                     with transaction.atomic():

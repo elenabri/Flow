@@ -1316,27 +1316,27 @@ class EridManagementView(View):
                 form = CreativeInvoiceForm(request.POST, instance=creative)
                 
                 if form.is_valid():
-                    updated_creative = form.save()
+                    with transaction.atomic():
+                        updated_creative = form.save()
+                    # Синхронизация с ОРД
                     ord_service = VKORDService(token=self.ord_token)
                     ord_service.create_invoice(
-                        updated_creative.ord_contract.external_id, 
-                        updated_creative.invoice_number,
-                        updated_creative.invoice_date.isoformat(),
-                        updated_creative.invoice_date.isoformat(), 
-                        updated_creative.invoice_date.isoformat(),
-                        float(updated_creative.invoice_amount), 
-                        float(updated_creative.invoice_amount), 
-                        False
+                        contract_ext_id=updated_creative.ord_contract.external_id, 
+                        invoice_number=updated_creative.invoice_number,
+                        date=updated_creative.invoice_date.isoformat(),
+                        start_date=updated_creative.invoice_date.isoformat(),
+                        end_date=updated_creative.invoice_date.isoformat(),
+                        amount=float(updated_creative.invoice_amount), 
+                        vat_amount=float(updated_creative.invoice_amount), # Уточните, есть ли у вас расчет НДС
+                        is_vat=False
                     )
+                    
                     messages.success(request, "Данные акта успешно обновлены в ОРД!")
                     return redirect('core:erid_management')
                 else:
-                    logger.error(f"Форма акта невалидна: {form.errors}")
-                    return render(request, self.template_name, {
-                        'error_message': f"Ошибки заполнения акта: {form.errors.as_text()}"
-                    })
+                    return render(request, self.template_name, {'error_message': f"Ошибки: {form.errors.as_text()}"})
             except Exception as e:
-                logger.error(f"Ошибка обновления акта: {str(e)}", exc_info=True)
+                logger.error(f"Ошибка обновления: {e}", exc_info=True)
                 return render(request, self.template_name, {'error_message': f"Ошибка: {str(e)}"})
         
         # --- БЛОК 1: РЕГИСТРАЦИЯ КРЕАТИВА ---

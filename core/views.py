@@ -1325,8 +1325,10 @@ class EridManagementView(View):
                 if not creative_in_ord.get("kktus") or not creative_in_ord.get("contract_external_ids"):
                     return render(request, 'error.html', {'message': "Креатив в ОРД не прошел валидацию (нет ККТУ или договора)."})
                 
-                # 3. Если всё ок, вызываем отправку акта
-                # service.create_invoice(...) 
+                response = service.session.put(url, json=data)
+                if response.status_code != 200:
+                    print(f"ПОЛНЫЙ ОТВЕТ ОРД: {response.text}") # <--- ЭТО ВАЖНО!
+                    return render(request, 'error.html', {'message': f"Ошибка: {response.text}"})
                 
             except Exception as e:
                 logger.error(f"Ошибка проверки креатива: {str(e)}")

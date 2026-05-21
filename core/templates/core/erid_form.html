@@ -1,420 +1,572 @@
-{% extends "core/base.html" %}
+{% extends 'base.html' %}
 
-{% load l10n %}
+{% block title %}Маркировка: Получить ERID | TubeFlow{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Единый стиль интерфейса TubeFlow */
+    .erid-card { 
+        border: 1px solid var(--mp-border); 
+        border-radius: 12px; 
+        background: #ffffff;
+    }
+    .blogger-row { 
+        background-color: var(--mp-bg); 
+        font-weight: 700; 
+        border-left: 4px solid var(--mp-accent); 
+    }
+    .erid-style { 
+        font-family: monospace; 
+        color: var(--mp-text-main); 
+        background: #e2e8f0; 
+        padding: 4px 8px; 
+        border-radius: 6px; 
+        font-size: 0.9rem; 
+        border: 1px solid var(--mp-border); 
+    }
+    .form-section-title { 
+        font-size: 0.8rem; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px; 
+        color: var(--mp-text-muted); 
+        margin-top: 20px; 
+        margin-bottom: 10px; 
+        font-weight: 700; 
+    }
+    .bg-custom-light {
+        background-color: #f8fafc;
+    }
+    /* Стили для кастомизации выпадающих списков под общий дизайн */
+    .form-select-custom {
+        border: 1px solid var(--mp-border);
+        border-radius: 6px;
+        background-color: #ffffff;
+        font-size: 0.9rem;
+    }
+    .form-select-custom:focus {
+        border-color: var(--mp-accent);
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+    /* Фикс интеграции TomSelect с Bootstrap 5 стилями */
+    .ts-wrapper.form-select-custom {
+        padding: 0 !important;
+        height: auto;
+        box-shadow: none;
+    }
+    .ts-wrapper .ts-control {
+        border: none !important;
+        padding: 0.45rem 2.25rem 0.45rem 0.75rem !important;
+        border-radius: 6px !important;
+    }
+    /* Стиль для кнопки удаления элементов из сохраненного списка */
+    .delete-item-btn {
+        cursor: pointer;
+        color: var(--bs-danger);
+        transition: transform 0.2s;
+    }
+    .delete-item-btn:hover {
+        transform: scale(1.15);
+    }
+    /* Стилизация выпадающего списка TomSelect для скроллинга большого объема ККТУ */
+    .ts-dropdown .dropdown-content {
+        max-height: 350px !important;
+    }
+</style>
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+{% endblock %}
 
 {% block content %}
-
-<style>
-
-    :root {
-
-        --primary: #2563eb;
-
-        --border-color: #e2e8f0;
-
-        --bg-readonly: #f1f5f9;
-
-    }
-
-
-
-    /* Глобальный сброс для этой страницы, чтобы поля не вылезали */
-
-    .dashboard-container * {
-
-        box-sizing: border-box;
-
-    }
-
-
-
-    .dashboard-container {
-
-        max-width: 800px;
-
-        margin: 40px auto;
-
-        padding: 0 15px;
-
-        font-family: 'Inter', system-ui, sans-serif;
-
-    }
-
-
-
-    .content-card {
-
-        background: white;
-
-        border-radius: 16px;
-
-        border: 1px solid var(--border-color);
-
-        padding: clamp(15px, 5%, 30px); /* Адаптивные отступы внутри карточки */
-
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-
-    }
-
-
-
-    .section-title {
-
-        font-size: 11px;
-
-        font-weight: 700;
-
-        text-transform: uppercase;
-
-        color: #94a3b8;
-
-        margin: 25px 0 15px;
-
-        display: flex;
-
-        align-items: center;
-
-        gap: 10px;
-
-    }
-
-
-
-    .section-title::after {
-
-        content: ""; height: 1px; background: #f1f5f9; flex: 1;
-
-    }
-
-
-
-    /* Сетка, которая никогда не ломается */
-
-    .grid-layout {
-
-        display: grid;
-
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-
-        gap: 15px;
-
-        width: 100%; /* Гарантируем, что сетка не шире родителя */
-
-    }
-
-
-
-    .field-group {
-
-        display: flex;
-
-        flex-direction: column;
-
-        gap: 6px;
-
-        min-width: 0; /* Важно для предотвращения распирания flex-элементов */
-
-    }
-
-
-
-    label {
-
-        font-size: 13px;
-
-        font-weight: 600;
-
-        color: #475569;
-
-    }
-
-
-
-    input {
-
-        width: 100%; /* Теперь всегда занимает 100% своей ячейки */
-
-        padding: 12px;
-
-        border: 1px solid var(--border-color);
-
-        border-radius: 8px;
-
-        font-size: 15px;
-
-        outline: none;
-
-        transition: border-color 0.2s;
-
-    }
-
-
-
-    input:focus:not([readonly]) {
-
-        border-color: var(--primary);
-
-    }
-
-
-
-    input[readonly] {
-
-        background: var(--bg-readonly);
-
-        color: #64748b;
-
-        cursor: not-allowed;
-
-        border-color: #e2e8f0;
-
-    }
-
-
-
-    /* Карточки прайса */
-
-    .price-item {
-
-        background: #fff;
-
-        border: 1px solid var(--border-color);
-
-        padding: 15px;
-
-        border-radius: 12px;
-
-    }
-
-
-
-    .price-item.special {
-
-        background: #fffaf5;
-
-        border-color: #fed7aa;
-
-    }
-
-
-
-    .cpv-text {
-
-        margin-top: 10px;
-
-        font-size: 12px;
-
-        font-weight: 700;
-
-        color: #10b981;
-
-    }
-
-
-
-    .special .cpv-text { color: #f97316; }
-
-
-
-    .save-btn {
-
-        width: 100%;
-
-        margin-top: 30px;
-
-        background: var(--primary);
-
-        color: white;
-
-        padding: 16px;
-
-        border: none;
-
-        border-radius: 10px;
-
-        font-size: 16px;
-
-        font-weight: 700;
-
-        cursor: pointer;
-
-        transition: transform 0.1s, background 0.2s;
-
-    }
-
-
-
-    .save-btn:hover { background: #1d4ed8; }
-
-    .save-btn:active { transform: scale(0.99); }
-
-</style>
-
-
-
-<div class="dashboard-container">
-
-    <h2 style="margin-bottom: 20px;">Настройка стоимости ваших услуг</h2>
-
-
-
-    <form method="post" class="content-card">
-
-        {% csrf_token %}
-
-
-
-        <div class="section-title">Канал и Охваты</div>
-
-        <div class="grid-layout">
-
-            <div class="field-group">
-
-                <label>Название</label>
-
-                <input type="text" value="{{ profile.channel_name }}" readonly>
-
-            </div>
-
-            <div class="field-group">
-
-                <label>Средние просмотры длинных роликов </label>
-
-                <input type="number" id="ml" value="{{ profile.median_views }}" readonly>
-
-            </div>
-
-            <div class="field-group">
-
-                <label>Средние просмотры шортсов (Shorts)</label>
-
-                <input type="number" id="ms" value="{{ profile.median_views_shorts }}" readonly>
-
-            </div>
-
+<div class="container-fluid px-0">
+    
+    {% if error_message %}
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4" role="alert">
+        <i class="bi bi-exclamation-octagon-fill me-2"></i> {{ error_message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <div class="col-xl-5 col-lg-6">
+            <div class="card erid-card p-4 shadow-sm">
+                <h5 class="fw-bold mb-4" style="color: var(--mp-text-main);">
+                    <i class="bi bi-layers-half text-primary me-2"></i>Регистрация интеграции & ERID
+                </h5>
+                
+                <form action="{% url 'core:erid_management' %}" method="POST" enctype="multipart/form-data" id="eridForm">
+                    {% csrf_token %}
+                    
+                    <div class="form-section-title">1. Рекламодатель</div>
+                    <div class="mb-3">
+                        <div class="d-flex gap-2 mb-2">
+                            <select class="form-select form-select-custom shadow-sm flex-grow-1" id="advSelect" name="advertiser_select" onchange="updatePartyFields('adv')">
+                                <option value="new" selected>+ Добавить нового рекламодателя</option>
+                                {% for adv in advertisers %}
+                                    <option value="{{ adv.external_id }}">{{ adv.name }} (ИНН: {{ adv.inn|default:"-" }})</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-outline-danger btn-sm px-2" title="Удалить выбранного рекламодателя" onclick="deleteSavedContractor('adv')">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="advNewBox" class="p-3 bg-custom-light rounded border">
+                            <div class="mb-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="adv_citizenship" id="adv_rf" value="rf" checked onchange="updatePartyFields('adv')">
+                                    <label class="form-check-label small fw-medium" for="adv_rf">Гражданин РФ</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="adv_citizenship" id="adv_foreign" value="foreign" onchange="updatePartyFields('adv')">
+                                    <label class="form-check-label small fw-medium" for="adv_foreign">Иностранец</label>
+                                </div>
+                            </div>
+
+                            <div class="mb-2">
+                                <select class="form-select form-select-sm form-select-custom" name="adv_type" id="adv_type" onchange="updatePartyFields('adv')">
+                                    <option value="ur">Юридическое лицо</option>
+                                    <option value="fiz">Физическое лицо</option>
+                                    <option value="ip" id="adv_ip_option">Индивидуальный предприниматель (ИП)</option>
+                                </select>
+                            </div>
+
+                            <!-- Обертка для корректного скрытия/показа TomSelect -->
+                            <div id="adv_country_wrapper" class="mb-2 d-none">
+                                <select class="form-select form-select-sm form-select-custom" id="adv_country" name="adv_country">
+                                    <option value="">-- Выберите страну --</option>
+                                    {% for country in countries %}
+                                        <option value="{{ country.code }}">{{ country.name }} </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <input type="text" class="form-control form-control-sm mb-2" id="adv_name" name="adv_name" placeholder="Название компании или ФИО" required>
+                            <input type="text" class="form-control form-control-sm mb-2" id="adv_inn" name="adv_inn" placeholder="ИНН">
+                            <input type="text" class="form-control form-control-sm mb-2 d-none" 
+       id="adv_reg_number" name="adv_reg_number" placeholder="Регистрационный номер / Tax ID">
+                            <input type="text" class="form-control form-control-sm" id="adv_phone" name="adv_phone" placeholder="Номер телефона">
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">2. Блогер и Площадка</div>
+                    <div class="mb-3">
+                        <div class="d-flex gap-2 mb-2">
+                            <select class="form-select form-select-custom shadow-sm flex-grow-1" id="blogSelect" name="blogger_select" onchange="updatePartyFields('blog')">
+                                <option value="new" selected>+ Добавить нового блогера</option>
+                                {% for blogger in bloggers %}
+                                    <option value="{{ blogger.external_id }}">{{ blogger.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-outline-danger btn-sm px-2" title="Удалить выбранного блогера" onclick="deleteSavedContractor('blog')">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="blogNewBox" class="p-3 bg-custom-light rounded border">
+                            <div class="mb-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="blog_citizenship" id="blog_rf" value="rf" checked onchange="updatePartyFields('blog')">
+                                    <label class="form-check-label small fw-medium" for="blog_rf">Гражданин РФ</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="blog_citizenship" id="blog_foreign" value="foreign" onchange="updatePartyFields('blog')">
+                                    <label class="form-check-label small fw-medium" for="blog_foreign">Иностранец</label>
+                                </div>
+                            </div>
+
+                            <div class="mb-2">
+                                <select class="form-select form-select-sm form-select-custom" name="blog_type" id="blog_type" onchange="updatePartyFields('blog')">
+                                    <option value="ur">Юридическое лицо</option>
+                                    <option value="fiz">Физическое лицо</option>
+                                    <option value="ip" id="blog_ip_option">Индивидуальный предприниматель (ИП)</option>
+                                </select>
+                            </div>
+
+                            <!-- Обертка для корректного скрытия/показа TomSelect -->
+                            <div id="blog_country_wrapper" class="mb-2 d-none">
+                                <select class="form-select form-select-sm form-select-custom" id="blog_country" name="blog_country">
+                                    <option value="">-- Выберите страну --</option>
+                                    {% for country in countries %}
+                                        <option value="{{ country.code }}">{{ country.name }} ({{ country.alpha3 }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <input type="text" class="form-control form-control-sm mb-2" id="blog_name" name="blog_name" placeholder="Название компании или ФИО" required>
+                            <input type="text" class="form-control form-control-sm mb-2" id="blog_inn" name="blog_inn" placeholder="ИНН">
+                            <input type="text" class="form-control form-control-sm mb-2 d-none" 
+       id="blog_reg_number" name="blog_reg_number" placeholder="Регистрационный номер / Tax ID">
+                            <input type="text" class="form-control form-control-sm mb-2" id="blog_phone" name="blog_phone" placeholder="Номер телефона">
+
+                            <input type="url" class="form-control form-control-sm" name="channel_url" required placeholder="Ссылка на YouTube-канал блогера">
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">3. Данные Креатива (Ролика)</div>
+                    <div class="p-3 bg-white rounded border mb-4">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Что рекламируем (Товар)</label>
+                            <input type="text" class="form-control form-control-sm" name="product_name" required placeholder="Например: Термос Вкусневич 1л">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Категория товара (ККТУ)</label>
+                            <select class="form-select form-select-sm form-select-custom" name="kktu_code" id="kktuSelect" required>
+                                <option value="">-- Начните вводить код или название --</option>
+                                {% for kktu in kktu_codes %}
+                                    <option value="{{ kktu.code }}">[{{ kktu.code }}] {{ kktu.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Период размещения</label>
+                            <div class="row g-2">
+                                <div class="col">
+                                    <input type="date" class="form-control form-control-sm" name="date_start" id="date_start" value="{{ today_date }}">
+                                </div>
+                                <div class="col">
+                                    <select class="form-select form-select-sm form-select-custom" name="date_end_type" id="dateEndType" onchange="if(this.value==='date'){document.getElementById('dateEndInput').classList.remove('d-none')}else{document.getElementById('dateEndInput').classList.add('d-none')}">
+                                        <option value="infinity">Бессрочно</option>
+                                        <option value="date">Указать дату окончания</option>
+                                    </select>
+                                    <input type="date" class="form-control form-control-sm mt-1 d-none" id="dateEndInput" name="date_end">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Ссылки на товары (необязательно)</label>
+                            <textarea class="form-control form-control-sm" name="target_urls" rows="2" placeholder="Каждая ссылка с новой строки"></textarea>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold text-muted">Файл видео рекламы</label>
+                            <input type="file" class="form-control form-control-sm" name="video_file" accept="video/*" required>
+                        </div>
+                    </div>
+                    
+               
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm" style="border-radius: 8px;">
+                        <i class="bi bi-cloud-arrow-up-fill me-2"></i>Сгенерировать ERID
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-xl-7 col-lg-6">
+            <div class="card erid-card overflow-hidden shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0" style="color: var(--mp-text-main);">
+                        <i class="bi bi-table text-secondary me-2"></i>Зарегистрированные интеграции
+                    </h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4" style="font-size: 13px; color: var(--mp-text-muted);">Интеграция / Ролик</th>
+                                <th style="font-size: 13px; color: var(--mp-text-muted);">Счет / Акт</th>
+                                <th style="font-size: 13px; color: var(--mp-text-muted);">Токен (ERID)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in integrations %}
+                            <tr class="blogger-row">
+                                <td colspan="3" class="ps-4 text-primary" style="font-size: 14px;">
+                                    <i class="bi bi-person-circle me-2"></i>{{ item.blogger_name }} 
+                                    <span class="text-muted fw-normal ms-3 small">Заказчик: {{ item.advertiser_name }}</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="ps-5">
+                                    <div class="fw-bold text-dark" style="font-size: 14px;">{{ item.creative_name }}</div>
+                                    <a href="{{ item.channel_url }}" target="_blank" class="small text-muted" style="font-size: 12px;">{{ item.channel_url }}</a>
+                                </td>
+                                <td>
+                                    {% if item.invoice_number %}
+                                        <span class="badge bg-light text-dark border">№{{ item.invoice_number }}</span>
+                                    {% else %}
+                                       <button type="button" class="btn btn-xs btn-outline-warning py-0 px-2" 
+        onclick="openActModal('{{ item.id }}')" style="font-size: 11px; border-radius: 4px;">
+    <i class="bi bi-plus-circle me-1"></i> Прикрепить акт
+</button>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="erid-style">{{ item.erid }}</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-5 text-muted small">
+                                    <i class="bi bi-folder-x display-6 d-block mb-2 text-secondary"></i>
+                                    Токенов пока нет. Заполните форму слева.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Прогресс-бар -->
+<div id="uploadProgressContainer" class="d-none fixed-bottom p-3" style="z-index: 1050;">
+    <div class="card shadow p-2" style="max-width: 400px; margin-left: auto;">
+        <div class="small fw-bold mb-1">Загрузка видео...</div>
+        <div class="progress" style="height: 10px;">
+            <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
         </div>
-
-
-
-        <div class="section-title">Длинная версия ролика(Long)</div>
-
-<div class="grid-layout">
-
-    <div class="price-item">
-
-        <label>Начало ролика</label>
-
-        <input type="number" step="0.01" id="p_start" name="price_start" 
-
-               value="{{ profile.price_start|unlocalize }}" oninput="calcAllCPV()">
-
-        <div class="cpv-text">CPV: <span id="cpv_start">0</span> ₽</div>
-
     </div>
-
-
-
-    <div class="price-item">
-
-        <label>Середина ролика</label>
-
-        <input type="number" step="0.01" id="p_mid" name="price_middle" 
-
-               value="{{ profile.price_middle|unlocalize }}" oninput="calcAllCPV()">
-
-        <div class="cpv-text">CPV: <span id="cpv_mid">0</span> ₽</div>
-
-    </div>
-
-
-
-    <div class="price-item">
-
-        <label>Конец ролика</label>
-
-        <input type="number" step="0.01" id="p_end" name="price_end" 
-
-               value="{{ profile.price_end|unlocalize }}" oninput="calcAllCPV()">
-
-        <div class="cpv-text">CPV: <span id="cpv_end">0</span> ₽</div>
-
-    </div>
-
-    </div>
-
-<div class="section-title">Шортс(Shorts)</div>
-
-    <div class="grid-layout">
-
-        <div class="price-item">
-
-            <label style="color: #c2410c;">YouTube Shorts</label>
-
-            <input type="number" step="0.01" id="p_shorts" name="price_shorts" 
-
-                   value="{{ profile.price_shorts|unlocalize }}" oninput="calcAllCPV()">
-
-            <div class="cpv-text">CPV: <span id="cpv_shorts_val">0</span> ₽</div>
-
-        </div>
-
-    </div> <!-- Закрываем grid-layout -->
-
-    <!-- УДАЛЕН лишний </div> здесь -->
-
-
-
-    <button type="submit" class="save-btn">Обновить прайс-лист</button>
-
-</form>
-
 </div>
 
+<!-- Модальное окно для акта -->
+<div class="modal fade" id="actModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" method="POST" action="{% url 'core:attach_act' %}">
+            {% csrf_token %}
+            <input type="hidden" name="integration_id" id="modalIntegrationId">
+            <div class="modal-header"><h5 class="modal-title">Прикрепить акт</h5></div>
+            <div class="modal-body">
+                <input type="text" name="invoice_number" class="form-control mb-2" placeholder="Номер акта" required>
+                
+                <!-- Новое поле для даты -->
+                <label class="small fw-bold text-muted mb-1">Дата акта</label>
+                <input type="date" name="invoice_date" class="form-control mb-2" required>
+                
+                <input type="number" step="0.01" name="invoice_amount" class="form-control" placeholder="Сумма" required>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
 
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
 <script>
+    let kktuSelectInstance = null;
+    let advCountrySelectInstance = null;
+    let blogCountrySelectInstance = null;
 
-function calcAllCPV() {
+    document.addEventListener('DOMContentLoaded', function() {
+        // РЕШЕНИЕ ДЛЯ ККТУ: используем максимальный лимит рендеринга
+        if (document.getElementById('kktuSelect')) {
+            kktuSelectInstance = new TomSelect('#kktuSelect', {
+                create: false, 
+                maxItems: 1,
+                maxOptions: 5000, // Поднимаем лимит выше общего количества строк в ККТУ
+                placeholder: '-- Начните вводить код или название --',
+                sortField: { field: "text", direction: "asc" },
+                dropdownParent: 'body',
+                // Отключаем внутреннее ограничение на отрисовку
+                render: {
+                    option: function(data, escape) {
+                        return '<div>' + escape(data.text) + '</div>';
+                    }
+                }
+            });
+        }
+        
+        const dateStartInput = document.getElementById('date_start');
+        if (dateStartInput && !dateStartInput.value) {
+            dateStartInput.value = new Date().toISOString().split('T')[0];
+        }
 
-    const ml = parseFloat(document.getElementById('ml').value) || 0;
+        // Запускаем первичную настройку полей
+        updatePartyFields('adv');
+        updatePartyFields('blog');
+    });
 
-    const ms = parseFloat(document.getElementById('ms').value) || 0;
+    // Функция безопасной инициализации TomSelect для стран при показе блока
+    function initCountrySelect(prefix) {
+        const selectId = '#' + prefix + '_country';
+        const selectEl = document.getElementById(prefix + '_country');
+        
+        // Если уже инициализирован, ничего не делаем
+        if (selectEl.classList.contains('tomselected')) return;
 
+        const instance = new TomSelect(selectId, {
+            create: false,
+            maxItems: 1,
+            maxOptions: 300,
+            placeholder: '-- Выберите страну --',
+            dropdownParent: 'body'
+        });
+
+        if (prefix === 'adv') advCountrySelectInstance = instance;
+        if (prefix === 'blog') blogCountrySelectInstance = instance;
+    }
+
+    function updatePartyFields(prefix) {
+        const select = document.getElementById(prefix + 'Select');
+        const box = document.getElementById(prefix + 'NewBox');
+        if (!select || !box) return;
+
+        const isNew = (select.value === 'new');
+        
+        if (!isNew) {
+            box.classList.add('d-none');
+            box.querySelectorAll('input, select').forEach(i => {
+                i.disabled = true;
+                i.required = false; 
+            });
+            const tsInstance = prefix === 'adv' ? advCountrySelectInstance : blogCountrySelectInstance;
+            if (tsInstance) tsInstance.disable();
+            return;
+        }
+
+        box.classList.remove('d-none');
+        box.querySelectorAll('input, select').forEach(i => {
+            if(!i.classList.contains('tomselected')) {
+                i.disabled = false;
+            }
+        });
+
+        const type = document.getElementById(prefix + '_type').value;
+        const isForeign = document.getElementById(prefix + '_foreign').checked;
+        
+        const innInput = document.getElementById(prefix + '_inn');
+        const regInput = document.getElementById(prefix + '_reg_number')
+        const nameInput = document.getElementById(prefix + '_name');
+        const phoneInput = document.getElementById(prefix + '_phone');
+        const ipOption = document.getElementById(prefix + '_ip_option');
+        const countryWrapper = document.getElementById(prefix + '_country_wrapper');
+
+        if (isForeign) {
+            innInput.classList.add('d-none');
+    innInput.required = false;
+    
+    regInput.classList.remove('d-none');
+    regInput.required = true;
+            // Сначала показываем обертку, чтобы элемент получил размеры в DOM
+            if (countryWrapper) countryWrapper.classList.remove('d-none');
+            
+            // И ТОЛЬКО ТЕПЕРЬ инициализируем TomSelect на видимом элементе
+            initCountrySelect(prefix);
+            
+            const tsInstance = prefix === 'adv' ? advCountrySelectInstance : blogCountrySelectInstance;
+            if (tsInstance) {
+                tsInstance.enable();
+            }
+            document.getElementById(prefix + '_country').required = true;
+            
+            if (ipOption) ipOption.classList.add('d-none');
+            if (type === 'ip') document.getElementById(prefix + '_type').value = 'ur';
+        } else {
+            innInput.classList.remove('d-none');
+    innInput.required = (type !== 'fiz'); // Или ваша логика обязательности
+    
+    regInput.classList.add('d-none');
+    regInput.required = false;
+            const tsInstance = prefix === 'adv' ? advCountrySelectInstance : blogCountrySelectInstance;
+            if (tsInstance) {
+                tsInstance.clear();
+                tsInstance.disable();
+            }
+            if (countryWrapper) countryWrapper.classList.add('d-none');
+            document.getElementById(prefix + '_country').required = false;
+            if (ipOption) ipOption.classList.remove('d-none');
+        }
+
+        // Поля в зависимости от типа контрагента
+        if (type === 'ur') {
+            nameInput.placeholder = "Название компании (ООО '...')";
+            innInput.placeholder = isForeign ? "Tax ID / Рег. код" : "ИНН организации (10 цифр)";
+            phoneInput.classList.add('d-none'); phoneInput.required = false;
+            innInput.classList.remove('d-none'); innInput.required = !isForeign;
+        } else if (type === 'fiz') {
+            nameInput.placeholder = "ФИО полностью";
+            phoneInput.classList.remove('d-none'); phoneInput.required = true;
+            if (isForeign) {
+                innInput.classList.add('d-none'); innInput.required = false;
+            } else {
+                innInput.classList.remove('d-none');
+                innInput.placeholder = "ИНН физлица (12 цифр)";
+                innInput.required = true;
+            }
+        } else if (type === 'ip') {
+            nameInput.placeholder = "ИП Фамилия Имя Отчество";
+            innInput.placeholder = "ИНН ИП (12 цифр)";
+            phoneInput.classList.remove('d-none'); phoneInput.required = false;
+            innInput.classList.remove('d-none'); innInput.required = true;
+        }
+    }
+
+    async function deleteSavedContractor(prefix) {
+        const select = document.getElementById(prefix + 'Select');
+        const selectedId = select.value;
+        
+        if (!selectedId || selectedId === 'new') {
+            alert('Пожалуйста, выберите сохраненного контрагента для удаления.');
+            return;
+        }
+        
+        const typeName = prefix === 'adv' ? 'рекламодателя' : 'блогера';
+        if (!confirm(`Вы уверены, что хотите удалить ${typeName}?`)) return;
+
+        try {
+            const response = await fetch("{% url 'core:delete_contractor' '0' %}".replace('0', selectedId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                const option = select.querySelector(`option[value="${selectedId}"]`);
+                if (option) option.remove();
+                
+                select.value = 'new';
+                updatePartyFields(prefix);
+                alert('Контрагент успешно удален.');
+            } else {
+                alert('Ошибка: ' + (data.error || 'Не удалось удалить контрагента.'));
+            }
+        } catch (error) {
+            console.error('Network error:', error);
+            alert('Произошла ошибка сети. Попробуйте снова.');
+        }
+    }
+    // Перехват отправки формы для прогресс-бара
+document.getElementById('eridForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const xhr = new XMLHttpRequest();
+    const bar = document.getElementById('uploadProgressBar');
+    const container = document.getElementById('uploadProgressContainer');
+
+    container.classList.remove('d-none');
     
+    xhr.upload.onprogress = (e) => {
+        const percent = (e.loaded / e.total) * 100;
+        bar.style.width = percent + '%';
+    };
 
-    const fields = [
+    xhr.onload = () => {
+        if (xhr.status === 200) {
+            location.reload(); // Перезагрузка для обновления таблицы
+        } else {
+            alert('Ошибка при загрузке');
+            container.classList.add('d-none');
+        }
+    };
 
-        { priceId: 'p_start', displayId: 'cpv_start', views: ml },
+    xhr.open('POST', this.action);
+    xhr.send(formData);
+});
 
-        { priceId: 'p_mid', displayId: 'cpv_mid', views: ml },
-
-        { priceId: 'p_end', displayId: 'cpv_end', views: ml },
-
-        { priceId: 'p_shorts', displayId: 'cpv_shorts_val', views: ms }
-
-    ];
-
-
-
-    fields.forEach(field => {
-
-        let p = document.getElementById(field.priceId).value;
-
-        // Заменяем запятую на точку, если она вдруг просочилась строкой
-
-        let price = parseFloat(p.toString().replace(',', '.')) || 0;
-
-        let result = field.views > 0 ? (price / field.views).toFixed(2) : '0';
-
-        document.getElementById(field.displayId).innerText = result;
-
-    });
-
+// Открытие модального окна для акта
+function openActModal(id) {
+    document.getElementById('modalIntegrationId').value = id;
+    new bootstrap.Modal(document.getElementById('actModal')).show();
 }
-
-window.onload = calcAllCPV;
-
 </script>
-
-{% endblock %} 
-
+{% endblock %} 

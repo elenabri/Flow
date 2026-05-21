@@ -1307,156 +1307,140 @@ class EridManagementView(View):
         return render(request, self.template_name, context)
 
     def post(self, request):
-        # 0. Валидация
-        kktu_code = request.POST.get('kktu_code', '30.15.1')
-        kktu_obj = KktuCode.objects.filter(code=kktu_code).first()
-        video_file = request.FILES.get('video_file')
+        action = request.POST.get('action', 'register_creative')
         
-        if not kktu_obj:
-            return render(request, self.template_name, {'error_message': "Код ККТУ не найден."})
-        if not video_file:
-            return render(request, self.template_name, {'error_message': "Файл видео обязателен."})
-
-        ord_service = VKORDService(token=self.ord_token)
-        channel_url = request.POST.get('channel_url', '').strip() or "https://youtube.com"
-
-        def get_contractor_payload(prefix, role, request_data):
-            citizenship = request_data.get(f'{prefix}_citizenship')
-            is_foreign = (citizenship == 'foreign')
-            web_type = request_data.get(f'{prefix}_type', 'legal')
+        # --- БЛОК 1: РЕГИСТРАЦИЯ КРЕАТИВА ---
+        if action == 'register_creative':
+            # 0. Валидация
+            kktu_code = request.POST.get('kktu_code', '30.15.1')
+            kktu_obj = KktuCode.objects.filter(code=kktu_code).first()
+            video_file = request.FILES.get('video_file')
             
-            # Определение типа для ОРД
-            if is_foreign:
-                ord_type = "foreign_juridical" if web_type == "ur" else "foreign_physical"
-            else:
-                ord_type = "juridical" if web_type == "ur" else ("ip" if web_type == "ip" else "physical")
+            if not kktu_obj or not video_file:
+                return render(request, self.template_name, {'error_message': "Код ККТУ или видео не найдены."})
 
-            # Берем данные в зависимости от гражданства
-            inn = "".join([c for c in request_data.get(f'{prefix}_inn', '') if c.isdigit()])
-            reg_number = request_data.get(f'{prefix}_reg_number', '').strip()
+            ord_service = VKORDService(token=self.ord_token)
+            channel_url = request.POST.get('channel_url', '').strip() or "https://youtube.com"
 
-            payload = {
-                "external_id": f"{prefix}_{uuid.uuid4().hex[:10]}",
-                "name": request_data.get(f'{prefix}_name'),
-                "roles": [role],
-                "juridical_details": {
-                    "type": ord_type,
-                    "phone": request_data.get(f'{prefix}_phone', '').strip() or "+79991234567"
-                }
-            }
-
-            if is_foreign:
-                # ВАЖНО: используем именно reg_number для иностранцев
-                if not reg_number:
-                     raise ValueError(f"Регистрационный номер для {prefix} не получен!")
+            # Вспомогательная функция (определяем внутри или выносим выше)
+            def get_contractor_payload(prefix, role, request_data):
+                citizenship = request_data.get(f'{prefix}_citizenship')
+                is_foreign = (citizenship == 'foreign')
+                web_type = request_data.get(f'{prefix}_type', 'legal')
                 
-                payload["juridical_details"]["foreign_oksm_country_code"] = request_data.get(f'{prefix}_country')
-                
-                if ord_type == "foreign_physical":
-                    payload["juridical_details"]["foreign_inn"] = reg_number
+                if is_foreign:
+                    ord_type = "foreign_juridical" if web_type == "ur" else "foreign_physical"
                 else:
-                    payload["juridical_details"]["foreign_registration_number"] = reg_number
-                
-                payment = request_data.get(f'{prefix}_epayment')
-                if payment:
-                    payload["juridical_details"]["foreign_epayment_method"] = payment
-            else:
-                payload["juridical_details"]["inn"] = inn
+                    ord_type = "juridical" if web_type == "ur" else ("ip" if web_type == "ip" else "physical")
 
-            return payload, (reg_number if is_foreign else inn)
+                inn = "".join([c for c in request_data.get(f'{prefix}_inn', '') if c.isdigit()])
+                reg_number = request_data.get(f'{prefix}_reg_number', '').strip()
 
-        try:
-            adv_select = request.POST.get('advertiser_select')
-            blog_select = request.POST.get('blogger_select')
-
-            # --- Обработка рекламодателя ---
-            if adv_select == 'new':
-                adv_payload, inn = get_contractor_payload('adv', 'advertiser', request.POST)
-                adv_api_id = ord_service.create_person(adv_payload)
-                advertiser = SavedContractor(
-                    external_id=adv_api_id, name=adv_payload["name"], inn=inn, 
-                    role='advertiser', contractor_type=request.POST.get('adv_type'),
-                    citizenship=request.POST.get('adv_citizenship', 'rf'),
-                    country=request.POST.get('adv_country'), phone=adv_payload["juridical_details"]["phone"]
-                )
-            else:
-                advertiser = SavedContractor.objects.get(external_id=adv_select)
-                adv_api_id = advertiser.external_id
-
-            # --- Обработка блогера ---
-            if blog_select == 'new':
-                blog_payload, inn = get_contractor_payload('blog', 'publisher', request.POST)
-                blog_api_id = ord_service.create_person(blog_payload)
-                ord_service.create_pad(
-                    pad_ext_id=f"pad_{uuid.uuid4().hex[:10]}", 
-                    person_ext_id=blog_api_id, 
-                    name=f"YouTube канал: {blog_payload['name']}",
-                    url=channel_url
-                )
-                blogger = SavedContractor(
-                    external_id=blog_api_id, name=blog_payload["name"], inn=inn, 
-                    role='blogger', contractor_type=request.POST.get('blog_type'),
-                    citizenship=request.POST.get('blog_citizenship', 'rf'),
-                    country=request.POST.get('blog_country'), phone=blog_payload["juridical_details"]["phone"]
-                )
-            else:
-                blogger = SavedContractor.objects.get(external_id=blog_select)
-                blog_api_id = blogger.external_id
-                ord_service.find_or_create_pad(person_ext_id=blog_api_id, url=channel_url)
-
-            # --- Работа с договором ---
-            ord_contract = OrdContract.objects.filter(advertiser__external_id=adv_api_id, blogger__external_id=blog_api_id).first()
-            contract_api_id = ord_contract.external_id if ord_contract else f"cnt_{uuid.uuid4().hex[:10]}"
-            
-            if not ord_contract:
-                contract_payload = {
-                    "type": "service", "client_external_id": adv_api_id, "contractor_external_id": blog_api_id,
-                    "date": timezone.now().date().isoformat(), "serial": f"TF-{uuid.uuid4().hex[:5].upper()}",
-                    "subject_type": "org_distribution", "flags": ["vat_included"], "amount": "0.0"
+                payload = {
+                    "external_id": f"{prefix}_{uuid.uuid4().hex[:10]}",
+                    "name": request_data.get(f'{prefix}_name'),
+                    "roles": [role],
+                    "juridical_details": {
+                        "type": ord_type,
+                        "phone": request_data.get(f'{prefix}_phone', '').strip() or "+79991234567"
+                    }
                 }
-                contract_api_id = ord_service.create_contract(contract_api_id, contract_payload)
+                if is_foreign:
+                    if not reg_number: raise ValueError(f"Рег. номер для {prefix} не получен!")
+                    payload["juridical_details"]["foreign_oksm_country_code"] = request_data.get(f'{prefix}_country')
+                    if ord_type == "foreign_physical": payload["juridical_details"]["foreign_inn"] = reg_number
+                    else: payload["juridical_details"]["foreign_registration_number"] = reg_number
+                    payment = request_data.get(f'{prefix}_epayment')
+                    if payment: payload["juridical_details"]["foreign_epayment_method"] = payment
+                else:
+                    payload["juridical_details"]["inn"] = inn
+                return payload, (reg_number if is_foreign else inn)
 
-            # --- Работа с креативом ---
-            media_external_id = ord_service.upload_media(video_file)
-            creative_payload = {
-                "contract_external_ids": [contract_api_id], "kktus": [kktu_code], "name": "Интеграция у блогера",
-                "brand": advertiser.name, "category": f"Реклама {request.POST.get('product_name', 'Продукт')}",
-                "description": "Размещение рекламного видеоролика.", "pay_type": "cpm", "form": "banner",
-                "target_urls": [url.strip() for url in request.POST.get('target_urls', '').split('\n') if url.strip()] or [channel_url],
-                "media_external_ids": [media_external_id]
-            }
-            erid = ord_service.create_creative(f"crv_{uuid.uuid4().hex[:10]}", creative_payload)
+            try:
+                adv_select = request.POST.get('advertiser_select')
+                blog_select = request.POST.get('blogger_select')
 
-            # --- Инвойс ---
-            ord_service.create_invoice(
-                contract_api_id, request.POST.get('invoice_number', f"INV-{uuid.uuid4().hex[:5].upper()}"),
-                timezone.now().date(), timezone.now().date(), timezone.now().date(),
-                float(request.POST.get('invoice_amount', 0)), float(request.POST.get('allocated_amount', 0)),
-                'is_vat' in request.POST
-            )
+                # --- Обработка рекламодателя ---
+                if adv_select == 'new':
+                    adv_payload, inn = get_contractor_payload('adv', 'advertiser', request.POST)
+                    adv_api_id = ord_service.create_person(adv_payload)
+                    advertiser = SavedContractor(external_id=adv_api_id, name=adv_payload["name"], inn=inn, 
+                        role='advertiser', contractor_type=request.POST.get('adv_type'),
+                        citizenship=request.POST.get('adv_citizenship', 'rf'), country=request.POST.get('adv_country'), 
+                        phone=adv_payload["juridical_details"]["phone"])
+                else:
+                    advertiser = SavedContractor.objects.get(external_id=adv_select)
+                    adv_api_id = advertiser.external_id
 
-            with transaction.atomic():
-                if adv_select == 'new': advertiser.save()
-                if blog_select == 'new': blogger.save()
+                # --- Обработка блогера ---
+                if blog_select == 'new':
+                    blog_payload, inn = get_contractor_payload('blog', 'publisher', request.POST)
+                    blog_api_id = ord_service.create_person(blog_payload)
+                    ord_service.create_pad(pad_ext_id=f"pad_{uuid.uuid4().hex[:10]}", person_ext_id=blog_api_id, 
+                        name=f"YouTube канал: {blog_payload['name']}", url=channel_url)
+                    blogger = SavedContractor(external_id=blog_api_id, name=blog_payload["name"], inn=inn, 
+                        role='blogger', contractor_type=request.POST.get('blog_type'),
+                        citizenship=request.POST.get('blog_citizenship', 'rf'), country=request.POST.get('blog_country'), 
+                        phone=blog_payload["juridical_details"]["phone"])
+                else:
+                    blogger = SavedContractor.objects.get(external_id=blog_select)
+                    blog_api_id = blogger.external_id
+                    ord_service.find_or_create_pad(person_ext_id=blog_api_id, url=channel_url)
+
+                # --- Работа с договором и креативом ---
+                ord_contract = OrdContract.objects.filter(advertiser__external_id=adv_api_id, blogger__external_id=blog_api_id).first()
+                contract_api_id = ord_contract.external_id if ord_contract else f"cnt_{uuid.uuid4().hex[:10]}"
+                
                 if not ord_contract:
-                    ord_contract = OrdContract.objects.create(
-                        external_id=contract_api_id, advertiser=advertiser, blogger=blogger, 
-                        number=f"TF-{uuid.uuid4().hex[:5].upper()}", date_sign=timezone.now().date()
-                    )
-                EridIntegration.objects.create(
-                    ord_contract=ord_contract, kktu=kktu_obj, blogger_name=blogger.name, 
-                    advertiser_name=advertiser.name, channel_url=channel_url, 
-                    creative_name=f"{blogger.name} YouTube", erid=erid,
-                    invoice_number=request.POST.get('invoice_number'), invoice_amount=request.POST.get('invoice_amount')
-                )
+                    contract_payload = {"type": "service", "client_external_id": adv_api_id, "contractor_external_id": blog_api_id,
+                        "date": timezone.now().date().isoformat(), "serial": f"TF-{uuid.uuid4().hex[:5].upper()}",
+                        "subject_type": "org_distribution", "flags": ["vat_included"], "amount": "0.0"}
+                    contract_api_id = ord_service.create_contract(contract_api_id, contract_payload)
 
-            messages.success(request, f"Токен {erid} получен!")
-            return redirect(request.path_info)
+                media_external_id = ord_service.upload_media(video_file)
+                creative_payload = {"contract_external_ids": [contract_api_id], "kktus": [kktu_code], "name": "Интеграция у блогера",
+                    "brand": advertiser.name, "category": f"Реклама {request.POST.get('product_name', 'Продукт')}",
+                    "description": "Размещение рекламного видеоролика.", "pay_type": "cpm", "form": "banner",
+                    "target_urls": [url.strip() for url in request.POST.get('target_urls', '').split('\n') if url.strip()] or [channel_url],
+                    "media_external_ids": [media_external_id]}
+                erid = ord_service.create_creative(f"crv_{uuid.uuid4().hex[:10]}", creative_payload)
 
-        except Exception as e:
-            logger.error(f"Ошибка ОРД: {str(e)}", exc_info=True)
-            return render(request, self.template_name, {'error_message': f"Ошибка регистрации: {str(e)}"})
+                with transaction.atomic():
+                    if adv_select == 'new': advertiser.save()
+                    if blog_select == 'new': blogger.save()
+                    if not ord_contract:
+                        ord_contract = OrdContract.objects.create(external_id=contract_api_id, advertiser=advertiser, 
+                            blogger=blogger, number=f"TF-{uuid.uuid4().hex[:5].upper()}", date_sign=timezone.now().date())
+                    EridIntegration.objects.create(ord_contract=ord_contract, kktu=kktu_obj, blogger_name=blogger.name, 
+                        advertiser_name=advertiser.name, channel_url=channel_url, 
+                        creative_name=f"{blogger.name} YouTube", erid=erid)
 
+                messages.success(request, f"Токен {erid} получен!")
+                return redirect(request.path_info)
+
+            except Exception as e:
+                logger.error(f"Ошибка ОРД: {str(e)}", exc_info=True)
+                return render(request, self.template_name, {'error_message': f"Ошибка регистрации: {str(e)}"})
+
+        # --- БЛОК 2: ОБНОВЛЕНИЕ АКТА ---
+        elif action == 'update_invoice':
+            erid = request.POST.get('erid')
+            try:
+                creative = EridIntegration.objects.get(erid=erid)
+                creative.invoice_number = request.POST.get('invoice_number')
+                creative.invoice_date = request.POST.get('invoice_date')
+                creative.invoice_amount = request.POST.get('invoice_amount')
+                creative.save()
+                
+                ord_service = VKORDService(token=self.ord_token)
+                ord_service.create_invoice(creative.ord_contract.external_id, creative.invoice_number,
+                    creative.invoice_date, creative.invoice_date, creative.invoice_date,
+                    float(creative.invoice_amount), float(creative.invoice_amount), False)
+                return JsonResponse({'success': True})
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=400)
+        
+        return HttpResponseBadRequest("Неверное действие")
 
 def delete_contractor(request, external_id):
     """

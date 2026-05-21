@@ -487,8 +487,8 @@ class EridIntegration(models.Model):
     erid = models.CharField("Токен (ERID)", max_length=100, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    external_id = models.CharField(max_length=255, unique=True, verbose_name="Внешний ID креатива в ОРД")
-    video_url = models.URLField("Ссылка на опубликованное видео", blank=True, null=True)
+    external_id = models.CharField(max_length=255, unique=False, verbose_name="Внешний ID креатива в ОРД")
+
 
     class Meta:
         verbose_name = "Интеграция ОРД (ERID)"

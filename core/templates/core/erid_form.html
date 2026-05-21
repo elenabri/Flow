@@ -414,12 +414,8 @@
         const ipOption = document.getElementById(prefix + '_ip_option');
         const countryWrapper = document.getElementById(prefix + '_country_wrapper');
 
-        if (isForeign) {
-            innInput.classList.add('d-none');
-    innInput.required = false;
-    
-    regInput.classList.remove('d-none');
-    regInput.required = true;
+        regInput.disabled = false; 
+            
             // Сначала показываем обертку, чтобы элемент получил размеры в DOM
             if (countryWrapper) countryWrapper.classList.remove('d-none');
             
@@ -434,7 +430,7 @@
             
             if (ipOption) ipOption.classList.add('d-none');
             if (type === 'ip') document.getElementById(prefix + '_type').value = 'ur';
-        } else {
+        } else { 
             innInput.classList.remove('d-none');
     innInput.required = (type !== 'fiz'); // Или ваша логика обязательности
     

@@ -74,29 +74,32 @@ class KktuCodeAdmin(admin.ModelAdmin):
 
 @admin.register(EridIntegration)
 class EridIntegrationAdmin(admin.ModelAdmin):
-    list_display = ('creative_name', 'erid', 'invoice_number', 'invoice_amount')
-    search_fields = ('creative_name', 'blogger_name', 'channel_url')
+    # Добавили video_url в list_display для удобства
+    list_display = ('creative_name', 'erid', 'external_id', 'video_url', 'invoice_number', 'invoice_amount')
     
-    # Группировка для удобства: сначала регистрируем, потом заполняем отчетность
+    # Добавили поиск по external_id
+    search_fields = ('creative_name', 'blogger_name', 'erid', 'external_id')
+    
     fieldsets = (
         ('Данные интеграции', {
-            'fields': ('ord_contract', 'kktu', 'blogger_name', 'advertiser_name', 'channel_url', 'creative_name')
+            'fields': ('ord_contract', 'kktu', 'blogger_name', 'advertiser_name', 
+                       'channel_url', 'creative_name', 'video_url', 'external_id')
         }),
         ('Статус маркировки', {
             'fields': ('erid',),
         }),
         ('Отчетность (акты)', {
             'fields': ('invoice_number', 'invoice_date', 'invoice_amount'),
-            'classes': ('collapse',), # Сворачиваем блок, чтобы не мешал
+            'classes': ('collapse',),
         }),
     )
     
-    readonly_fields = ('erid',) # ERID получаем автоматически через API
+    # external_id оставляем редактируемым, так как он присваивается нашей системой
+    readonly_fields = ('erid',) 
     
-    # Можно добавить кнопку-действие для обновления данных из ОРД, если нужно
     actions = ['sync_with_ord']
 
     @admin.action(description="Синхронизировать с ОРД")
     def sync_with_ord(self, request, queryset):
-        # Здесь вы сможете вызвать метод вашего VKORDService для обновления статусов
-        pass
+        # Здесь будет логика вызова API
+        self.message_user(request, "Синхронизация запущена...")

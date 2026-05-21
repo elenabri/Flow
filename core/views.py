@@ -1425,6 +1425,7 @@ class EridManagementView(View):
         # --- БЛОК 2: ОБНОВЛЕНИЕ АКТА ---
         elif action == 'update_invoice':
             integration_id = request.POST.get('integration_id')
+            print(f"DEBUG: POST DATA for invoice: {request.POST}")
             try:
                 # 1. Получаем объект через ID
                 creative = EridIntegration.objects.get(id=integration_id)
@@ -1452,7 +1453,10 @@ class EridManagementView(View):
                     messages.success(request, "Данные акта успешно обновлены в ОРД!")
                     return redirect('core:erid_management')
                 else:
-                    return render(request, self.template_name, {'error_message': f"Ошибка валидации: {form.errors}"})
+                    logger.error(f"Форма акта невалидна: {form.errors}")
+                    return render(request, self.template_name, {
+                        'error_message': f"Ошибки заполнения акта: {form.errors.as_text()}"
+                    })
             
             except Exception as e:
                 logger.error(f"Ошибка обновления акта: {str(e)}", exc_info=True)

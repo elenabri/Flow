@@ -1325,7 +1325,13 @@ class EridManagementView(View):
             is_foreign = (citizenship == 'foreign')
             web_type = request_data.get(f'{prefix}_type', 'legal')
             
-            # Определение типа для ОРД
+            # Получаем номер из формы (пробуем разные варианты имен)
+            reg_number = request_data.get(f'{prefix}_reg_number', '').strip()
+            if not reg_number:
+                # Если reg_number пуст, возможно, в форме поле называется иначе
+                reg_number = request_data.get(f'{prefix}_inn', '').strip()
+
+            # Определение типа
             if is_foreign:
                 ord_type = "foreign_juridical" if web_type == "ur" else "foreign_physical"
             else:
@@ -1342,11 +1348,15 @@ class EridManagementView(View):
             }
 
             if is_foreign:
+                if not reg_number:
+                    raise ValueError(f"Для иностранного лица {prefix} не передан регистрационный номер (проверьте поле 'reg_number' в HTML)")
+                
                 payload["juridical_details"]["foreign_oksm_country_code"] = request_data.get(f'{prefix}_country')
+                
                 if ord_type == "foreign_physical":
-                    payload["juridical_details"]["foreign_inn"] = request_data.get(f'{prefix}_reg_number', '').strip()
+                    payload["juridical_details"]["foreign_inn"] = reg_number
                 else:
-                    payload["juridical_details"]["foreign_registration_number"] = request_data.get(f'{prefix}_reg_number', '').strip()
+                    payload["juridical_details"]["foreign_registration_number"] = reg_number
                 
                 payment = request_data.get(f'{prefix}_epayment')
                 if payment:

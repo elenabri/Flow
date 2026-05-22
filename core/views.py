@@ -1308,6 +1308,7 @@ class EridManagementView(View):
 
     def post(self, request):
         action = request.POST.get('action')
+        service = VKORDService(token=self.get_ord_token())
         # --- БЛОК 2: ОБНОВЛЕНИЕ АКТА (перенесли вверх для безопасности) ---
         # --- БЛОК 2: ОБНОВЛЕНИЕ АКТА ---
         if action == 'update_invoice':

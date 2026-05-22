@@ -326,6 +326,7 @@
     <div class="modal-dialog">
         <form class="modal-content" method="POST" action="{% url 'core:erid_management' %}">
             {% csrf_token %}
+                <input type="hidden" name="action" value="update_invoice">
             <input type="hidden" name="integration_id" id="modalIntegrationId">
             <div class="modal-header"><h5 class="modal-title">Прикрепить акт</h5></div>
             <div class="modal-body">

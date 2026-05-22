@@ -1360,7 +1360,7 @@ class EridManagementView(View):
                                 },
                                 "creatives": [
                                     {
-                                        "creative_external_id": updated_creative.external_id,
+                                        "creative_external_id": "crv_b88e134063",
                                         "platforms": [
                                             {
                                                 "pad_external_id": "pad_a96994cc47", # Нужно взять из настроек или интеграции

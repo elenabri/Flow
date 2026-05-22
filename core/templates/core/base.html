@@ -82,6 +82,66 @@
     .navbar-toggler-icon {
     pointer-events: none;
 }
+    #custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    cursor: pointer;
+}
+
+.custom-modal-alert {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #64748b;
+}
+
+.modal-alert-icon {
+    font-size: 50px;
+    margin-bottom: 15px;
+}
+
+.modal-action-btn {
+    background: var(--mp-accent);
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.modal-action-btn:hover {
+    background: #2563eb;
+}
+
+/* А внутри самого попапа возвращаем стандартный курсор, чтобы текст можно было выделять */
+.custom-modal-alert {
+    cursor: default;
+}
     
 
     /* Десктопная линия под активным пунктом */
@@ -266,36 +326,39 @@
 
     <!-- Отдельный скрипт для логики скрытия меню (адаптирован под iPhone) -->
     <script>
+    // Закрытие модального окна
+    function closeAlertModal() {
+        const modal = document.getElementById('custom-modal-overlay');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const navbarCollapse = document.getElementById('mainNav');
         const navbarToggler = document.querySelector('.navbar-toggler');
 
         if (navbarCollapse && navbarToggler) {
-            // Фикс для iOS Safari: явно разрешаем обработку кликов на иконке и toggler
-            navbarToggler.style.cursor = 'pointer';
-            const togglerIcon = navbarToggler.querySelector('.navbar-toggler-icon');
-            if (togglerIcon) {
-                togglerIcon.style.pointerEvents = 'none';
-            }
+            // Закрытие меню при клике по пункту меню (на мобильных)
+            navbarCollapse.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
+                    if (bsCollapse) bsCollapse.hide();
+                });
+            });
 
-            // Добавляем поддержку клика по всему body в iOS
-            document.body.style.cursor = 'pointer';
-
-            // Закрытие меню при клике вне его области
+            // Закрытие при клике вне меню
             document.addEventListener('click', function (event) {
                 const isMenuOpen = navbarCollapse.classList.contains('show');
-                const clickedInsideMenu = navbarCollapse.contains(event.target);
-                const clickedToggler = navbarToggler.contains(event.target);
-
-                if (isMenuOpen && !clickedInsideMenu && !clickedToggler) {
-                    // Используем встроенный метод Bootstrap для безопасного закрытия
-                    const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse) || new bootstrap.Collapse(navbarCollapse, { toggle: false });
-                    bsCollapse.hide();
+                if (isMenuOpen && !navbarCollapse.contains(event.target) && !navbarToggler.contains(event.target)) {
+                    const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
+                    if (bsCollapse) bsCollapse.hide();
                 }
             });
         }
     });
-    </script>
+</script>
+    
 
     {% block extra_js %}{% endblock %}
 </body>

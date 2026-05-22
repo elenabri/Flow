@@ -1372,6 +1372,7 @@ class EridManagementView(View):
                                                     "vat": "0.00",
                                                     "including_vat": str(updated_creative.invoice_amount)
                                                 },
+                                                "amount_per_event": "0.1",
                                                 "date_start_planned": "2026-05-21",
                                                 "date_end_planned": "2026-05-22",
                                                 "date_start_actual": "2026-05-21",

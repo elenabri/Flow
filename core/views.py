@@ -1385,12 +1385,19 @@ class EridManagementView(View):
                     url = f"{service.BASE_URL}/v4/invoice/{integration.external_id}"
                     response = service.session.put(url, json=data)
                     
+                    logger.info(f"DEBUG: URL: {url}")
+                    logger.info(f"DEBUG: Data Sent: {data}")
+                    logger.info(f"DEBUG: Status Code: {response.status_code}")
+                    logger.info(f"DEBUG: Response Text: {response.text}")
+
                     if response.status_code in [200, 204]:
                         messages.success(request, "Акт успешно обновлен в ОРД!")
                         return redirect('core:erid_management')
                     else:
-                        logger.error(f"Ошибка ОРД: {response.text}")
-                        return render(request, self.template_name, {'error_message': f"ОРД вернул ошибку: {response.text}"})
+                        # Здесь мы гарантированно увидим причину ошибки в логах
+                        error_msg = f"ОРД ошибка {response.status_code}: {response.text}"
+                        logger.error(error_msg)
+                        return render(request, self.template_name, {'error_message': error_msg})
                 
                 else:
                     return render(request, self.template_name, {'error_message': "Ошибка валидации формы"})

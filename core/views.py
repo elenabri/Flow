@@ -1334,7 +1334,7 @@ class EridManagementView(View):
 
 
                     data = {
-                        "contract_external_id": updated_creative.ord_contract.external_id,
+                        "contract_external_id": "cnt_58ba736ba4",
                         "date": updated_creative.invoice_date.isoformat(),
                         "serial": updated_creative.invoice_number,
                         "date_start": updated_creative.invoice_date.isoformat(),

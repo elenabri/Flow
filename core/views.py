@@ -1346,6 +1346,12 @@ class EridManagementView(View):
                         },
                         "items": [
                             {
+                                "amount": {
+                                    "excluding_vat": str(excluding_vat),
+                                    "vat_rate": "0",
+                                    "vat": "0.00",
+                                    "including_vat": str(updated_creative.invoice_amount)
+                                },
                                 "creatives": [
                                     {
                                         "creative_external_id": updated_creative.external_id,

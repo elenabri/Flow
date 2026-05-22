@@ -111,37 +111,38 @@ logger = logging.getLogger(__name__)
 @transaction.atomic
 def register(request):
     if request.method == 'POST':
+        # 1. Сначала получаем email, чтобы проверить наличие пользователя
+        email = request.POST.get('email', '').lower()
+        existing_user = User.objects.filter(email=email).first()
+
+        # 2. Если юзер существует и он неактивен — "подхватываем" его
+        if existing_user and not existing_user.is_active:
+            user = existing_user
+            pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+            user.set_password(pwd)
+            user.save()
+            send_verification_email(user, pwd, request)
+            return redirect('core:registration_success')
+        
+        # 3. Если юзер существует и АКТИВЕН — стандартная ошибка
+        if existing_user and existing_user.is_active:
+            messages.error(request, "Пользователь с таким email уже активен.")
+            return redirect('core:register')
+
+        # 4. Если юзера нет — продолжаем обычную регистрацию
         form = RegistrationForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                email = form.cleaned_data.get('email').lower()
+                user = form.save(commit=False)
+                user.email = email
+                user.username = email
+                pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+                user.set_password(pwd)
+                user.is_active = False
+                user.role = form.cleaned_data.get('role')
+                user.save()
                 
-                # --- ДОБАВЛЯЕМ ЛОГИКУ ПОИСКА ---
-                # Проверяем, не создавали ли мы этого пользователя заранее
-                user = User.objects.filter(email=email).first()
-                
-                if user:
-                    # Если пользователь уже активен — значит он уже зарегистрирован
-                    if user.is_active:
-                        messages.error(request, "Пользователь с таким email уже активен.")
-                        return redirect('core:register')
-                    
-                    # Если пользователь есть, но не активен (ваш "предварительный" аккаунт)
-                    # Мы не меняем его роль или данные, просто даем ему пароль
-                    pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
-                    user.set_password(pwd)
-                    user.save()
-                else:
-                    # --- ЕСЛИ ПОЛЬЗОВАТЕЛЯ НЕТ, СОЗДАЕМ НОВОГО ---
-                    user = form.save(commit=False)
-                    user.email = email
-                    user.username = email
-                    pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
-                    user.set_password(pwd)
-                    user.is_active = False 
-                    user.role = form.cleaned_data.get('role')
-                    user.save()
-                
+                role = user.role
                 if role == 'blogger':
                     BloggerProfile.objects.create(
                         user=user,
@@ -163,32 +164,26 @@ def register(request):
                         user=user, 
                         company_name=form.cleaned_data.get('company_name') or "Новый бренд"
                     )
-                    
                     product_title = form.cleaned_data.get('product_title')
                     if product_title:
                         ProductAd.objects.create(
                             advertiser=adv, 
                             name=product_title,
-                            short_desc = request.POST.get('short_description', ''),
+                            short_desc=request.POST.get('short_description', ''),
                             category=", ".join(request.POST.getlist('topics')),
                             image=request.FILES.get('product_image'),
                             link_wb=form.cleaned_data.get('product_link'),
                             is_active=True
                         )
 
-                # ОТПРАВКА ПИСЬМА
                 send_verification_email(user, pwd, request)
                 return redirect('core:registration_success')
 
             except Exception as e:
-                # !!! КРИТИЧЕСКИЙ КРАШ-ТЕСТ ДЛЯ ПОИСКА ОШИБКИ !!!
-                # Выводим ошибку в логи Render
-                logger.error(f"Критическая ошибка при регистрации пользователя: {str(e)}", exc_info=True)
+                logger.error(f"Ошибка при создании профиля: {str(e)}", exc_info=True)
                 messages.error(request, f"Ошибка при создании профиля: {e}")
-                
         else:
-            # Если сама форма невалидна (например, email уже занят)
-            logger.warning(f"Форма не прошла валидацию: {form.errors.as_json()}")
+            # Обработка ошибок формы
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"{form.fields[field].label or field}: {error}")

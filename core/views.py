@@ -1514,9 +1514,7 @@ class EridManagementView(View):
                     if blog_select == 'new': blogger.save()
                     if not ord_contract:
                         ord_contract = OrdContract.objects.create(external_id=contract_api_id, advertiser=advertiser, blogger=blogger, number=f"TF-{uuid.uuid4().hex[:5].upper()}", date_sign=timezone.now().date())
-                    EridIntegration.objects.create(ord_contract=ord_contract, kktu=kktu_obj, blogger_name=blogger.name, creative_external_id=creative_temp_id,
-                        advertiser_name=advertiser.name, channel_url=channel_url, 
-                        creative_name=f"{blogger.name} YouTube", erid=erid)
+                    EridIntegration.objects.create(ord_contract=ord_contract, external_id=creative_temp_id,  kktu=kktu_obj, blogger_name=blogger.name, advertiser_name=advertiser.name, channel_url=channel_url, creative_name=f"{blogger.name} YouTube",  erid=erid)
 
                 messages.success(request, f"Токен {erid} получен!")
                 return redirect(request.path_info)

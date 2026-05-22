@@ -92,6 +92,34 @@
         border-radius: 8px !important;
         padding: 0.6rem 0.75rem !important;
     }
+    /* Убираем лишние отступы у групп полей */
+.form-group {
+    margin-bottom: 0.5rem; /* было 1rem или больше */
+}
+
+/* Делаем поля ввода тоньше и аккуратнее */
+.form-control, .form-select {
+    padding: 0.25rem 0.5rem !important; /* уменьшаем внутренние отступы */
+    font-size: 0.875rem !important;      /* чуть уменьшаем шрифт */
+    height: auto !important;             /* убираем фиксированную высоту */
+    line-height: 1.5;
+}
+
+/* Компактные подписи к полям */
+label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 0.1rem;
+    display: block;
+}
+
+/* Если у вас поля стоят в ряд - используем Grid */
+.compact-form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
 
     .delete-item-btn { color: var(--bs-danger); }
 </style>

@@ -1413,7 +1413,7 @@ class EridManagementView(View):
                 return render(request, self.template_name, {'error_message': f"Системная ошибка: {str(e)}"})
         
         # --- БЛОК 1: РЕГИСТРАЦИЯ КРЕАТИВА ---
-        elif action == 'register_creative':
+        elif action == 'register_creative' or action is None:
             # 0. Валидация
             kktu_code = request.POST.get('kktu_code', '30.15.1')
             kktu_obj = KktuCode.objects.filter(code=kktu_code).first()
@@ -1506,15 +1506,17 @@ class EridManagementView(View):
                     "description": "Размещение рекламного видеоролика.", "pay_type": "cpm", "form": "banner",
                     "target_urls": [url.strip() for url in request.POST.get('target_urls', '').split('\n') if url.strip()] or [channel_url],
                     "media_external_ids": [media_external_id]}
-                creative_temp_id = f"crv_{uuid.uuid4().hex[:10]}"
-                erid = ord_service.create_creative(creative_temp_id, creative_payload)
+                erid = ord_service.create_creative(f"crv_{uuid.uuid4().hex[:10]}", creative_payload)
 
                 with transaction.atomic():
                     if adv_select == 'new': advertiser.save()
                     if blog_select == 'new': blogger.save()
                     if not ord_contract:
-                        ord_contract = OrdContract.objects.create(external_id=contract_api_id, advertiser=advertiser, blogger=blogger, number=f"TF-{uuid.uuid4().hex[:5].upper()}", date_sign=timezone.now().date())
-                    EridIntegration.objects.create(ord_contract=ord_contract, external_id=creative_temp_id,  kktu=kktu_obj, blogger_name=blogger.name, advertiser_name=advertiser.name, channel_url=channel_url, creative_name=f"{blogger.name} YouTube",  erid=erid)
+                        ord_contract = OrdContract.objects.create(external_id=contract_api_id, advertiser=advertiser, 
+                            blogger=blogger, number=f"TF-{uuid.uuid4().hex[:5].upper()}", date_sign=timezone.now().date())
+                    EridIntegration.objects.create(ord_contract=ord_contract, kktu=kktu_obj, blogger_name=blogger.name, 
+                        advertiser_name=advertiser.name, channel_url=channel_url, 
+                        creative_name=f"{blogger.name} YouTube", erid=erid)
 
                 messages.success(request, f"Токен {erid} получен!")
                 return redirect(request.path_info)

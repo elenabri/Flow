@@ -4,34 +4,71 @@
 
 {% block extra_css %}
 <style>
-    :root {
-        --primary: #0d6efd;
-        --bg-app: #f1f5f9;
-        --card-bg: #ffffff;
-        --text-main: #1e293b;
-        --text-muted: #64748b;
-        --border: #e2e8f0;
-        --radius: 8px;
+  .erid-card { 
+        border: 1px solid var(--mp-border); 
+        border-radius: 12px; 
+        background: #ffffff;
     }
-    body { background-color: var(--bg-app); color: var(--text-main); font-size: 0.9rem; }
-    
-    /* Карточки */
-    .erid-card { border: none; border-radius: var(--radius); box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem; background: var(--card-bg); }
-    
-    /* Секции формы */
-    .form-section-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin: 1.5rem 0 1rem; font-weight: 800; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
-    
-    /* Поля */
-    .form-control, .form-select { border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.9rem; }
-    .bg-custom-light { background: #f8fafc; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); }
-    
-    /* Таблица */
-    .table thead th { font-size: 0.75rem; text-transform: uppercase; background: #f8fafc; color: var(--text-muted); padding: 1rem; }
-    .table td { padding: 1rem; vertical-align: middle; }
-    .erid-style { font-family: 'Courier New', monospace; color: var(--primary); background: #eff6ff; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85rem; }
-    
-    /* Кнопки */
-    .btn-primary { background-color: var(--primary); border: none; padding: 0.6rem 1rem; }
+    .blogger-row { 
+        background-color: var(--mp-bg); 
+        font-weight: 700; 
+        border-left: 4px solid var(--mp-accent); 
+    }
+    .erid-style { 
+        font-family: monospace; 
+        color: var(--mp-text-main); 
+        background: #e2e8f0; 
+        padding: 4px 8px; 
+        border-radius: 6px; 
+        font-size: 0.9rem; 
+        border: 1px solid var(--mp-border); 
+    }
+    .form-section-title { 
+        font-size: 0.8rem; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px; 
+        color: var(--mp-text-muted); 
+        margin-top: 20px; 
+        margin-bottom: 10px; 
+        font-weight: 700; 
+    }
+    .bg-custom-light {
+        background-color: #f8fafc;
+    }
+    /* Стили для кастомизации выпадающих списков под общий дизайн */
+    .form-select-custom {
+        border: 1px solid var(--mp-border);
+        border-radius: 6px;
+        background-color: #ffffff;
+        font-size: 0.9rem;
+    }
+    .form-select-custom:focus {
+        border-color: var(--mp-accent);
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+    /* Фикс интеграции TomSelect с Bootstrap 5 стилями */
+    .ts-wrapper.form-select-custom {
+        padding: 0 !important;
+        height: auto;
+        box-shadow: none;
+    }
+    .ts-wrapper .ts-control {
+        border: none !important;
+        padding: 0.45rem 2.25rem 0.45rem 0.75rem !important;
+        border-radius: 6px !important;
+    }
+    /* Стиль для кнопки удаления элементов из сохраненного списка */
+    .delete-item-btn {
+        cursor: pointer;
+        color: var(--bs-danger);
+        transition: transform 0.2s;
+    }
+    .delete-item-btn:hover {
+        transform: scale(1.15);
+    }
+    /* Стилизация выпадающего списка TomSelect для скроллинга большого объема ККТУ */
+    .ts-dropdown .dropdown-content {
+        max-height: 350px !important;
     </style>
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 {% endblock %}

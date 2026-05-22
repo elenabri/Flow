@@ -1317,53 +1317,74 @@ class EridManagementView(View):
             integration_id = request.POST.get('integration_id')
             try:
                 integration = EridIntegration.objects.get(id=integration_id)
-                
-                # Работа с формой
                 form = CreativeInvoiceForm(request.POST, instance=integration)
                 
-                # ИСПОЛЬЗУЕМ ПРАВИЛЬНОЕ ПОЛЕ: integration.external_id
-                url = f"{service.BASE_URL}/v3/creative/{integration.external_id}"
-                
-                creative_in_ord = service.session.get(url).json()
-                
-                # 2. Проверка данных
-                if not creative_in_ord.get("kktus") or not creative_in_ord.get("contract_external_ids"):
-                    return render(request, self.template_name, {'error_message': "Креатив в ОРД не прошел валидацию."})
-                
-                response = service.session.put(url, json=data)
-                if response.status_code != 200:
-                    print(f"ПОЛНЫЙ ОТВЕТ ОРД: {response.text}") # <--- ЭТО ВАЖНО!
-                    return render(request, 'error.html', {'message': f"Ошибка: {response.text}"})
-                
-            except Exception as e:
-                logger.error(f"Ошибка ОРД: {str(e)}", exc_info=True)
-                return render(request, self.template_name, {'error_message': f"Ошибка регистрации: {str(e)}"})
-            
-    
-                
                 if form.is_valid():
-                    with transaction.atomic():
-                        updated_creative = form.save()
-                    # Синхронизация с ОРД
-                    ord_service = VKORDService(token=self.ord_token)
-                    ord_service.create_invoice(
-                        contract_ext_id=updated_creative.ord_contract.external_id, 
-                        invoice_number=updated_creative.invoice_number,
-                        date=updated_creative.invoice_date.isoformat(),
-                        start_date=updated_creative.invoice_date.isoformat(),
-                        end_date=updated_creative.invoice_date.isoformat(),
-                        amount=float(updated_creative.invoice_amount), 
-                        vat_amount=float(updated_creative.invoice_amount), # Уточните, есть ли у вас расчет НДС
-                        is_vat=False
-                    )
+                    updated_creative = form.save()
                     
-                    messages.success(request, "Данные акта успешно обновлены в ОРД!")
-                    return redirect('core:erid_management')
+                    # Формируем структуру согласно документации v4/invoice
+                    # ВАЖНО: Рассчитайте НДС, если он 20%, то VAT = amount * 20 / 120
+                    amount_val = float(updated_creative.invoice_amount)
+                    vat_val = round(amount_val * 20 / 120, 2)
+                    excluding_vat = round(amount_val - vat_val, 2)
+
+                    data = {
+                        "contract_external_id": updated_creative.ord_contract.external_id,
+                        "date": updated_creative.invoice_date.isoformat(),
+                        "serial": updated_creative.invoice_number,
+                        "date_start": updated_creative.invoice_date.isoformat(),
+                        "date_end": updated_creative.invoice_date.isoformat(),
+                        "amount": {
+                            "services": {
+                                "excluding_vat": str(excluding_vat),
+                                "vat_rate": "20",
+                                "vat": str(vat_val),
+                                "including_vat": str(amount_val)
+                            }
+                        },
+                        "items": [
+                            {
+                                "creatives": [
+                                    {
+                                        "creative_external_id": updated_creative.external_id,
+                                        "platforms": [
+                                            {
+                                                "pad_external_id": "YOUR_PAD_ID", # Нужно взять из настроек или интеграции
+                                                "shows_count": 0,
+                                                "invoice_shows_count": 0,
+                                                "amount": {
+                                                    "excluding_vat": str(excluding_vat),
+                                                    "vat_rate": "20",
+                                                    "vat": str(vat_val),
+                                                    "including_vat": str(amount_val)
+                                                },
+                                                "pay_type": "cpm"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+
+                    # Использование PUT с external_id
+                    # Предполагаем, что integration.external_id - это и есть ID акта в ОРД
+                    url = f"{service.BASE_URL}/v4/invoice/{integration.external_id}"
+                    response = service.session.put(url, json=data)
+                    
+                    if response.status_code in [200, 204]:
+                        messages.success(request, "Акт успешно обновлен в ОРД!")
+                        return redirect('core:erid_management')
+                    else:
+                        logger.error(f"Ошибка ОРД: {response.text}")
+                        return render(request, self.template_name, {'error_message': f"ОРД вернул ошибку: {response.text}"})
+                
                 else:
-                    return render(request, self.template_name, {'error_message': f"Ошибки: {form.errors.as_text()}"})
+                    return render(request, self.template_name, {'error_message': "Ошибка валидации формы"})
+
             except Exception as e:
-                logger.error(f"Ошибка обновления: {e}", exc_info=True)
-                return render(request, self.template_name, {'error_message': f"Ошибка: {str(e)}"})
+                logger.error(f"Критическая ошибка обновления акта: {str(e)}", exc_info=True)
+                return render(request, self.template_name, {'error_message': f"Системная ошибка: {str(e)}"})
         
         # --- БЛОК 1: РЕГИСТРАЦИЯ КРЕАТИВА ---
         elif action == 'register_creative' or action is None:

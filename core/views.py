@@ -1324,9 +1324,14 @@ class EridManagementView(View):
                     
                     # Формируем структуру согласно документации v4/invoice
                     # ВАЖНО: Рассчитайте НДС, если он 20%, то VAT = amount * 20 / 120
-                    amount_val = float(updated_creative.invoice_amount)
-                    vat_val = round(amount_val * 20 / 120, 2)
-                    excluding_vat = round(amount_val - vat_val, 2)
+                    total = float(updated_creative.invoice_amount)
+                    vat_val = round(total * 0.2 / 1.2, 2)
+                    ex_vat_val = round(total - vat_val, 2)
+                    diff = total - (ex_vat_val + vat_val)
+                    ex_vat_val = round(ex_vat_val + diff, 2)
+
+
+
 
                     data = {
                         "contract_external_id": updated_creative.ord_contract.external_id,
@@ -1338,26 +1343,26 @@ class EridManagementView(View):
                         "contractor_role": "publisher",
                         "amount": {
                             "services": {
-                                "excluding_vat": str(updated_creative.invoice_amount),
+                                "excluding_vat": "{:.2f}".format(ex_vat_val),
                                 "vat_rate": "0",
-                                "vat": "0.00",
-                                "including_vat": str(updated_creative.invoice_amount)
+                                "vat": "{:.2f}".format(vat_val),
+                                "including_vat": "{:.2f}".format(total)
                             }
                         },
                         "items": [
                             {
                                 "amount": {
-                                    "excluding_vat": str(excluding_vat),
+                                    "excluding_vat": "{:.2f}".format(ex_vat_val),
                                     "vat_rate": "0",
-                                    "vat": "0.00",
-                                    "including_vat": str(updated_creative.invoice_amount)
+                                    "vat": "{:.2f}".format(vat_val),
+                                   "including_vat": "{:.2f}".format(total)
                                 },
                                 "creatives": [
                                     {
                                         "creative_external_id": updated_creative.external_id,
                                         "platforms": [
                                             {
-                                                "pad_external_id": "YOUR_PAD_ID", # Нужно взять из настроек или интеграции
+                                                "pad_external_id": "pad_fc4fb19ed2", # Нужно взять из настроек или интеграции
                                                 "shows_count": 0,
                                                 "invoice_shows_count": 0,
                                                 "amount": {

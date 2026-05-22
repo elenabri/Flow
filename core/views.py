@@ -1325,8 +1325,8 @@ class EridManagementView(View):
                     # Формируем структуру согласно документации v4/invoice
                     # ВАЖНО: Рассчитайте НДС, если он 20%, то VAT = amount * 20 / 120
                     total = float(updated_creative.invoice_amount)
-                    vat_val = round(total * 0.2 / 1.2, 2)
-                    ex_vat_val = round(total - vat_val, 2)
+                    vat_val = 0.00
+                    ex_vat_val = total
                     diff = total - (ex_vat_val + vat_val)
                     ex_vat_val = round(ex_vat_val + diff, 2)
 
@@ -1345,7 +1345,7 @@ class EridManagementView(View):
                             "services": {
                                 "excluding_vat": "{:.2f}".format(ex_vat_val),
                                 "vat_rate": "0",
-                                "vat": "{:.2f}".format(vat_val),
+                                "vat":"0.00",
                                 "including_vat": "{:.2f}".format(total)
                             }
                         },
@@ -1354,7 +1354,7 @@ class EridManagementView(View):
                                 "amount": {
                                     "excluding_vat": "{:.2f}".format(ex_vat_val),
                                     "vat_rate": "0",
-                                    "vat": "{:.2f}".format(vat_val),
+                                    "vat": "0.00",
                                    "including_vat": "{:.2f}".format(total)
                                 },
                                 "creatives": [

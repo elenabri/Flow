@@ -4,81 +4,34 @@
 
 {% block extra_css %}
 <style>
-:root {
-    --primary: #0d6efd;
-    --bg-app: #f1f5f9;
-    --card-bg: #ffffff;
-    --text-main: #1e293b;
-    --text-muted: #64748b;
-    --border: #e2e8f0;
-    --radius: 8px;
-}
-
-body { background-color: var(--bg-app); color: var(--text-main); font-size: 0.9rem; }
-
-/* Карточки */
-.erid-card { 
-    border: none; 
-    border-radius: var(--radius); 
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    margin-bottom: 1rem;
-    padding: 1.25rem;
-}
-
-/* Заголовки разделов */
-.form-section-title {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
-    margin: 1.5rem 0 0.75rem;
-    font-weight: 800;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.25rem;
-}
-
-/* Компактные формы */
-.form-control, .form-select {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.85rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-}
-
-.bg-custom-light { background: #f8fafc; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); }
-
-/* Таблица */
-.table thead th {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    background: #f8fafc !important;
-    color: var(--text-muted);
-    padding: 0.75rem;
-}
-.table td { padding: 0.75rem; font-size: 0.85rem; }
-
-.erid-style { 
-    font-family: monospace; 
-    color: var(--primary); 
-    background: #eff6ff; 
-    padding: 2px 6px; 
-    border-radius: 4px; 
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-
-/* Мобильная оптимизация */
-@media (max-width: 768px) {
-    .erid-card { padding: 1rem; }
-    .container-fluid { padding: 0.5rem !important; }
-    /* Скрываем лишние колонки в таблице на узких экранах, если нужно */
-}
-
-/* Дополнительные правки */
-.btn { padding: 0.4rem 1rem; font-size: 0.85rem; border-radius: var(--radius); }
-.ts-control { border-radius: var(--radius) !important; padding: 0.4rem 0.6rem !important; }
-
-</style>
+    :root {
+        --primary: #0d6efd;
+        --bg-app: #f1f5f9;
+        --card-bg: #ffffff;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --radius: 8px;
+    }
+    body { background-color: var(--bg-app); color: var(--text-main); font-size: 0.9rem; }
+    
+    /* Карточки */
+    .erid-card { border: none; border-radius: var(--radius); box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem; background: var(--card-bg); }
+    
+    /* Секции формы */
+    .form-section-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin: 1.5rem 0 1rem; font-weight: 800; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
+    
+    /* Поля */
+    .form-control, .form-select { border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.9rem; }
+    .bg-custom-light { background: #f8fafc; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); }
+    
+    /* Таблица */
+    .table thead th { font-size: 0.75rem; text-transform: uppercase; background: #f8fafc; color: var(--text-muted); padding: 1rem; }
+    .table td { padding: 1rem; vertical-align: middle; }
+    .erid-style { font-family: 'Courier New', monospace; color: var(--primary); background: #eff6ff; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 0.85rem; }
+    
+    /* Кнопки */
+    .btn-primary { background-color: var(--primary); border: none; padding: 0.6rem 1rem; }
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 {% endblock %}
 

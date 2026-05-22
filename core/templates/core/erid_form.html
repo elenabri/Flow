@@ -4,124 +4,80 @@
 
 {% block extra_css %}
 <style>
-    /* Переменные для удобства (если они уже есть в base.html, удалите их отсюда) */
-    :root {
-        --mp-border: #e2e8f0;
-        --mp-bg: #f8fafc;
-        --mp-accent: #0d6efd;
-        --mp-text-main: #1e293b;
-        --mp-text-muted: #64748b;
-    }
-
-    body { background-color: #f1f5f9; }
-
-    .erid-card { 
-        border: none !important; 
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-        border-radius: 16px !important;
-        background: #ffffff;
-        margin-bottom: 1.5rem;
-    }
-
-    .blogger-row { background-color: #ffffff; }
-
-    .erid-style { 
-        font-family: 'Courier New', Courier, monospace; 
-        color: var(--mp-accent);
-        background: #eff6ff; 
-        padding: 4px 10px; 
-        border-radius: 6px; 
-        font-size: 0.85rem; 
-        font-weight: 600;
-        border: 1px solid #bfdbfe;
-        display: inline-block;
-    }
-
-    .form-section-title { 
-        font-size: 0.75rem; 
-        text-transform: uppercase; 
-        letter-spacing: 0.1em; 
-        color: var(--mp-text-muted); 
-        margin: 24px 0 12px 0;
-        font-weight: 800; 
-        border-bottom: 1px solid var(--mp-border);
-        padding-bottom: 4px;
-    }
-
-    .bg-custom-light {
-        background-color: #f8fafc;
-        border: 1px solid #f1f5f9 !important;
-    }
-
-    .form-control, .form-select-custom {
-        padding: 0.6rem 0.75rem;
-        border: 1px solid #cbd5e1;
-        border-radius: 8px !important;
-        font-size: 0.95rem;
-    }
-
-    .form-control:focus, .form-select-custom:focus {
-        border-color: var(--mp-accent);
-        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
-    }
-
-    /* Улучшение для мобильных */
-    @media (max-width: 768px) {
-        .container-fluid { padding: 0.5rem !important; }
-        .erid-card { padding: 1.25rem !important; }
-        .card-header { padding: 1rem !important; }
-        /* Делаем таблицу более читаемой на узких экранах */
-        .table-responsive { border: none; }
-    }
-
-    .btn { border-radius: 8px !important; padding: 0.6rem 1.2rem; }
-
-    /* Оформление таблицы */
-    .table thead th {
-        background: #f8fafc !important;
-        text-transform: uppercase;
-        font-size: 0.7rem !important;
-        letter-spacing: 0.05em;
-        border-bottom: 2px solid var(--mp-border) !important;
-    }
-    
-    .table td { padding: 1rem !important; vertical-align: middle; }
-    
-    .ts-wrapper .ts-control {
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 8px !important;
-        padding: 0.6rem 0.75rem !important;
-    }
-    /* Убираем лишние отступы у групп полей */
-.form-group {
-    margin-bottom: 0.5rem; /* было 1rem или больше */
+:root {
+    --primary: #0d6efd;
+    --bg-app: #f1f5f9;
+    --card-bg: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --radius: 8px;
 }
 
-/* Делаем поля ввода тоньше и аккуратнее */
+body { background-color: var(--bg-app); color: var(--text-main); font-size: 0.9rem; }
+
+/* Карточки */
+.erid-card { 
+    border: none; 
+    border-radius: var(--radius); 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+    padding: 1.25rem;
+}
+
+/* Заголовки разделов */
+.form-section-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin: 1.5rem 0 0.75rem;
+    font-weight: 800;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.25rem;
+}
+
+/* Компактные формы */
 .form-control, .form-select {
-    padding: 0.25rem 0.5rem !important; /* уменьшаем внутренние отступы */
-    font-size: 0.875rem !important;      /* чуть уменьшаем шрифт */
-    height: auto !important;             /* убираем фиксированную высоту */
-    line-height: 1.5;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
 }
 
-/* Компактные подписи к полям */
-label {
-    font-size: 0.75rem;
+.bg-custom-light { background: #f8fafc; padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); }
+
+/* Таблица */
+.table thead th {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    background: #f8fafc !important;
+    color: var(--text-muted);
+    padding: 0.75rem;
+}
+.table td { padding: 0.75rem; font-size: 0.85rem; }
+
+.erid-style { 
+    font-family: monospace; 
+    color: var(--primary); 
+    background: #eff6ff; 
+    padding: 2px 6px; 
+    border-radius: 4px; 
+    font-size: 0.8rem;
     font-weight: 600;
-    color: #64748b;
-    margin-bottom: 0.1rem;
-    display: block;
 }
 
-/* Если у вас поля стоят в ряд - используем Grid */
-.compact-form-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
+/* Мобильная оптимизация */
+@media (max-width: 768px) {
+    .erid-card { padding: 1rem; }
+    .container-fluid { padding: 0.5rem !important; }
+    /* Скрываем лишние колонки в таблице на узких экранах, если нужно */
 }
 
-    .delete-item-btn { color: var(--bs-danger); }
+/* Дополнительные правки */
+.btn { padding: 0.4rem 1rem; font-size: 0.85rem; border-radius: var(--radius); }
+.ts-control { border-radius: var(--radius) !important; padding: 0.4rem 0.6rem !important; }
+
 </style>
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 {% endblock %}

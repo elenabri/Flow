@@ -1362,7 +1362,7 @@ class EridManagementView(View):
                                         "creative_external_id": updated_creative.external_id,
                                         "platforms": [
                                             {
-                                                "pad_external_id": "pad_fc4fb19ed2", # Нужно взять из настроек или интеграции
+                                                #"pad_external_id": "pad_fc4fb19ed2", # Нужно взять из настроек или интеграции
                                                 "shows_count": 0,
                                                 "invoice_shows_count": 0,
                                                 "amount": {

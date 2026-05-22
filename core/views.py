@@ -64,6 +64,8 @@ def get_youtube_stats(channel_url, api_key):
         v_data = requests.get(v_url).json()
         v_ids = [v["contentDetails"]["videoId"] for v in v_data.get("items", [])]
         long_views, shorts_views = [], []
+        raw_avatar_url = item["snippet"]["thumbnails"]["high"]["url"]
+        processed_avatar_url = raw_avatar_url.replace("yt3.ggpht.com", "yt4.ggpht.com")
         if v_ids:
             stats_url = f"https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id={','.join(v_ids)}&key={api_key}"
             for v in requests.get(stats_url).json().get("items", []):
@@ -91,7 +93,7 @@ def get_youtube_stats(channel_url, api_key):
             'name': item["snippet"]["title"],
             'long_median': int(statistics.median(long_views)) if long_views else 0,
             'shorts_median': int(statistics.median(shorts_views)) if shorts_views else 0,
-            'api_avatar': item["snippet"]["thumbnails"]["high"]["url"],
+            'avatar_url': processed_avatar_url,
             'api_banner': item.get("brandingSettings", {}).get("image", {}).get("bannerExternalUrl"),
         }
     except Exception as e:

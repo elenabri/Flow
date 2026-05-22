@@ -107,25 +107,40 @@ import logging
 # Инициализируем логгер, чтобы видеть ошибки прямо в консоли Render
 logger = logging.getLogger(__name__)
 
+
 @transaction.atomic
 def register(request):
     if request.method == 'POST':
         form = RegistrationForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                user = form.save(commit=False)
                 email = form.cleaned_data.get('email').lower()
-                user.email = email
-                user.username = email  # Используем email как логин
                 
-                # Пароль
-                pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
-                user.set_password(pwd)
-                user.is_active = False 
+                # --- ДОБАВЛЯЕМ ЛОГИКУ ПОИСКА ---
+                # Проверяем, не создавали ли мы этого пользователя заранее
+                user = User.objects.filter(email=email).first()
                 
-                role = form.cleaned_data.get('role')
-                user.role = role 
-                user.save()
+                if user:
+                    # Если пользователь уже активен — значит он уже зарегистрирован
+                    if user.is_active:
+                        messages.error(request, "Пользователь с таким email уже активен.")
+                        return redirect('core:register')
+                    
+                    # Если пользователь есть, но не активен (ваш "предварительный" аккаунт)
+                    # Мы не меняем его роль или данные, просто даем ему пароль
+                    pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+                    user.set_password(pwd)
+                    user.save()
+                else:
+                    # --- ЕСЛИ ПОЛЬЗОВАТЕЛЯ НЕТ, СОЗДАЕМ НОВОГО ---
+                    user = form.save(commit=False)
+                    user.email = email
+                    user.username = email
+                    pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+                    user.set_password(pwd)
+                    user.is_active = False 
+                    user.role = form.cleaned_data.get('role')
+                    user.save()
                 
                 if role == 'blogger':
                     BloggerProfile.objects.create(

@@ -4,72 +4,89 @@
 
 {% block extra_css %}
 <style>
-  .erid-card { 
-        border: 1px solid var(--mp-border); 
-        border-radius: 12px; 
-        background: #ffffff;
-    }
-    .blogger-row { 
-        background-color: var(--mp-bg); 
-        font-weight: 700; 
-        border-left: 4px solid var(--mp-accent); 
-    }
-    .erid-style { 
-        font-family: monospace; 
-        color: var(--mp-text-main); 
-        background: #e2e8f0; 
-        padding: 4px 8px; 
-        border-radius: 6px; 
-        font-size: 0.9rem; 
-        border: 1px solid var(--mp-border); 
-    }
-    .form-section-title { 
-        font-size: 0.8rem; 
-        text-transform: uppercase; 
-        letter-spacing: 0.5px; 
-        color: var(--mp-text-muted); 
-        margin-top: 20px; 
-        margin-bottom: 10px; 
-        font-weight: 700; 
-    }
-    .bg-custom-light {
-        background-color: #f8fafc;
-    }
-    /* Стили для кастомизации выпадающих списков под общий дизайн */
-    .form-select-custom {
+    /* 1. Карточки и контейнеры */
+    .erid-card {
         border: 1px solid var(--mp-border);
-        border-radius: 6px;
-        background-color: #ffffff;
-        font-size: 0.9rem;
+        border-radius: 16px; /* Чуть скругленнее для современного вида */
+        background: #ffffff;
+        overflow: hidden;
     }
-    .form-select-custom:focus {
+    
+    /* 2. Заголовки разделов формы */
+    .form-section-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--mp-text-muted);
+        margin: 24px 0 12px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+    }
+    .form-section-title::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--mp-border);
+        margin-left: 10px;
+    }
+
+    /* 3. Инпуты и Селекты */
+    .form-control, .form-select-custom {
+        border: 1px solid var(--mp-border);
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem;
+        transition: all 0.2s ease;
+    }
+    .form-control:focus, .form-select-custom:focus {
         border-color: var(--mp-accent);
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
-    /* Фикс интеграции TomSelect с Bootstrap 5 стилями */
-    .ts-wrapper.form-select-custom {
-        padding: 0 !important;
-        height: auto;
-        box-shadow: none;
+
+    /* 4. Стилизация списка интеграций */
+    .blogger-row {
+        background-color: #f1f5f9;
     }
-    .ts-wrapper .ts-control {
-        border: none !important;
-        padding: 0.45rem 2.25rem 0.45rem 0.75rem !important;
-        border-radius: 6px !important;
+    
+    .erid-style {
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        color: var(--mp-accent);
+        background: #eff6ff;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 1px solid #dbeafe;
     }
-    /* Стиль для кнопки удаления элементов из сохраненного списка */
+
+    /* 5. Кнопки */
+    .btn-primary {
+        background-color: var(--mp-accent);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+    
     .delete-item-btn {
-        cursor: pointer;
-        color: var(--bs-danger);
-        transition: transform 0.2s;
+        color: var(--mp-danger);
+        transition: all 0.2s;
     }
     .delete-item-btn:hover {
-        transform: scale(1.15);
+        background: #fee2e2;
+        border-radius: 4px;
     }
-    /* Стилизация выпадающего списка TomSelect для скроллинга большого объема ККТУ */
-    .ts-dropdown .dropdown-content {
-        max-height: 350px !important;
-    </style>
+
+    /* 6. Fix для TomSelect */
+    .ts-control {
+        border-radius: 8px !important;
+        border: 1px solid var(--mp-border) !important;
+    }
+    .ts-wrapper.focus .ts-control {
+        border-color: var(--mp-accent) !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    }
+</style>
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 {% endblock %}
 

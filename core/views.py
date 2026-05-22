@@ -1351,6 +1351,7 @@ class EridManagementView(View):
                         },
                         "items": [
                             {
+                                "contract_external_id": "cnt_58ba736ba4",
                                 "amount": {
                                     "excluding_vat": "{:.2f}".format(ex_vat_val),
                                     "vat_rate": "0",

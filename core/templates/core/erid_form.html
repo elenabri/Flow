@@ -4,359 +4,162 @@
 
 {% block extra_css %}
 <style>
-    /* 1. Карточки и контейнеры */
-    .erid-card {
-        border: 1px solid var(--mp-border);
-        border-radius: 16px; /* Чуть скругленнее для современного вида */
-        background: #ffffff;
-        overflow: hidden;
-    }
-    
-    /* 2. Заголовки разделов формы */
-    .form-section-title {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--mp-text-muted);
-        margin: 24px 0 12px;
-        font-weight: 800;
-        display: flex;
-        align-items: center;
-    }
-    .form-section-title::after {
-        content: "";
-        flex: 1;
-        height: 1px;
-        background: var(--mp-border);
-        margin-left: 10px;
-    }
-
-    /* 3. Инпуты и Селекты */
-    .form-control, .form-select-custom {
-        border: 1px solid var(--mp-border);
-        border-radius: 8px;
-        padding: 0.6rem 0.8rem;
-        transition: all 0.2s ease;
-    }
-    .form-control:focus, .form-select-custom:focus {
-        border-color: var(--mp-accent);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    /* 4. Стилизация списка интеграций */
-    .blogger-row {
-        background-color: #f1f5f9;
-    }
-    
-    .erid-style {
-        font-family: 'SFMono-Regular', Consolas, monospace;
-        color: var(--mp-accent);
-        background: #eff6ff;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        border: 1px solid #dbeafe;
-    }
-
-    /* 5. Кнопки */
-    .btn-primary {
-        background-color: var(--mp-accent);
-        border: none;
-        padding: 0.75rem 1.5rem;
-        border-radius: 8px;
-        font-weight: 600;
-    }
-    
-    .delete-item-btn {
-        color: var(--mp-danger);
-        transition: all 0.2s;
-    }
-    .delete-item-btn:hover {
-        background: #fee2e2;
-        border-radius: 4px;
-    }
-
-    /* 6. Fix для TomSelect */
-    .ts-control {
-        border-radius: 8px !important;
-        border: 1px solid var(--mp-border) !important;
-    }
-    .ts-wrapper.focus .ts-control {
-        border-color: var(--mp-accent) !important;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-    }
+    .erid-card { border: 1px solid var(--mp-border); border-radius: 16px; background: #ffffff; overflow: hidden; }
+    .form-section-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--mp-text-muted); margin: 24px 0 12px; font-weight: 800; display: flex; align-items: center; }
+    .form-section-title::after { content: ""; flex: 1; height: 1px; background: var(--mp-border); margin-left: 10px; }
+    .form-select-custom { border: 1px solid var(--mp-border); border-radius: 8px; padding: 0.6rem 0.8rem; }
+    .erid-style { font-family: 'SFMono-Regular', Consolas, monospace; color: var(--mp-accent); background: #eff6ff; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; border: 1px solid #dbeafe; }
+    .bg-custom-light { background-color: #f8fafc; }
+    .ts-control { border-radius: 8px !important; border: 1px solid var(--mp-border) !important; }
+    .ts-wrapper.focus .ts-control { border-color: var(--mp-accent) !important; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important; }
 </style>
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid px-0">
-    
-    {% if error_message %}
-    <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4" role="alert">
-        <i class="bi bi-exclamation-octagon-fill me-2"></i> {{ error_message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    {% endif %}
-
-    <div class="row g-4">
-        <div class="col-xl-5 col-lg-6">
-            <div class="card erid-card p-4 shadow-sm">
-                <h5 class="fw-bold mb-4" style="color: var(--mp-text-main);">
-                    <i class="bi bi-layers-half text-primary me-2"></i>Регистрация интеграции & ERID
-                </h5>
-                
-                <form action="{% url 'core:erid_management' %}" method="POST" enctype="multipart/form-data" id="eridForm">
-                    {% csrf_token %}
-                    
-                    <div class="form-section-title">1. Рекламодатель</div>
-                    <div class="mb-3">
-                        <div class="d-flex gap-2 mb-2">
-                            <select class="form-select form-select-custom shadow-sm flex-grow-1" id="advSelect" name="advertiser_select" onchange="updatePartyFields('adv')">
-                                <option value="new" selected>+ Добавить нового рекламодателя</option>
-                                {% for adv in advertisers %}
-                                    <option value="{{ adv.external_id }}">{{ adv.name }} (ИНН: {{ adv.inn|default:"-" }})</option>
-                                {% endfor %}
-                            </select>
-                            <button type="button" class="btn btn-outline-danger btn-sm px-2" title="Удалить выбранного рекламодателя" onclick="deleteSavedContractor('adv')">
-                                <i class="bi bi-trash3"></i>
-                            </button>
-                        </div>
-                        
-                        <div id="advNewBox" class="p-3 bg-custom-light rounded border">
-                            <div class="mb-2">
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="adv_citizenship" id="adv_rf" value="rf" checked onchange="updatePartyFields('adv')">
-                                    <label class="form-check-label small fw-medium" for="adv_rf">Гражданин РФ</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="adv_citizenship" id="adv_foreign" value="foreign" onchange="updatePartyFields('adv')">
-                                    <label class="form-check-label small fw-medium" for="adv_foreign">Иностранец</label>
-                                </div>
-                            </div>
-
-                            <div class="mb-2">
-                                <select class="form-select form-select-sm form-select-custom" name="adv_type" id="adv_type" onchange="updatePartyFields('adv')">
-                                    <option value="ur">Юридическое лицо</option>
-                                    <option value="fiz">Физическое лицо</option>
-                                    <option value="ip" id="adv_ip_option">Индивидуальный предприниматель (ИП)</option>
-                                </select>
-                            </div>
-
-                            <!-- Обертка для корректного скрытия/показа TomSelect -->
-                            <div id="adv_country_wrapper" class="mb-2 d-none">
-                                <select class="form-select form-select-sm form-select-custom" id="adv_country" name="adv_country">
-                                    <option value="">-- Выберите страну --</option>
-                                    {% for country in countries %}
-                                        <option value="{{ country.code }}">{{ country.name }} </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <input type="text" class="form-control form-control-sm mb-2" id="adv_name" name="adv_name" placeholder="Название компании или ФИО" required>
-                            <input type="text" class="form-control form-control-sm mb-2" id="adv_inn" name="adv_inn" placeholder="ИНН">
-                            <input type="text" class="form-control form-control-sm mb-2 d-none" 
-       id="adv_reg_number" name="adv_reg_number" placeholder="Регистрационный номер / Tax ID">
-                            <input type="text" class="form-control form-control-sm" id="adv_phone" name="adv_phone" placeholder="Номер телефона">
-                        </div>
-                    </div>
-
-                    <div class="form-section-title">2. Блогер и Площадка</div>
-                    <div class="mb-3">
-                        <div class="d-flex gap-2 mb-2">
-                            <select class="form-select form-select-custom shadow-sm flex-grow-1" id="blogSelect" name="blogger_select" onchange="updatePartyFields('blog')">
-                                <option value="new" selected>+ Добавить нового блогера</option>
-                                {% for blogger in bloggers %}
-                                    <option value="{{ blogger.external_id }}">{{ blogger.name }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="button" class="btn btn-outline-danger btn-sm px-2" title="Удалить выбранного блогера" onclick="deleteSavedContractor('blog')">
-                                <i class="bi bi-trash3"></i>
-                            </button>
-                        </div>
-                        
-                        <div id="blogNewBox" class="p-3 bg-custom-light rounded border">
-                            <div class="mb-2">
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="blog_citizenship" id="blog_rf" value="rf" checked onchange="updatePartyFields('blog')">
-                                    <label class="form-check-label small fw-medium" for="blog_rf">Гражданин РФ</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="blog_citizenship" id="blog_foreign" value="foreign" onchange="updatePartyFields('blog')">
-                                    <label class="form-check-label small fw-medium" for="blog_foreign">Иностранец</label>
-                                </div>
-                            </div>
-
-                            <div class="mb-2">
-                                <select class="form-select form-select-sm form-select-custom" name="blog_type" id="blog_type" onchange="updatePartyFields('blog')">
-                                    <option value="ur">Юридическое лицо</option>
-                                    <option value="fiz">Физическое лицо</option>
-                                    <option value="ip" id="blog_ip_option">Индивидуальный предприниматель (ИП)</option>
-                                </select>
-                            </div>
-
-                            <!-- Обертка для корректного скрытия/показа TomSelect -->
-                            <div id="blog_country_wrapper" class="mb-2 d-none">
-                                <select class="form-select form-select-sm form-select-custom" id="blog_country" name="blog_country">
-                                    <option value="">-- Выберите страну --</option>
-                                    {% for country in countries %}
-                                        <option value="{{ country.code }}">{{ country.name }} ({{ country.alpha3 }})</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <input type="text" class="form-control form-control-sm mb-2" id="blog_name" name="blog_name" placeholder="Название компании или ФИО" required>
-                            <input type="text" class="form-control form-control-sm mb-2" id="blog_inn" name="blog_inn" placeholder="ИНН">
-                            <input type="text" class="form-control form-control-sm mb-2 d-none" 
-       id="blog_reg_number" name="blog_reg_number" placeholder="Регистрационный номер / Tax ID">
-                            <input type="text" class="form-control form-control-sm mb-2" id="blog_phone" name="blog_phone" placeholder="Номер телефона">
-
-                            <input type="url" class="form-control form-control-sm" name="channel_url" required placeholder="Ссылка на YouTube-канал блогера">
-                        </div>
-                    </div>
-
-                    <div class="form-section-title">3. Данные Креатива (Ролика)</div>
-                    <div class="p-3 bg-white rounded border mb-4">
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">Что рекламируем (Товар)</label>
-                            <input type="text" class="form-control form-control-sm" name="product_name" required placeholder="Например: Термос Вкусневич 1л">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">Категория товара (ККТУ)</label>
-                            <select class="form-select form-select-sm form-select-custom" name="kktu_code" id="kktuSelect" required>
-                                <option value="">-- Начните вводить код или название --</option>
-                                {% for kktu in kktu_codes %}
-                                    <option value="{{ kktu.code }}">[{{ kktu.code }}] {{ kktu.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">Период размещения</label>
-                            <div class="row g-2">
-                                <div class="col">
-                                    <input type="date" class="form-control form-control-sm" name="date_start" id="date_start" value="{{ today_date }}">
-                                </div>
-                                <div class="col">
-                                    <select class="form-select form-select-sm form-select-custom" name="date_end_type" id="dateEndType" onchange="if(this.value==='date'){document.getElementById('dateEndInput').classList.remove('d-none')}else{document.getElementById('dateEndInput').classList.add('d-none')}">
-                                        <option value="infinity">Бессрочно</option>
-                                        <option value="date">Указать дату окончания</option>
-                                    </select>
-                                    <input type="date" class="form-control form-control-sm mt-1 d-none" id="dateEndInput" name="date_end">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted">Ссылки на товары (необязательно)</label>
-                            <textarea class="form-control form-control-sm" name="target_urls" rows="2" placeholder="Каждая ссылка с новой строки"></textarea>
-                        </div>
-                        
-                        <div class="mb-2">
-                            <label class="form-label small fw-bold text-muted">Файл видео рекламы</label>
-                            <input type="file" class="form-control form-control-sm" name="video_file" accept="video/*" required>
-                        </div>
-                    </div>
-                    
-               
-                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm" style="border-radius: 8px;">
-                        <i class="bi bi-cloud-arrow-up-fill me-2"></i>Сгенерировать ERID
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <div class="col-xl-7 col-lg-6">
-            <div class="card erid-card overflow-hidden shadow-sm">
-                <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="fw-bold mb-0" style="color: var(--mp-text-main);">
-                        <i class="bi bi-table text-secondary me-2"></i>Зарегистрированные интеграции
-                    </h6>
-                </div>
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="ps-4" style="font-size: 13px; color: var(--mp-text-muted);">Интеграция / Ролик</th>
-                                <th style="font-size: 13px; color: var(--mp-text-muted);">Счет / Акт</th>
-                                <th style="font-size: 13px; color: var(--mp-text-muted);">Токен (ERID)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in integrations %}
-                            <tr class="blogger-row">
-                                <td colspan="3" class="ps-4 text-primary" style="font-size: 14px;">
-                                    <i class="bi bi-person-circle me-2"></i>{{ item.blogger_name }} 
-                                    <span class="text-muted fw-normal ms-3 small">Заказчик: {{ item.advertiser_name }}</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="ps-5">
-                                    <div class="fw-bold text-dark" style="font-size: 14px;">{{ item.creative_name }}</div>
-                                    <a href="{{ item.channel_url }}" target="_blank" class="small text-muted" style="font-size: 12px;">{{ item.channel_url }}</a>
-                                </td>
-                                <td>
-                                    {% if item.invoice_number %}
-                                        <span class="badge bg-light text-dark border">№{{ item.invoice_number }}</span>
-                                    {% else %}
-                                       <button type="button" class="btn btn-xs btn-outline-warning py-0 px-2" 
-        onclick="openActModal('{{ item.id }}')" style="font-size: 11px; border-radius: 4px;">
-    <i class="bi bi-plus-circle me-1"></i> Прикрепить акт
-</button>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="erid-style">{{ item.erid }}</span>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="text-center py-5 text-muted small">
-                                    <i class="bi bi-folder-x display-6 d-block mb-2 text-secondary"></i>
-                                    Токенов пока нет. Заполните форму слева.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- Прогресс-бар -->
-<div id="uploadProgressContainer" class="d-none fixed-bottom p-3" style="z-index: 1050;">
-    <div class="card shadow p-2" style="max-width: 400px; margin-left: auto;">
-        <div class="small fw-bold mb-1">Загрузка видео...</div>
-        <div class="progress" style="height: 10px;">
-            <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
-        </div>
+    {% if error_message %}
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4" role="alert">
+        <i class="bi bi-exclamation-octagon-fill me-2"></i> {{ error_message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-</div>
+    {% endif %}
 
-<!-- Модальное окно для акта -->
-<div class="modal fade" id="actModal" tabindex="-1">
-    <div class="modal-dialog">
-        <form class="modal-content" method="POST" action="{% url 'core:erid_management' %}">
-            {% csrf_token %}
-                <input type="hidden" name="action" value="update_invoice">
-            <input type="hidden" name="integration_id" id="modalIntegrationId">
-            <div class="modal-header"><h5 class="modal-title">Прикрепить акт</h5></div>
-            <div class="modal-body">
-                <input type="text" name="invoice_number" class="form-control mb-2" placeholder="Номер акта" required>
+    <div class="row g-4">
+        <!-- Форма -->
+        <div class="col-xl-5 col-lg-6">
+            <div class="card erid-card p-4 shadow-sm">
+                <h5 class="fw-bold mb-4 text-primary">
+                    <i class="bi bi-layers-half me-2"></i>Регистрация интеграции & ERID
+                </h5>
                 
-                <!-- Новое поле для даты -->
-                <label class="small fw-bold text-muted mb-1">Дата акта</label>
-                <input type="date" name="invoice_date" class="form-control mb-2" required>
-                
-                <input type="number" step="0.01" name="invoice_amount" class="form-control" placeholder="Сумма" required>
+                <form action="{% url 'core:erid_management' %}" method="POST" enctype="multipart/form-data" id="eridForm">
+                    {% csrf_token %}
+                    
+                    <div class="form-section-title">1. Рекламодатель</div>
+                    <div class="mb-3">
+                        <div class="d-flex gap-2 mb-2">
+                            <select class="form-select form-select-custom shadow-sm flex-grow-1" id="advSelect" name="advertiser_select" onchange="updatePartyFields('adv')">
+                                <option value="new" selected>+ Добавить нового рекламодателя</option>
+                                {% for adv in advertisers %}<option value="{{ adv.external_id }}">{{ adv.name }} (ИНН: {{ adv.inn|default:"-" }})</option>{% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-outline-danger btn-sm px-2" onclick="deleteSavedContractor('adv')"><i class="bi bi-trash3"></i></button>
+                        </div>
+                        
+                        <div id="advNewBox" class="p-3 bg-custom-light rounded border">
+                            <div class="mb-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="adv_citizenship" id="adv_rf" value="rf" checked onchange="updatePartyFields('adv')">
+                                    <label class="form-check-label small fw-medium" for="adv_rf">Гражданин РФ</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="adv_citizenship" id="adv_foreign" value="foreign" onchange="updatePartyFields('adv')">
+                                    <label class="form-check-label small fw-medium" for="adv_foreign">Иностранец</label>
+                                </div>
+                            </div>
+                            <select class="form-select form-select-sm form-select-custom mb-2" name="adv_type" id="adv_type" onchange="updatePartyFields('adv')">
+                                <option value="ur">Юридическое лицо</option>
+                                <option value="fiz">Физическое лицо</option>
+                                <option value="ip" id="adv_ip_option">Индивидуальный предприниматель (ИП)</option>
+                            </select>
+                            <div id="adv_country_wrapper" class="mb-2 d-none">
+                                <select class="form-select form-select-sm form-select-custom" id="adv_country" name="adv_country">
+                                    <option value="">-- Выберите страну --</option>
+                                    {% for country in countries %}<option value="{{ country.code }}">{{ country.name }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <input type="text" class="form-control form-control-sm mb-2" id="adv_name" name="adv_name" placeholder="Название компании или ФИО" required>
+                            <input type="text" class="form-control form-control-sm mb-2" id="adv_inn" name="adv_inn" placeholder="ИНН">
+                            <input type="text" class="form-control form-control-sm mb-2 d-none" id="adv_reg_number" name="adv_reg_number" placeholder="Tax ID">
+                            <input type="text" class="form-control form-control-sm" id="adv_phone" name="adv_phone" placeholder="Телефон">
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">2. Блогер и Площадка</div>
+                    <div class="mb-3">
+                        <div class="d-flex gap-2 mb-2">
+                            <select class="form-select form-select-custom shadow-sm flex-grow-1" id="blogSelect" name="blogger_select" onchange="updatePartyFields('blog')">
+                                <option value="new" selected>+ Добавить нового блогера</option>
+                                {% for blogger in bloggers %}<option value="{{ blogger.external_id }}">{{ blogger.name }}</option>{% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-outline-danger btn-sm px-2" onclick="deleteSavedContractor('blog')"><i class="bi bi-trash3"></i></button>
+                        </div>
+                        
+                        <div id="blogNewBox" class="p-3 bg-custom-light rounded border">
+                            <div class="mb-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="blog_citizenship" id="blog_rf" value="rf" checked onchange="updatePartyFields('blog')">
+                                    <label class="form-check-label small fw-medium" for="blog_rf">Гражданин РФ</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="blog_citizenship" id="blog_foreign" value="foreign" onchange="updatePartyFields('blog')">
+                                    <label class="form-check-label small fw-medium" for="blog_foreign">Иностранец</label>
+                                </div>
+                            </div>
+                            <select class="form-select form-select-sm form-select-custom mb-2" name="blog_type" id="blog_type" onchange="updatePartyFields('blog')">
+                                <option value="ur">Юридическое лицо</option>
+                                <option value="fiz">Физическое лицо</option>
+                                <option value="ip" id="blog_ip_option">Индивидуальный предприниматель (ИП)</option>
+                            </select>
+                            <div id="blog_country_wrapper" class="mb-2 d-none">
+                                <select class="form-select form-select-sm form-select-custom" id="blog_country" name="blog_country">
+                                    <option value="">-- Выберите страну --</option>
+                                    {% for country in countries %}<option value="{{ country.code }}">{{ country.name }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <input type="text" class="form-control form-control-sm mb-2" id="blog_name" name="blog_name" placeholder="Название или ФИО" required>
+                            <input type="text" class="form-control form-control-sm mb-2" id="blog_inn" name="blog_inn" placeholder="ИНН">
+                            <input type="text" class="form-control form-control-sm mb-2 d-none" id="blog_reg_number" name="blog_reg_number" placeholder="Tax ID">
+                            <input type="text" class="form-control form-control-sm mb-2" id="blog_phone" name="blog_phone" placeholder="Телефон">
+                            <input type="url" class="form-control form-control-sm" name="channel_url" required placeholder="Ссылка на YouTube-канал">
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">3. Данные Креатива</div>
+                    <div class="p-3 bg-white rounded border mb-4">
+                        <input type="text" class="form-control form-control-sm mb-3" name="product_name" required placeholder="Товар">
+                        <select class="form-select form-select-sm form-select-custom mb-3" name="kktu_code" id="kktuSelect" required>
+                            <option value="">-- Выберите ККТУ --</option>
+                            {% for kktu in kktu_codes %}<option value="{{ kktu.code }}">[{{ kktu.code }}] {{ kktu.name }}</option>{% endfor %}
+                        </select>
+                        <input type="file" class="form-control form-control-sm" name="video_file" accept="video/*" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2"><i class="bi bi-cloud-arrow-up-fill me-2"></i>Сгенерировать ERID</button>
+                </form>
             </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+
+        <!-- Таблица -->
+        <div class="col-xl-7 col-lg-6">
+            <div class="card erid-card shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-secondary"><i class="bi bi-table me-2"></i>Зарегистрированные интеграции</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light"><tr><th class="ps-4 small">Интеграция</th><th class="small">Документы</th><th class="small">Токен</th></tr></thead>
+                        <tbody>
+                            {% for item in integrations %}
+                            <tr class="blogger-row">
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark small">{{ item.creative_name }}</div>
+                                    <small class="text-muted">{{ item.blogger_name }}</small>
+                                </td>
+                                <td>
+                                    {% if item.invoice_number %}<span class="badge bg-light text-dark border">№{{ item.invoice_number }}</span>
+                                    {% else %}<button type="button" class="btn btn-xs btn-outline-warning py-0 px-2" onclick="openActModal('{{ item.id }}')"><i class="bi bi-plus-circle me-1"></i> Акт</button>{% endif %}
+                                </td>
+                                <td><span class="erid-style">{{ item.erid }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center py-5 text-muted small">Нет данных</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 {% endblock %}

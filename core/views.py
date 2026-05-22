@@ -1338,10 +1338,10 @@ class EridManagementView(View):
                         "contractor_role": "publisher",
                         "amount": {
                             "services": {
-                                "excluding_vat": str(excluding_vat),
-                                "vat_rate": "20",
-                                "vat": str(vat_val),
-                                "including_vat": str(amount_val)
+                                "excluding_vat": str(updated_creative.invoice_amount)
+                                "vat_rate": "0",
+                                "vat": "0.00",
+                                "including_vat": str(updated_creative.invoice_amount)
                             }
                         },
                         "items": [
@@ -1355,10 +1355,10 @@ class EridManagementView(View):
                                                 "shows_count": 0,
                                                 "invoice_shows_count": 0,
                                                 "amount": {
-                                                    "excluding_vat": str(excluding_vat),
-                                                    "vat_rate": "20",
+                                                    "excluding_vat": str(updated_creative.invoice_amount)
+                                                    "vat_rate": "0.00",
                                                     "vat": str(vat_val),
-                                                    "including_vat": str(amount_val)
+                                                    "including_vat": str(updated_creative.invoice_amount)
                                                 },
                                                 "pay_type": "cpm"
                                             }

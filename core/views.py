@@ -1368,8 +1368,8 @@ class EridManagementView(View):
                                                 "invoice_shows_count": 0,
                                                 "amount": {
                                                     "excluding_vat": str(updated_creative.invoice_amount),
-                                                    "vat_rate": "0.00",
-                                                    "vat": str(vat_val),
+                                                    "vat_rate": "0",
+                                                    "vat": "0.00",
                                                     "including_vat": str(updated_creative.invoice_amount)
                                                 },
                                                 "date_start_planned": "2026-05-21",

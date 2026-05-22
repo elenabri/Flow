@@ -1334,6 +1334,8 @@ class EridManagementView(View):
                         "serial": updated_creative.invoice_number,
                         "date_start": updated_creative.invoice_date.isoformat(),
                         "date_end": updated_creative.invoice_date.isoformat(),
+                        "client_role": "advertiser",   
+                        "contractor_role": "blogger"
                         "amount": {
                             "services": {
                                 "excluding_vat": str(excluding_vat),

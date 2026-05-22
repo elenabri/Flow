@@ -1321,10 +1321,8 @@ class EridManagementView(View):
                 # Работа с формой
                 form = CreativeInvoiceForm(request.POST, instance=integration)
                 
-                # 1. Запрос к ОРД (используем service, который теперь определен)
-                # Убедитесь, что переменная url определена перед этим вызовом!
-                # Если url еще не определен, его нужно сформировать:
-                url = f"{service.BASE_URL}/v3/creative/{integration.creative_ext_id}"
+                # ИСПОЛЬЗУЕМ ПРАВИЛЬНОЕ ПОЛЕ: integration.external_id
+                url = f"{service.BASE_URL}/v3/creative/{integration.external_id}"
                 
                 creative_in_ord = service.session.get(url).json()
                 

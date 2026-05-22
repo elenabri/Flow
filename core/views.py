@@ -1337,8 +1337,8 @@ class EridManagementView(View):
                         "contract_external_id": "cnt_58ba736ba4",
                         "date": updated_creative.invoice_date.isoformat(),
                         "serial": updated_creative.invoice_number,
-                        "date_start": "2026-05-21",
-                        "date_end": "2026-05-22",
+                        "date_start": "2026-05-19",
+                        "date_end": "2026-05-20",
                         "client_role": "advertiser",   
                         "contractor_role": "publisher",
                         "amount": {

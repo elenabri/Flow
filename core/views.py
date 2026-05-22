@@ -1373,7 +1373,7 @@ class EridManagementView(View):
                                                     "including_vat": str(updated_creative.invoice_amount)
                                                 },
                                                 "date_start_planned": updated_creative.invoice_date.isoformat(),
-                                                "date_end_planned": "2026-05-31",
+                                                "date_end_planned": "2026-05-21",
                                                 "date_start_actual":updated_creative.invoice_date.isoformat(),
                                                 "date_end_actual": "2026-05-31",
                                                 "pay_type": "cpm"

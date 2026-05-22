@@ -1308,23 +1308,29 @@ class EridManagementView(View):
 
     def post(self, request):
         action = request.POST.get('action')
-        service = VKORDService(token=self.get_ord_token())
-        # --- БЛОК 2: ОБНОВЛЕНИЕ АКТА (перенесли вверх для безопасности) ---
+        
+        # Используем свойство self.ord_token (без скобок)
+        service = VKORDService(token=self.ord_token)
+        
         # --- БЛОК 2: ОБНОВЛЕНИЕ АКТА ---
         if action == 'update_invoice':
             integration_id = request.POST.get('integration_id')
-            integration = EridIntegration.objects.get(id=integration_id)
-            
-            # Работа с формой
-            form = CreativeInvoiceForm(request.POST, instance=integration)
-            
             try:
-                # 1. Запрос к ОРД
-                creative_in_ord = service.session.get(f"{service.BASE_URL}/v3/creative/{integration.creative_ext_id}").json()
+                integration = EridIntegration.objects.get(id=integration_id)
                 
-                # 2. Проверка данных (все внутри try)
+                # Работа с формой
+                form = CreativeInvoiceForm(request.POST, instance=integration)
+                
+                # 1. Запрос к ОРД (используем service, который теперь определен)
+                # Убедитесь, что переменная url определена перед этим вызовом!
+                # Если url еще не определен, его нужно сформировать:
+                url = f"{service.BASE_URL}/v3/creative/{integration.creative_ext_id}"
+                
+                creative_in_ord = service.session.get(url).json()
+                
+                # 2. Проверка данных
                 if not creative_in_ord.get("kktus") or not creative_in_ord.get("contract_external_ids"):
-                    return render(request, 'error.html', {'message': "Креатив в ОРД не прошел валидацию (нет ККТУ или договора)."})
+                    return render(request, self.template_name, {'error_message': "Креатив в ОРД не прошел валидацию."})
                 
                 response = service.session.put(url, json=data)
                 if response.status_code != 200:
@@ -1332,8 +1338,8 @@ class EridManagementView(View):
                     return render(request, 'error.html', {'message': f"Ошибка: {response.text}"})
                 
             except Exception as e:
-                logger.error(f"Ошибка проверки креатива: {str(e)}")
-                return render(request, 'error.html', {'message': f"Ошибка связи с ОРД: {str(e)}"})
+                logger.error(f"Ошибка ОРД: {str(e)}", exc_info=True)
+                return render(request, self.template_name, {'error_message': f"Ошибка регистрации: {str(e)}"})
             
     
                 

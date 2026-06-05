@@ -33,7 +33,7 @@ def send_telegram_message(recipient_tg_id, title, text):
 class VKORDService:
     """Синхронный сервис для бесшовной интеграции с API ОРД VK по спецификации v3"""
     
-    BASE_URL = "https://api-sandbox.ord.vk.com" 
+    BASE_URL = "https://api.ord.vk.com"
     
     def __init__(self, token):
         self.token = token

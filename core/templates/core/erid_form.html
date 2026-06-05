@@ -354,33 +354,8 @@
             alert('Произошла ошибка сети. Попробуйте снова.');
         }
     }
-    // Перехват отправки формы для прогресс-бара
-document.getElementById('eridForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    const xhr = new XMLHttpRequest();
-    const bar = document.getElementById('uploadProgressBar');
-    const container = document.getElementById('uploadProgressContainer');
+   
 
-    container.classList.remove('d-none');
-    
-    xhr.upload.onprogress = (e) => {
-        const percent = (e.loaded / e.total) * 100;
-        bar.style.width = percent + '%';
-    };
-
-    xhr.onload = () => {
-        if (xhr.status === 200) {
-            location.reload(); // Перезагрузка для обновления таблицы
-        } else {
-            alert('Ошибка при загрузке');
-            container.classList.add('d-none');
-        }
-    };
-
-    xhr.open('POST', this.action);
-    xhr.send(formData);
-});
 
 // Открытие модального окна для акта
 function openActModal(id) {

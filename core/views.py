@@ -140,7 +140,7 @@ def register(request):
                 user.username = email
                 pwd = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
                 user.set_password(pwd)
-                user.is_active = False
+                user.is_active = True
                 user.role = form.cleaned_data.get('role')
                 user.save()
                 
@@ -178,8 +178,12 @@ def register(request):
                             is_active=True
                         )
 
-                send_verification_email(user, pwd, request)
-                return redirect('core:registration_success')
+                #send_verification_email(user, pwd, request)
+                #return redirect('core:registration_success')
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                return redirect('core:dashboard')
+            
+            
 
             except Exception as e:
                 logger.error(f"Ошибка при создании профиля: {str(e)}", exc_info=True)
